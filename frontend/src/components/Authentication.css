@@ -1,0 +1,45 @@
+.infor {
+  display: flex;
+  justify-content: center;
+  margin-top: 50px;
+}
+#vinhome{
+     z-index: -1;
+}
+/* Phần infor mặc định */
+.information { 
+  width: 300px;           
+  height: 200px;          
+  border-radius: 10px;
+  text-align: center;
+  padding: 20px;
+  background-color: #00bcd4;
+  color: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; 
+}
+
+/* Thay đổi mỗi khi di chuột vào */
+.information.active {
+  background-color: #007bff;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+}
+
+.information button {
+  background: none;
+  border: 2px solid white;
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.information button:hover {
+  background-color: white;
+  color: #007bff;
+}
