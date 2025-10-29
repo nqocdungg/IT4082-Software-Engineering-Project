@@ -1,68 +1,212 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+   font-family: 'Inter', sans-serif;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+   cursor: pointer;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+html,
+body {
+   margin: 0;
+}
+
+body {
+   background-color: rgba(59, 82, 102, 1);
+}
+
+.appMain {
+   position: absolute;
+   top: 16px;
+   left: 16px;
+   right: 16px;
+   bottom: 16px;
+   border-radius: 24px;
+   background: linear-gradient(135deg, rgba(42, 123, 155, 1) 0%, rgba(147, 153, 148, 1) 100%);
+   box-shadow: 6px 6px 15px rgba(0, 0, 0, 0.12);
+   display: flex;
+   flex-direction: column;
+   overflow: hidden;
+}
+
+/* =========================
+   Header
+========================= */
+header {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   background-color: inherit;
+   padding: 0 20px;
+   padding-left: 30px;
+   position: relative;
+   height: 70px;
+   color: white;
+}
+
+
+
+.header .user {
+   display: flex;
+   align-items: center;
+   gap: 24px;
+}
+
+.header .main-btn,
+.header .bell,
+.header .user-account {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;          
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 24px;
+  transition: background 0.3s, transform 0.2s;
+  cursor: pointer;
+}
+
+.header .main-btn:hover,
+.header .bell:hover,
+.header .user-account:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+/* =========================
+   App content: sidebar + main
+========================= */
+.mainContentWrapper {
+   width: 100%;
+   /* chiếm toàn bộ phần trong của .appMain */
+   flex: 1;
+   display: flex;
+   flex-direction: row;
+   overflow: hidden;
+   min-height: 0;
+}
+
+
+/* =========================
+   Sidebar
+========================= */
+.sidebar li a {
+   display: block;
+   text-decoration: none;
+   color: white;
+   padding: 12px 0;
+   transition: background 0.3s;
+   border-radius: 8px;
+}
+
+.sidebar li a .menu-item {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 6px;
+}
+
+.sidebar {
+   width: 100px;
+   background-color: inherit;
+   color: white;
+   padding-top: 20px;
+   display: flex;
+   flex-direction: column;
+}
+
+.sidebar ul {
+   list-style: none;
+   padding: 0;
+   margin: 0;
+   flex: 1;
+}
+
+.sidebar li {
+   margin: 10px 0;
+}
+
+.sidebar li a {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 6px;
+   text-decoration: none;
+   color: white;
+   padding: 12px 0;
+   transition: background 0.3s;
+}
+
+.sidebar .icon {
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   line-height: 0;
+   transition: background 0.3s, transform 0.2s;
+}
+
+.sidebar .icon svg {
+   width: 20px;
+   height: 20px;
+   display: block;
+}
+
+
+/* Khi hover vào link, đổi nền icon */
+.sidebar li a:hover .icon {
+   background-color: rgba(255, 255, 255, 0.3);
+   transform: scale(1.05);
+}
+
+/* Khi item được chọn (active) */
+.sidebar li a.active .icon {
+   background-color: white;
+   color: rgba(42, 123, 155, 1);
+}
+
+/* === Label nằm dưới icon === */
+.sidebar .label {
+   font-size: 13px;
+   text-align: center;
+   line-height: 1.2;
+   color: inherit;
+}
+
+
+/* =========================
+   Main area (Khung dashboard)
+========================= */
+.mainContent {
+   flex: 1;
+   padding: 20px;
+   overflow-y: auto;
+   background-color: white;
+   border-radius: 20px;
+   margin: 10px;
+   margin-left: 0px;
+   margin-top: 0px;
+}
+
+/* =========================
+   User icon
+========================= */
+.user-icon {
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   object-fit: cover;
+   background-color: inherit;
+   margin-bottom: 10px;
 }
