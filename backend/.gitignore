@@ -7,15 +7,6 @@ node_modules/
 .env.*
 !.env.example
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
 # OS / Editor junk
 .DS_Store
 Thumbs.db
@@ -32,11 +23,9 @@ pids/
 *.seed
 *.pid.lock
 
-# Database / cache / uploads
+# Database 
 *.sqlite
-*.db
-*.db-journal
-uploads/
+*.database
 cache/
 
 
