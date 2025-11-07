@@ -8,14 +8,14 @@ import Login from "./pages/Login";
 import "./index.css";
 
 function App() {
+  const token = localStorage.getItem("token");
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/households" element={<Households />} />
-        <Route path="/residents" element={<Residents />} />
-        <Route path="/revenues" element={<Revenues />} />
-        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </BrowserRouter>
   );
