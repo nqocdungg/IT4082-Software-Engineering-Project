@@ -1,0 +1,11 @@
+###GET
+GET http://localhost:5050/login
+
+### Login a user POST /AUTH/LOGIN
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "to_truong", 
+    "password": "totruong@123"
+}

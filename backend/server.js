@@ -3,9 +3,10 @@ import cors from 'cors'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import authRoutes from './src/routes/authRoutes.js'
-
+import dotenv from "dotenv"
+dotenv.config()
 const app = express()
-const PORT = process.env.PORT || 5050
+const PORT = process.env.PORT || 5000
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

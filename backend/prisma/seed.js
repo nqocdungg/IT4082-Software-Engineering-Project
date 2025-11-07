@@ -10,14 +10,14 @@ async function main() {
         data: [
         {
             username: 'to_truong',
-            password: '123456', 
+            password: hashedHead, 
             fullname: 'Nguyễn Văn A',
             phone: '0912345678',
             role: 'HEAD',
         },
         {
             username: 'to_pho',
-            password: '123456',
+            password: hashedDeputy,
             fullname: 'Nguyễn Thị B',
             phone: '0987654321',
             role: 'DEPUTY',
