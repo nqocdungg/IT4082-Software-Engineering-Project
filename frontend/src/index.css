@@ -32,9 +32,7 @@ body {
    overflow: hidden;
 }
 
-/* =========================
-   Header
-========================= */
+/* ========================= Header ========================= */
 header {
    display: flex;
    justify-content: space-between;
@@ -47,8 +45,6 @@ header {
    color: white;
 }
 
-
-
 .header .user {
    display: flex;
    align-items: center;
@@ -58,31 +54,29 @@ header {
 .header .main-btn,
 .header .bell,
 .header .user-account {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;          
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 0;
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 24px;
-  transition: background 0.3s, transform 0.2s;
-  cursor: pointer;
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   line-height: 0;
+   background: transparent;
+   border: none;
+   color: white;
+   font-size: 24px;
+   transition: background 0.3s, transform 0.2s;
+   cursor: pointer;
 }
 
 .header .main-btn:hover,
 .header .bell:hover,
 .header .user-account:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+   background: rgba(255, 255, 255, 0.3);
+   transform: scale(1.05);
 }
 
-/* =========================
-   App content: sidebar + main
-========================= */
+/* ========================= App content: sidebar + main ========================= */
 .mainContentWrapper {
    width: 100%;
    /* chiếm toàn bộ phần trong của .appMain */
@@ -93,10 +87,7 @@ header {
    min-height: 0;
 }
 
-
-/* =========================
-   Sidebar
-========================= */
+/* ========================= Sidebar ========================= */
 .sidebar li a {
    display: block;
    text-decoration: none;
@@ -163,7 +154,6 @@ header {
    display: block;
 }
 
-
 /* Khi hover vào link, đổi nền icon */
 .sidebar li a:hover .icon {
    background-color: rgba(255, 255, 255, 0.3);
@@ -184,10 +174,7 @@ header {
    color: inherit;
 }
 
-
-/* =========================
-   Main area (Khung dashboard)
-========================= */
+/* ========================= Main area (Khung dashboard) ========================= */
 .mainContent {
    flex: 1;
    padding: 20px;
@@ -199,9 +186,7 @@ header {
    margin-top: 0px;
 }
 
-/* =========================
-   User icon
-========================= */
+/* ========================= User icon ========================= */
 .user-icon {
    width: 40px;
    height: 40px;
@@ -211,270 +196,275 @@ header {
    margin-bottom: 10px;
 }
 
-
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+   line-height: 1.5;
+   font-weight: 400;
+   color-scheme: light dark;
+   color: rgba(255, 255, 255, 0.87);
+   background-color: #242424;
+   font-synthesis: none;
+   text-rendering: optimizeLegibility;
+   -webkit-font-smoothing: antialiased;
+   -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+   font-weight: 500;
+   color: #646cff;
+   text-decoration: inherit;
 }
+
 a:hover {
-  color: #535bf2;
+   color: #535bf2;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+   margin: 0;
+   display: flex;
+   place-items: center;
+   min-width: 320px;
+   min-height: 100vh;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+   font-size: 3.2em;
+   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+.dashboard button {
+   border-radius: 8px;
+   border: 1px solid transparent;
+   padding: 0.6em 1.2em;
+   font-size: 1em;
+   font-weight: 500;
+   font-family: inherit;
+   background-color: #1a1a1a;
+   cursor: pointer;
+   transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
+
+.dashboard button:hover {
+   border-color: #646cff;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+
+.dashboard button:focus,
+.dashboard button:focus-visible {
+   outline: 4px auto -webkit-focus-ring-color;
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+   :root {
+      color: #213547;
+      background-color: #ffffff;
+   }
+
+   a:hover {
+      color: #747bff;
+   }
+
+   .dashboard button {
+      background-color: #f9f9f9;
+   }
 }
 
 /* ==== Tổng thể ==== */
 html,
 body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
+   height: 100%;
+   margin: 0;
+   padding: 0;
 }
 
 .dashboard {
-  width: 100%;
-  min-height: calc(100vh - 60px);
-  padding: 16px 24px;
-  font-family: Arial, sans-serif;
-  background-color: WHITE;
+   width: 100%;
+   min-height: calc(100vh - 60px);
+   padding: 16px 24px;
+   font-family: Arial, sans-serif;
+   background-color: WHITE;
 }
 
 /* --- Top cards --- */
 .top-cards {
-  display: flex;
-  gap: 16px;
-  margin: 16px 0;
-  padding: 12px;
-  border-radius: 16px;
-  background-color: #f9fafb;
+   display: flex;
+   gap: 22px;
+   margin: 20px 0;
+   padding: 16px;
+   border-radius: 16px;
+   background-color: #f9fafb;
 }
 
 .top-cards .card {
-  flex: 1 1 calc(25% - 20px);
-  padding: 24px;
-  height: 65px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-
-  transition: transform 0.2s, box-shadow 0.2s;
-  justify-content: space-between;
-  border: none;
-
-  color: #ffffff;
+   flex: 1 1 calc(25% - 20px);
+   padding: 24px;
+   height: 65px;
+   border-radius: 20px;
+   display: flex;
+   align-items: center;
+   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+   transition: transform 0.2s, box-shadow 0.2s;
+   justify-content: space-between;
+   border: none;
+   color: #ffffff;
 }
+
 .top-cards .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
-  filter: brightness(1.05);
+   transform: translateY(-4px);
+   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+   filter: brightness(1.05);
 }
 
 .card.card1 {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+   background: linear-gradient(135deg, #2563eb, #3b82f6);
 }
 
 .card.card2 {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+   background: linear-gradient(135deg, #3b82f6, #60a5fa);
 }
+
 .card.card3 {
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+   background: linear-gradient(135deg, #2563eb, #60a5fa);
 }
+
 .card.card4 {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+   background: linear-gradient(135deg, #2563eb, #3b82f6);
 }
 
 .card-content {
-  display: flex;
-  justify-content: space-between;
-  flex-direction: column;
+   display: flex;
+   justify-content: space-between;
+   flex-direction: column;
 }
+
 .card-content h4 {
-  margin-top: 30px;
-  font-size: 1rem;
-  color: #f8fafc;
+   margin-top: 30px;
+   font-size: 1rem;
+   color: #f8fafc;
 }
 
 .card-content .value {
-  font-size: 1.3rem;
-  font-weight: 500;
-  width: 100%;
-  display: block;
-  text-align: center;
-  margin-bottom: 30px;
-  color: #f9fafb;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+   font-size: 1.3rem;
+   font-weight: 500;
+   width: 100%;
+   display: block;
+   text-align: center;
+   margin-bottom: 30px;
+   color: #f9fafb;
+   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* --- Charts --- */
 .charts {
-  display: flex;
-  gap: 18px;
-  margin-top: 8px;
-  background-color: white;
-  flex: 1 1 100%;
-  align-items: stretch;
+   display: flex;
+   gap: 28px;
+   margin-top: 10px;
+   background-color: white;
+   flex: 1 1 100%;
+   align-items: stretch;
 }
 
 /* Biểu đồ cột + đường */
 .chart-left {
-  flex: 2 1 62%;
-  background-color: #f7f7f9;
-  padding: 18px;
-  min-height: 320px;
-  padding-top: 12px;
-  border-radius: 20px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+   flex: 3 1 70%;
+   background-color: #f7f7f9;
+   padding: 30px;
+   min-height: 400px;
+   padding-top: 15px;
+   border-radius: 20px;
+   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 /* Hai vòng tròn */
 .chart-right {
-  flex: 1 1 38%;
-  background-color: #f7f7f9;
-  padding: 16px;
-  border-radius: 20px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+   flex: 1 1 35%;
+   background-color: #f7f7f9;
+   padding: 26px;
+   border-radius: 20px;
+   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
 }
 
 /* Header chart */
 .chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin-bottom: 15px;
 }
 
 .chart-header h3 {
-  margin: 0;
-  font-size: 1.05rem;
+   margin: 0;
+   font-size: 1.2rem;
 }
 
 .btn-action {
-  padding: 6px 14px;
-
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: #fff;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+   padding: 6px 14px;
+   border-radius: 10px;
+   background: linear-gradient(135deg, #2563eb, #3b82f6);
+   color: #fff;
+   font-weight: 500;
+   cursor: pointer;
+   box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
 }
 
 .btn-action:hover {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  transform: translateY(-2px);
+   background: linear-gradient(135deg, #1d4ed8, #2563eb);
+   transform: translateY(-2px);
 }
-.btn-action:active {
-  background-color: #1e40af; /* khi nhấn xuống tối hơn nữa */
-  transform: translateY(1px); /* nhấn xuống */
-}
-.chart-container {
-  height: 240px;
 
-  padding-top: 12px;
+.btn-action:active {
+   background-color: #1e40af;
+   /* khi nhấn xuống tối hơn nữa */
+   transform: translateY(1px);
+   /* nhấn xuống */
+}
+
+.chart-container {
+   height: 300px;
+   padding-top: 20px;
 }
 
 /* Nhóm 2 vòng tròn */
 .circle-group {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 24px;
-
-  flex-direction: row;
+   display: flex;
+   justify-content: center;
+   align-items: flex-start;
+   margin-bottom: 40px;
+   flex-direction: row;
 }
 
 .circle-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 150px;
-  height: 150px;
-  gap: 12px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   width: 190px;
+   height: 190px;
+   gap: 20px;
 }
 
 .circle-item p.target {
-  margin-bottom: 10px;
-  font-weight: 500;
-  margin-top: -8px;
+   margin-bottom: 10px;
+   font-weight: 500;
+   margin-top: -8px;
 }
+
 .circle-item .percent {
-  font-weight: bold;
-  color: #3b82f6;
+   font-weight: bold;
+   color: #3b82f6;
 }
+
 .circle-item .percent.red {
-  color: #ef4444;
+   color: #ef4444;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .charts {
-    flex-direction: column;
-  }
+   .charts {
+      flex-direction: column;
+   }
 }
-
 /* ==== OVERRIDE: khiến Dashboard fit đúng khung .mainContent ==== */
 
 /* 0) Đừng để body là flex (rule mặc định của Vite) vì sẽ đẩy .appMain lệch */
