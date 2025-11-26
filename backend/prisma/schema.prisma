@@ -45,9 +45,11 @@ model Resident {
   residentCCCD      String      @unique
   fullname          String      @db.VarChar(100)
   dob               DateTime   
+  gender            String?     @db.VarChar(1)
   relationToOwner   String
   status            Int
   createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   householdId       Int      
   household         Household   @relation(fields: [householdId], references: [id])
