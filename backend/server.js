@@ -4,6 +4,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import authRoutes from './src/routes/authRoutes.js'
 import dotenv from "dotenv"
+import staffRoutes from './src/routes/staffRoutes.js'
+import householdRoutes from './src/routes/householdRoutes.js'
 dotenv.config()
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -18,6 +20,8 @@ app.use(cors({
 
 app.use(express.json())
 app.use('/api/auth', authRoutes)
+app.use('/api/staff', staffRoutes)
+app.use('/api/households', householdRoutes)
 
 app.use(express.static(path.join(__dirname, "../frontend/dist")))
 
