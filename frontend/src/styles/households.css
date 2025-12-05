@@ -1,0 +1,282 @@
+/* ==== PAGE WRAPPER (giống residents-page) ==== */
+.households-page {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #f3f4fb;
+}
+
+/* ==== HEADER ==== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.page-title-icon {
+  color: #16a34a;
+}
+
+/* ==== BUTTON ==== */
+.btn-primary {
+  background: #111827;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: black;
+}
+
+/* ==== CARD ==== */
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+/* ==== FILTER SECTION ==== */
+.filter-card {
+  padding: 14px 16px;
+}
+
+
+
+.households-page .filter-grid {
+  display: grid;
+  gap: 14px;
+  align-items: end;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+
+
+.filter-grid select,
+.filter-grid input {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+}
+
+.filter-grid select:focus,
+.filter-grid input:focus {
+  background: white;
+  border-color: #111827;
+}
+
+
+
+.search-box {
+  position: relative;
+}
+
+.search-box input {
+  padding-left: 34px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+/* ==== STATS MINI (dùng lại form Residents) ==== */
+.stats-mini {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  background: white;
+  padding: 12px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ==== TABLE CARD ==== */
+.table-card {
+  padding: 0;
+}
+
+.table-header {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ==== TABLE 4 DÒNG + SCROLL – GIỐNG RESIDENT ==== */
+.table-wrapper {
+  max-height: 260px; /* 4 dòng + header */
+  overflow-y: scroll;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ẨN SCROLLBAR – vẫn cuộn được */
+.table-wrapper::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.table-wrapper {
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* IE */
+}
+
+.household-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.household-table thead {
+  background: #f9fafb;
+}
+
+.household-table th,
+.household-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* sticky header giống resident-table */
+.household-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f9fafb;
+  z-index: 3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.household-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* EMPTY ROW */
+.empty-row {
+  text-align: center;
+  padding: 22px;
+  color: #6b7280;
+}
+
+/* ==== STATUS BADGE CHO HỘ KHẨU ==== */
+.status-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-hk-thuong_tru {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.status-hk-tam_tru {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.status-hk-da_chuyen_di {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+@media (max-width: 900px) {
+  .households-page .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .households-page .stats-mini {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+
+/* ==== HÀNH ĐỘNG TRONG BẢNG ==== */
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.row-actions button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 999px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.row-actions button:hover {
+  background: #e5e7eb;
+}
+
+.row-actions .danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.row-actions .danger:hover {
+  background: #fecaca;
+}
+
+/* clickable row giống residents */
+.clickable-row {
+  cursor: pointer;
+}
+.clickable-row:hover {
+  background: #f3f4ff;
+}
+.member-list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 13px;
+  color: #111827;
+}
+
+
