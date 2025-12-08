@@ -1,38 +1,48 @@
+// src/components/SideBar.jsx
+import "../styles/sidebar.css";
 import { Link, useLocation } from "react-router-dom";
-import { FaHome, FaUsers, FaAddressCard, FaClipboard } from "react-icons/fa";
+import {
+  FiGrid,
+  FiHome,
+  FiUsers,
+  FiTrendingUp,
+  FiTrendingDown,
+} from "react-icons/fi";
 
 const menuItems = [
-  { icon: FaHome, label: "Trang chủ", path: "/" },
-  { icon: FaUsers, label: "Hộ khẩu", path: "/households" },
-  { icon: FaAddressCard, label: "Nhân khẩu", path: "/residents" },
-  { icon: FaClipboard, label: "Khoản thu", path: "/revenues" },
-  { icon: FaClipboard, label: "Khoản chi", path: "/expenses" },
+  { icon: FiGrid, label: "Dashboard", path: "/" },
+  { icon: FiHome, label: "Households", path: "/households" },
+  { icon: FiUsers, label: "Residents", path: "/residents" },
+  { icon: FiTrendingUp, label: "Revenues", path: "/revenues" },
+  { icon: FiTrendingDown, label: "Expenses", path: "/expenses" },
 ];
 
 export default function SideBar() {
-  const location = useLocation(); 
+  const location = useLocation();
 
   return (
     <aside className="sidebar">
-      <ul>
-        {menuItems.map((item, index) => {
+      <div className="sidebar-header">
+        <span className="sidebar-title">Menu</span>
+      </div>
+
+      <nav className="sidebar-nav">
+        {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
 
           return (
-            <li key={index}>
-              <Link to={item.path} className={isActive ? "active" : ""}>
-                <div className="menu-item">
-                  <span className="icon">
-                    <Icon size={20} />
-                  </span>
-                  <span className="label">{item.label}</span>
-                </div>
-              </Link>
-            </li>
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`nav-item ${isActive ? "active" : ""}`}
+            >
+              <Icon />
+              <span>{item.label}</span>
+            </Link>
           );
         })}
-      </ul>
+      </nav>
     </aside>
   );
 }
