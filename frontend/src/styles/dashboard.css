@@ -1,0 +1,351 @@
+/* src/styles/dashboard.css */
+
+/* Toàn trang trắng, không nền xám */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #ffffff;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ===== LAYOUT CHUNG ===== */
+.appMain {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  padding-top: var(--header-height);
+}
+
+.mainContentWrapper {
+  margin-left: 240px;
+  padding: 16px 20px 24px;
+  width: calc(100% - 240px);
+  min-height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+/* mainContent cuộn, nhưng ẩn scrollbar */
+.mainContent {
+  width: 100%;
+  background: #ffffff;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;            /* Firefox */
+}
+
+.mainContent::-webkit-scrollbar {   /* Chrome / Edge / Safari */
+  width: 0;
+  height: 0;
+}
+
+/* ===== DASHBOARD KHÔNG KHUNG ===== */
+.dashboard {
+  width: 100%;
+  max-width: 100%;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ===== TOP CARDS ===== */
+.top-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.top-cards .card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 70px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+  transition: transform 0.2s;
+}
+
+.top-cards .card:hover {
+  transform: translateY(-2px);
+}
+
+.card-content h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.card-content .value {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.icon-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.icon-container.blue { background: #2563eb; }
+.icon-container.green { background: #10b981; }
+.icon-container.red { background: #f97316; }
+.icon-container.purple { background: #6366f1; }
+
+/* ===== CHARTS HÀNG 2 ===== */
+.charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.chart-left,
+.chart-right {
+  background: #ffffff;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.chart-left { min-height: 280px; }
+.chart-right { min-height: 280px; }
+
+.chart-left h3,
+.chart-right h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.chart-container {
+  height: 260px;
+  padding-top: 4px;
+  overflow: hidden;
+}
+
+/* ===== PIE CƠ CẤU ĐỘ TUỔI ===== */
+.circle-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* legend */
+.age-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.age-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.age-legend-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.age-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.age-legend-value {
+  opacity: 0.85;
+}
+
+/* ===== STATS ROW HÀNG 3 ===== */
+.stats-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* CÁC CARD THỐNG KÊ (bên phải) – căn giữa theo chiều dọc */
+.stat-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.stat-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.stat-value {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stat-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.stat-dot.up { background: #22c55e; }
+.stat-dot.down { background: #ef4444; }
+.stat-dot.neutral { background: #9ca3af; }
+
+.stats-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ===== AREA CHART TỔNG THU - CHI ===== */
+.finance-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.finance-chart-wrapper {
+  height: 140px;
+  margin-bottom: 4px;
+}
+
+.stat-card.finance-card {
+  padding-bottom: 6px;
+}
+
+.finance-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.finance-title {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.finance-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.finance-change {
+  font-size: 11px;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ===== ẨN VIỀN ĐEN FOCUS TRÊN NÚT + BIỂU ĐỒ ===== */
+button:focus,
+button:focus-visible,
+.icon-container:focus,
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .top-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-side-column {
+    flex-direction: row;
+  }
+
+  .stats-side-column .stat-card {
+    flex: 1;
+  }
+}
+
+/* Ẩn scrollbar toàn trang nhưng vẫn cuộn được */
+html,
+body {
+  overflow-y: auto;
+  scrollbar-width: none;          /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;                      /* Chrome / Edge / Safari */
+}
+
+/* Xoá viền đen khi focus vào biểu đồ / phần tử trong dashboard */
+.dashboard *:focus,
+.dashboard *:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Fix cho Firefox với một số phần tử */
+.dashboard *::-moz-focus-inner {
+  border: 0 !important;
+}
+
