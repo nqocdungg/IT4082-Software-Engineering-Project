@@ -1,13 +1,20 @@
-/* ==== PAGE WRAPPER ==== */
 .residents-page {
-  padding: 16px 20px;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 0 20px 12px 20px;
   background: #f3f4fb;
+  min-height: 0;
 }
 
-/* ==== HEADER ==== */
+.residents-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 12px;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -27,7 +34,6 @@
   color: #16a34a;
 }
 
-/* ==== BUTTON ==== */
 .btn-primary {
   background: #111827;
   color: white;
@@ -45,7 +51,6 @@
   background: black;
 }
 
-/* ==== CARDS ==== */
 .card {
   background: white;
   border-radius: 16px;
@@ -54,7 +59,6 @@
   border: 1px solid #e5e7eb;
 }
 
-/* ==== FILTER SECTION ==== */
 .filter-card {
   padding: 14px 16px;
 }
@@ -74,6 +78,7 @@
   padding: 10px 12px;
   font-size: 14px;
   outline: none;
+  width: 100%;
 }
 
 .filter-grid select:focus,
@@ -98,7 +103,6 @@
   color: #9ca3af;
 }
 
-/* ==== STATS MINI ==== */
 .stats-mini {
   display: grid;
   grid-template-columns: repeat(5, minmax(0,1fr));
@@ -124,9 +128,12 @@
   margin-top: 2px;
 }
 
-/* ==== TABLE ==== */
 .table-card {
   padding: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .table-header {
@@ -136,16 +143,16 @@
   color: #111827;
 }
 
-/* ===== FIX BẢNG 4 DÒNG + SCROLL ===== */
 .table-wrapper {
-  max-height: 260px;       /* chiều cao tương ứng 4 dòng + header */
-  overflow-y: scroll;      /* cuộn dọc */
-  overflow-x: hidden;      
-  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .resident-table {
   width: 100%;
+  table-layout: auto;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -167,14 +174,16 @@
   top: 0;
   background: #f9fafb;
   z-index: 3;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.resident-table tbody tr {
+  height: 60px;
 }
 
 .resident-table tbody tr:hover {
   background: #f9fafb;
 }
 
-/* ==== STATUS BADGE ==== */
 .status-badge {
   padding: 3px 10px;
   border-radius: 999px;
@@ -188,7 +197,6 @@
 .status-da_chuyen_di { background:#f3f4f6; color:#4b5563; }
 .status-da_qua_doi { background:#fef2f2; color:#b91c1c; }
 
-/* ==== ROW ACTIONS ==== */
 .row-actions {
   display: flex;
   gap: 8px;
@@ -219,28 +227,16 @@
   background: #fecaca;
 }
 
-/* EMPTY ROW */
 .empty-row {
   text-align: center;
   padding: 22px;
   color: #6b7280;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .filter-grid {
-    grid-template-columns: 1fr;
-  }
-  .stats-mini {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
 .filter-grid.basic-3 {
-  grid-template-columns: minmax(0,3fr) minmax(0,1fr) minmax(0,1fr);
+  grid-template-columns: minmax(0,7fr) minmax(0,1fr) minmax(0,1fr);
 }
 
-/* ==== CLICKABLE ROW ==== */
 .clickable-row {
   cursor: pointer;
 }
@@ -249,386 +245,61 @@
   background: #f3f4ff;
 }
 
-/* ===== MODAL ===== */
-.resident-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15,23,42,0.35);
+.pagination {
+  margin-top: 6px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 50;
-}
-
-.resident-modal {
-  width: 720px;
-  max-width: 90%;
-  max-height: 80vh;
-  background: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 25px 60px rgba(15,23,42,0.3);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.resident-modal-header {
-  padding: 14px 18px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.resident-modal-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9ca3af;
-  margin-bottom: 2px;
-}
-
-.resident-modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.resident-modal-sub {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.modal-close-btn {
-  border: none;
-  background: #f3f4f6;
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.modal-close-btn:hover {
-  background: #e5e7eb;
-}
-
-.resident-modal-body {
-  padding: 10px 18px 12px;
-  overflow-y: auto;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 10px 18px;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.detail-item.detail-wide {
-  grid-column: span 2;
-}
-
-.detail-label {
-  font-size: 12px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.detail-value {
+  gap: 12px;
   font-size: 14px;
-  color: #111827;
 }
 
-.resident-modal-footer {
-  padding: 10px 18px 12px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  border-top: 1px solid #e5e7eb;
-}
-
-@media (max-width: 640px) {
-  .resident-modal {
-    width: 95%;
-    max-height: 85vh;
-  }
-  .detail-grid {
-    grid-template-columns: minmax(0,1fr);
-  }
-  .detail-item.detail-wide {
-    grid-column: span 1;
-  }
-}
-
-/* ===== INPUTS IN MODAL ===== */
-.detail-value input,
-.detail-value select,
-.detail-value textarea,
-.detail-title-input {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 7px 10px;
-  font-size: 13px;
-  background: #f9fafb;
-  outline: none;
-}
-
-.detail-value input:focus,
-.detail-value select:focus,
-.detail-value textarea:focus,
-.detail-title-input:focus {
-  border-color: #111827;
-  background: #ffffff;
-}
-
-.detail-value textarea {
-  min-height: 60px;
-  resize: vertical;
-}
-
-.detail-title-input {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-}
-
-/* ===== BUTTON SECONDARY ===== */
-.btn-secondary {
-  background: #f3f4f6;
-  color: #111827;
-  padding: 8px 18px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  font-size: 14px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
+.pagination button {
+  background: #f0f2f5;
+  border: 1px solid #d9d9d9;
+  padding: 6px 10px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: 0.2s;
 }
 
-.btn-secondary:hover {
-  background: #e5e7eb;
+.pagination button:hover:not(:disabled) {
+  background: #e7e9ec;
 }
 
-/* ===== SMALL TEXT ===== */
-.sub-text {
-  font-size: 12px;
-  color: #6b7280;
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-/* ẨN SCROLLBAR – vẫn cuộn được */
+.pagination .page-number {
+  background: black;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
 .table-wrapper::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
 }
 
 .table-wrapper {
-  scrollbar-width: none;      /* Firefox */
-  -ms-overflow-style: none;   /* IE */
-}
-.resident-table thead th {
-  position: sticky;
-  top: 0;
-  background: #f9fafb;
-  z-index: 3;
-}
-/* ===== MODAL OVERLAY + WRAPPER ===== */
-.resident-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.resident-modal {
-  width: 720px;
-  max-width: 90%;
-  max-height: 80vh;
-  background: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.3);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* ===== MODAL HEADER ===== */
-.resident-modal-header {
-  padding: 14px 18px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.resident-modal-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #9ca3af;
-  margin-bottom: 2px;
-}
-
-.resident-modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-}
-
-.resident-modal-sub {
-  font-size: 13px;
-  color: #6b7280;
-  margin: 3px 0 0;
-}
-
-.modal-close-btn {
-  border: none;
-  background: #f3f4f6;
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.modal-close-btn:hover {
-  background: #e5e7eb;
-}
-
-/* ===== MODAL BODY ===== */
-.resident-modal-body {
-  padding: 10px 18px 12px;
-  overflow-y: auto;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 18px;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.detail-item.detail-wide {
-  grid-column: span 2;
-}
-
-.detail-label {
-  font-size: 12px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.detail-value {
-  font-size: 14px;
-  color: #111827;
-}
-
-/* ===== MODAL FOOTER ===== */
-.resident-modal-footer {
-  padding: 10px 18px 12px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  border-top: 1px solid #e5e7eb;
-}
-
-/* ===== INPUT / SELECT / TEXTAREA TRONG MODAL ===== */
-.detail-value input,
-.detail-value select,
-.detail-value textarea,
-.detail-title-input {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 7px 10px;
-  font-size: 13px;
-  background: #f9fafb;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.detail-value input:focus,
-.detail-value select:focus,
-.detail-value textarea:focus,
-.detail-title-input:focus {
-  border-color: #111827;
-  background: #ffffff;
-}
-
-.detail-value textarea {
-  min-height: 60px;
-  resize: vertical;
-}
-
-.detail-title-input {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-}
-
-/* ===== BUTTON SECONDARY (Dùng trong footer) ===== */
-.btn-secondary {
-  background: #f3f4f6;
-  color: #111827;
-  padding: 8px 18px;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  font-size: 14px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-/* Text nhỏ phụ, ví dụ “39 tuổi” */
 .sub-text {
   font-size: 12px;
   color: #6b7280;
 }
 
-/* Responsive cho modal */
-@media (max-width: 640px) {
-  .resident-modal {
-    width: 95%;
-    max-height: 85vh;
+@media (max-width: 900px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
   }
-  .detail-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .stats-mini {
+    grid-template-columns: 1fr 1fr;
   }
-  .detail-item.detail-wide {
-    grid-column: span 1;
-  }
-}
-.resident-modal-body.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.resident-modal-body.no-scrollbar {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
