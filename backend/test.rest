@@ -45,7 +45,7 @@ Content-Type: application/json
 
 ### Get all residents
 GET http://localhost:5000/api/residents
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6Ik5ndXnhu4VuIFbEg24gQSIsImlhdCI6MTc2NTE2NTcxOCwiZXhwIjoxNzY1MjUyMTE4fQ.Fg7jc0EKbAA5rlJVFJuKe868a43r7diO70psMpaCqPM
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6Ik5ndXnhu4VuIFbEg24gQSIsImlhdCI6MTc2NTE5MTg4NywiZXhwIjoxNzY1Mjc4Mjg3fQ.EvRzorLzpk_6TvmanzC0t8lVLxXtiO31tFbiev7xlg0
 
 
 ###############################################
