@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Authentication.css";
 import Logo from "../assets/images/Logo.png";
 import UserIcon from "../assets/images/user.jpg";
 
-function Authentication() {
-  const navigate = useNavigate();
-
+function Authentication({ onSuccess }) {
   const [invalidloginName, setInvalidloginName] = useState(false);
   const [invalidPass, setInvalidPass] = useState(false);
   const [enteredloginName, setEnteredloginName] = useState("");
@@ -30,13 +27,13 @@ function Authentication() {
           password: enteredPassword,
         });
 
-        const { token, user } = res.data;
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        const { accessToken, user } = res.data;
 
-        navigate("/dashboard"); 
+        localStorage.setItem("token", accessToken);
+        localStorage.setItem("role", user.role);
+
+        if (onSuccess) onSuccess();
       } catch (err) {
-        console.error("Lỗi đăng nhập:", err.response?.data || err.message);
         setInvalidloginName(true);
         setInvalidPass(true);
       }
@@ -59,10 +56,9 @@ function Authentication() {
                 onChange={(event) => setEnteredloginName(event.target.value)}
               />
               <label>Tên đăng nhập</label>
-              {invalidloginName && (
-                <p className="error-text">Sai tên đăng nhập</p>
-              )}
+              {invalidloginName && <p className="error-text">Sai tên đăng nhập</p>}
             </div>
+
             <div className="control">
               <input
                 type="password"
@@ -73,9 +69,8 @@ function Authentication() {
               <label>Mật khẩu</label>
               {invalidPass && <p className="error-text">Sai mật khẩu</p>}
             </div>
-            <button type="button" className="forgetPass">
-              Quên mật khẩu
-            </button>
+
+            <button type="button" className="forgetPass">Quên mật khẩu</button>
             <button type="submit">Đăng nhập</button>
           </form>
         </div>

@@ -1,11 +1,57 @@
-###GET
-GET http://localhost:5050/login
+###############################################
+# LOGIN 4 ROLES
+###############################################
 
-### Login a user POST /AUTH/LOGIN
+### Login HEAD
 POST http://localhost:5000/api/auth/login
 Content-Type: application/json
 
 {
-    "username": "to_truong", 
-    "password": "totruong@123"
+  "username": "to_truong",
+  "password": "totruong@123"
 }
+
+### Login DEPUTY
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "pho_chu",
+  "password": "phochu@123"
+}
+
+### Login ACCOUNTANT
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ke_toan",
+  "password": "ketoan@123"
+}
+
+### Login RESIDENT
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ho_dan",
+  "password": "hodan@123"
+}
+
+
+###############################################
+# GET RESIDENTS
+###############################################
+
+### Get all residents
+GET http://localhost:5000/api/residents
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6Ik5ndXnhu4VuIFbEg24gQSIsImlhdCI6MTc2NTE2NTcxOCwiZXhwIjoxNzY1MjUyMTE4fQ.Fg7jc0EKbAA5rlJVFJuKe868a43r7diO70psMpaCqPM
+
+
+###############################################
+# GET HOUSEHOLDS
+###############################################
+
+### Get all households
+GET http://localhost:5000/api/households
+Authorization: Bearer {{token}}
