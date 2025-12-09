@@ -11,21 +11,18 @@ import {
 } from "react-icons/fa";
 import "../styles/households.css";
 
-// Giả sử role lấy từ context/auth, t để tạm:
-const currentRole = "HEAD"; // HEAD | DEPUTY | HOUSEHOLD | ACCOUNTANT
+const currentRole = "HEAD";
 
-// ================== DATA MẪU (map đúng với Household) ==================
 const initialHouseholds = [
   {
-    id: "HK000001",                 // CHAR(8)
+    id: "HK000001",
     address: "Số 10, Ngõ 5, TDP 7 La Khê",
-    registrationDate: "2010-06-01", // DATE
-    nbrOfResident: 4,               // INT
-    status: "Đang hoạt động",       // VARCHAR(200) – mô tả trạng thái hộ khẩu
-    userId: "US000001",             // tài khoản quản lý hộ
-    ownerId: "NK000001",            // mã nhân khẩu chủ hộ
-
-    ownerName: "Nguyễn Văn A",      // dữ liệu join thêm để hiển thị
+    registrationDate: "2010-06-01",
+    nbrOfResident: 4,
+    status: "Đang hoạt động",
+    userId: "US000001",
+    ownerId: "NK000001",
+    ownerName: "Nguyễn Văn A",
     ownerCCCD: "001085000123",
     residents: [
       "Nguyễn Văn A",
@@ -118,7 +115,6 @@ function statusToClass(status) {
   return "";
 }
 
-// ================== MODAL CHI TIẾT / EDIT ==================
 const emptyHousehold = {
   id: "",
   address: "",
@@ -166,10 +162,7 @@ function HouseholdDetailModal({
 
   return (
     <div className="resident-modal-overlay" onClick={onClose}>
-      <div
-        className="resident-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="resident-modal" onClick={(e) => e.stopPropagation()}>
         <div className="resident-modal-header">
           <div>
             <p className="resident-modal-label">
@@ -195,7 +188,6 @@ function HouseholdDetailModal({
 
         <div className="resident-modal-body no-scrollbar">
           <div className="detail-grid">
-            {/* ID (mã hộ) */}
             <div className="detail-item">
               <span className="detail-label">Mã hộ khẩu</span>
               <span className="detail-value">
@@ -211,7 +203,6 @@ function HouseholdDetailModal({
               </span>
             </div>
 
-            {/* Số nhân khẩu */}
             <div className="detail-item">
               <span className="detail-label">Số nhân khẩu</span>
               <span className="detail-value">
@@ -229,7 +220,6 @@ function HouseholdDetailModal({
               </span>
             </div>
 
-            {/* userId */}
             <div className="detail-item">
               <span className="detail-label">Mã tài khoản hộ (userId)</span>
               <span className="detail-value">
@@ -245,7 +235,6 @@ function HouseholdDetailModal({
               </span>
             </div>
 
-            {/* ownerId */}
             <div className="detail-item">
               <span className="detail-label">Mã nhân khẩu chủ hộ (ownerId)</span>
               <span className="detail-value">
@@ -261,7 +250,6 @@ function HouseholdDetailModal({
               </span>
             </div>
 
-            {/* Địa chỉ */}
             <div className="detail-item detail-wide">
               <span className="detail-label">Địa chỉ thường trú</span>
               <span className="detail-value">
@@ -276,7 +264,6 @@ function HouseholdDetailModal({
               </span>
             </div>
 
-            {/* Trạng thái hộ */}
             <div className="detail-item">
               <span className="detail-label">Trạng thái hộ khẩu</span>
               <span className="detail-value">
@@ -303,7 +290,6 @@ function HouseholdDetailModal({
               </span>
             </div>
 
-            {/* Ngày đăng ký */}
             <div className="detail-item">
               <span className="detail-label">Ngày đăng ký sổ hộ khẩu</span>
               <span className="detail-value">
@@ -321,7 +307,6 @@ function HouseholdDetailModal({
               </span>
             </div>
 
-            {/* Danh sách nhân khẩu */}
             <div className="detail-item detail-wide">
               <span className="detail-label">Danh sách nhân khẩu trong hộ</span>
               <span className="detail-value">
@@ -374,7 +359,6 @@ function HouseholdDetailModal({
   );
 }
 
-// ================== MODAL THÊM HỘ ==================
 function AddHouseholdModal({ open, onClose, onCreate }) {
   const emptyForm = {
     id: "",
@@ -415,10 +399,7 @@ function AddHouseholdModal({ open, onClose, onCreate }) {
 
   return (
     <div className="resident-modal-overlay" onClick={onClose}>
-      <div
-        className="resident-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="resident-modal" onClick={(e) => e.stopPropagation()}>
         <div className="resident-modal-header">
           <div>
             <p className="resident-modal-label">Thêm mới</p>
@@ -553,7 +534,7 @@ function AddHouseholdModal({ open, onClose, onCreate }) {
               <span className="detail-value">
                 <textarea
                   placeholder="Có thể ghi chú: tên các nhân khẩu hoặc ghi 'Xem chi tiết trong trang nhân khẩu'"
-                  value={form.note}
+                  value={form.note || ""}
                   onChange={(e) => handleChange("note", e.target.value)}
                 />
               </span>
@@ -578,7 +559,6 @@ function AddHouseholdModal({ open, onClose, onCreate }) {
   );
 }
 
-// ================== MAIN COMPONENT ==================
 export default function HouseholdsPage() {
   const [households, setHouseholds] = useState(initialHouseholds);
   const [search, setSearch] = useState("");
@@ -644,8 +624,7 @@ export default function HouseholdsPage() {
     };
   }, [households]);
 
-  const allowManage =
-    currentRole === "HEAD" || currentRole === "DEPUTY"; // theo mô tả nghiệp vụ
+  const allowManage = currentRole === "HEAD" || currentRole === "DEPUTY";
 
   const handleOpenDetail = (household, mode = "view") => {
     setSelectedHousehold(household);
@@ -683,8 +662,7 @@ export default function HouseholdsPage() {
       <div className="mainContentWrapper">
         <SideBar />
 
-        <div className="mainContent households-page no-scrollbar">
-          {/* HEADER */}
+        <div className="mainContent households-page">
           <div className="page-header">
             <h2 className="page-title">
               <FaHome className="page-title-icon" />
@@ -701,7 +679,6 @@ export default function HouseholdsPage() {
             )}
           </div>
 
-          {/* FILTER */}
           <div className="card filter-card">
             <div className="filter-grid">
               <div className="filter-input search-box">
@@ -738,7 +715,6 @@ export default function HouseholdsPage() {
             </div>
           </div>
 
-          {/* STATS MINI */}
           <div className="stats-mini">
             <div className="stat-card">
               <p className="stat-label">Tổng số hộ</p>
@@ -762,7 +738,6 @@ export default function HouseholdsPage() {
             </div>
           </div>
 
-          {/* TABLE */}
           <div className="card table-card">
             <div className="table-header">
               Danh sách hộ khẩu ({filteredHouseholds.length} bản ghi)
@@ -815,9 +790,7 @@ export default function HouseholdsPage() {
                         </td>
                         <td>{h.registrationDate}</td>
                         {allowManage && (
-                          <td
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          <td onClick={(e) => e.stopPropagation()}>
                             <div className="row-actions">
                               <button
                                 onClick={() => handleOpenDetail(h, "edit")}
@@ -841,7 +814,6 @@ export default function HouseholdsPage() {
             </div>
           </div>
 
-          {/* MODALS */}
           <HouseholdDetailModal
             household={selectedHousehold}
             mode={detailMode}
