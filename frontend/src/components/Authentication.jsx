@@ -22,7 +22,7 @@ function Authentication({ onSuccess }) {
 
     if (!loginNameNotValid && !PassNotValid) {
       try {
-        const res = await axios.post("http://localhost:5050/api/auth/login", {
+        const res = await axios.post("http://localhost:5000/api/auth/login", {
           username: enteredloginName,
           password: enteredPassword,
         });
