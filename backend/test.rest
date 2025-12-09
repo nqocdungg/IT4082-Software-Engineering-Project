@@ -54,4 +54,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6I
 
 ### Get all households
 GET http://localhost:5000/api/households
-Authorization: Bearer {{token}}
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6Ik5ndXnhu4VuIFbEg24gQSIsImlhdCI6MTc2NTMwOTMyNSwiZXhwIjoxNzY1Mzk1NzI1fQ.gGkLiX94SA8ayh_xiSaAtQI9jBbuwIp0oo7ZNNXzefw

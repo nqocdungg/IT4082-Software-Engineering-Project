@@ -60,7 +60,7 @@ export default function ResidentManagement() {
   async function fetchResidents() {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5050/api/residents", {
+      const res = await axios.get("http://localhost:5000/api/residents", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setResidents(res.data.data);
@@ -166,7 +166,7 @@ export default function ResidentManagement() {
         householdId: Number(formValues.householdId),
       };
       const res = await axios.post(
-        "http://localhost:5050/api/residents",
+        "http://localhost:5000/api/residents",
         payload,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -195,7 +195,7 @@ export default function ResidentManagement() {
         householdId: Number(formValues.householdId),
       };
       const res = await axios.put(
-        `http://localhost:5050/api/residents/${selectedResident.id}`,
+        `http://localhost:5000/api/residents/${selectedResident.id}`,
         payload,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -216,7 +216,7 @@ export default function ResidentManagement() {
       return;
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5050/api/residents/${id}`, {
+      await axios.delete(`http://localhost:5000/api/residents/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setResidents((prev) => prev.filter((r) => r.id !== id));
