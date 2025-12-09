@@ -1,5 +1,6 @@
-
+/* src/index.css */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "./styles/layout.css";
 
 *,
 *::before,
@@ -24,37 +25,4 @@ body {
 
 button {
   font-family: inherit;
-}
-
-
-:root {
-  --header-height: 60px;      /* khớp với .header { height: 60px } */
-  --sidebar-width: 260px;     /* đúng với thiết kế sidebar */
-}
-
-/* Nền ngoài cùng */
-.appMain {
-  min-height: 100vh;
-  background: #f3f4fb;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Header của m vẫn để trong Header.css, chỉ cần height = --header-height */
-
-/* Wrapper chứa sidebar + mainContent */
-.mainContentWrapper {
-  flex: 1;
-  position: relative;
-  /* không cần padding-top ở đây vì header/ sidebar đã fixed */
-}
-
-/* Khung trắng nội dung bên phải */
-.mainContent {
-  margin-left: var(--sidebar-width);               /* tránh sidebar */
-  margin-top: var(--header-height);                /* tránh header fixed */
-  padding: 16px 20px 24px;
-  height: calc(100vh - var(--header-height));
-  overflow-y: auto;
-  box-sizing: border-box;
 }

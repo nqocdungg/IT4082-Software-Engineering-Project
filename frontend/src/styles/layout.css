@@ -1,32 +1,28 @@
+/* src/styles/layout.css */
+:root {
+  --header-height: 60px;
+  --sidebar-width: 260px;
+}
+
 .appMain {
+  min-height: 100vh;
+  background: #f3f4fb;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
 }
 
 .mainContentWrapper {
   flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  height: 100%;
-  overflow-y: auto;
-  min-height: 0;
+  position: relative;
+  padding: 0 !important;   /* ép về 0 luôn */
+  margin: 0;
 }
 
 .mainContent {
-  flex: 1;
-  height: 100%;
-  overflow-y: auto;
-  padding: 8px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 0;
+  margin-left: var(--sidebar-width);
+  margin-top: var(--header-height);
+  padding: 0;
+  height: calc(100vh - var(--header-height));
+  box-sizing: border-box;
+  background: #f3f4fb;
 }

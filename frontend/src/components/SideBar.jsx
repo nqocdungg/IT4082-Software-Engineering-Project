@@ -10,7 +10,7 @@ import {
 } from "react-icons/fi";
 
 const menuItems = [
-  { icon: FiGrid, label: "Dashboard", path: "/" },
+  { icon: FiGrid, label: "Dashboard", path: "/dashboard" },
   { icon: FiHome, label: "Households", path: "/households" },
   { icon: FiUsers, label: "Residents", path: "/residents" },
   { icon: FiTrendingUp, label: "Revenues", path: "/revenues" },
