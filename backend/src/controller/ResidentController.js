@@ -44,22 +44,51 @@ export const getResidents = async (req, res) => {
 // GET /api/residents/stats
 export const getResidentStats = async (req, res) => {
   try {
-    const total = await prisma.resident.count();
-    const thuongTru = await prisma.resident.count({ where: { status: 0 } });
-    const tamTru = await prisma.resident.count({ where: { status: 1 } });
-    const tamVang = await prisma.resident.count({ where: { status: 2 } });
-    const daChuyenDi = await prisma.resident.count({ where: { status: 3 } });
-    const daQuaDoi = await prisma.resident.count({ where: { status: 4 } });
+    const residents = await prisma.resident.findMany({
+      select: { status: true },
+    });
+
+    const stats = {
+      total: residents.length,
+      thuongTru: 0,
+      tamTru: 0,
+      tamVang: 0,
+      daChuyenDi: 0,
+      daQuaDoi: 0,
+    };
+
+    residents.forEach((r) => {
+      switch (Number(r.status)) {
+        case 0:
+          stats.thuongTru += 1;
+          break;
+        case 1:
+          stats.tamTru += 1;
+          break;
+        case 2:
+          stats.tamVang += 1;
+          break;
+        case 3:
+          stats.daChuyenDi += 1;
+          break;
+        case 4:
+          stats.daQuaDoi += 1;
+          break;
+        default:
+          break;
+      }
+    });
 
     return res.json({
       message: "Fetched stats",
-      data: {total,thuongTru,tamTru,tamVang,daChuyenDi,daQuaDoi}
+      data: stats,
     });
   } catch (err) {
     console.error("getResidentStats error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // GET /api/residents/:id
 export const getResidentById = async (req, res) => {
