@@ -1,6 +1,3 @@
-/* src/styles/dashboard.css */
-
-/* Toàn trang trắng, không nền xám */
 html,
 body {
   margin: 0;
@@ -10,7 +7,6 @@ body {
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* ===== LAYOUT CHUNG ===== */
 .appMain {
   width: 100%;
   min-height: 100vh;
@@ -29,7 +25,6 @@ body {
   background: #ffffff;
 }
 
-/* mainContent cuộn, nhưng ẩn scrollbar */
 .mainContent {
   width: 100%;
   background: #ffffff;
@@ -37,24 +32,23 @@ body {
   margin: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;            /* Firefox */
+  scrollbar-width: none;          
 }
 
-.mainContent::-webkit-scrollbar {   /* Chrome / Edge / Safari */
+.mainContent::-webkit-scrollbar {   
   width: 0;
   height: 0;
 }
 
-/* ===== DASHBOARD KHÔNG KHUNG ===== */
 .dashboard {
   width: 100%;
   max-width: 100%;
   background: transparent;
   border-radius: 0;
   box-shadow: none;
+  padding: 10px;
 }
 
-/* ===== TOP CARDS ===== */
 .top-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -109,7 +103,6 @@ body {
 .icon-container.red { background: #f97316; }
 .icon-container.purple { background: #6366f1; }
 
-/* ===== CHARTS HÀNG 2 ===== */
 .charts {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -143,7 +136,6 @@ body {
   overflow: hidden;
 }
 
-/* ===== PIE CƠ CẤU ĐỘ TUỔI ===== */
 .circle-item {
   flex: 1;
   display: flex;
@@ -152,7 +144,6 @@ body {
   gap: 6px;
 }
 
-/* legend */
 .age-legend {
   display: flex;
   flex-direction: column;
@@ -186,7 +177,6 @@ body {
   opacity: 0.85;
 }
 
-/* ===== STATS ROW HÀNG 3 ===== */
 .stats-row {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -194,7 +184,6 @@ body {
   margin-top: 14px;
 }
 
-/* CÁC CARD THỐNG KÊ (bên phải) – căn giữa theo chiều dọc */
 .stat-card {
   background: #ffffff;
   border-radius: 14px;
@@ -247,7 +236,6 @@ body {
   gap: 14px;
 }
 
-/* ===== AREA CHART TỔNG THU - CHI ===== */
 .finance-card {
   display: flex;
   flex-direction: column;
@@ -289,7 +277,6 @@ body {
   gap: 4px;
 }
 
-/* ===== ẨN VIỀN ĐEN FOCUS TRÊN NÚT + BIỂU ĐỒ ===== */
 button:focus,
 button:focus-visible,
 .icon-container:focus,
@@ -299,7 +286,6 @@ button:focus-visible,
   box-shadow: none;
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
   .charts {
     grid-template-columns: 1fr;
@@ -324,27 +310,24 @@ button:focus-visible,
   }
 }
 
-/* Ẩn scrollbar toàn trang nhưng vẫn cuộn được */
 html,
 body {
   overflow-y: auto;
-  scrollbar-width: none;          /* Firefox */
+  scrollbar-width: none;         
 }
 
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   width: 0;
-  height: 0;                      /* Chrome / Edge / Safari */
+  height: 0;                    
 }
 
-/* Xoá viền đen khi focus vào biểu đồ / phần tử trong dashboard */
 .dashboard *:focus,
 .dashboard *:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
 
-/* Fix cho Firefox với một số phần tử */
 .dashboard *::-moz-focus-inner {
   border: 0 !important;
 }

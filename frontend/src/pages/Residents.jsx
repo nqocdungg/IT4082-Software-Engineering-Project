@@ -51,7 +51,7 @@ export default function ResidentManagement() {
   const [formValues, setFormValues] = useState(emptyForm);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const rowsPerPage = 4;
 
   useEffect(() => {
     fetchResidents();
@@ -109,6 +109,7 @@ export default function ResidentManagement() {
       total,
       thuongTru: count(0),
       tamTru: count(1),
+      tamVang: count(2),
       daChuyenDi: count(3),
       daQuaDoi: count(4),
     };
@@ -304,6 +305,10 @@ export default function ResidentManagement() {
               <p className="stat-label">Tạm trú</p>
               <p className="stat-value">{stats.tamTru}</p>
             </div>
+             <div className="stat-card">
+              <p className="stat-label">Tạm vắng</p>
+              <p className="stat-value">{stats.tamVang}</p>
+            </div>
             <div className="stat-card">
               <p className="stat-label">Đã chuyển đi</p>
               <p className="stat-value">{stats.daChuyenDi}</p>
@@ -402,27 +407,28 @@ export default function ResidentManagement() {
                 </tbody>
               </table>
             </div>
+            <div className="pagination">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                <FaChevronLeft />
+              </button>
+
+              <span>
+                Trang {currentPage} / {totalPages}
+              </span>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                <FaChevronRight />
+              </button>
+            </div>
           </div>
 
-          <div className="pagination">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              <FaChevronLeft />
-            </button>
 
-            <span>
-              Trang {currentPage} / {totalPages}
-            </span>
-
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              <FaChevronRight />
-            </button>
-          </div>
 
           {selectedResident && (
             <div className="resident-modal-overlay">
@@ -433,12 +439,6 @@ export default function ResidentManagement() {
                       {detailMode === "view"
                         ? "Thông tin nhân khẩu"
                         : "Chỉnh sửa nhân khẩu"}
-                    </p>
-                    <h3 className="resident-modal-title">
-                      {selectedResident.fullname}
-                    </h3>
-                    <p className="resident-modal-sub">
-                      CCCD: {selectedResident.residentCCCD}
                     </p>
                   </div>
                   <button

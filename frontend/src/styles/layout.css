@@ -1,4 +1,3 @@
-/* src/styles/layout.css */
 :root {
   --header-height: 60px;
   --sidebar-width: 260px;
@@ -14,7 +13,7 @@
 .mainContentWrapper {
   flex: 1;
   position: relative;
-  padding: 0 !important;   /* ép về 0 luôn */
+  padding: 0 !important;
   margin: 0;
 }
 

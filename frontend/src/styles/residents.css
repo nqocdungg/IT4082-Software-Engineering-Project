@@ -1,15 +1,13 @@
-.mainContent {
-  padding: 0;
-}
-
+/* src/styles/residents.css */
 .residents-page {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 10px 10px;
+  padding: 10px;
   background: #f3f4fb;
   min-height: 0;
+  overflow: hidden;
   position: relative;
 }
 
@@ -63,9 +61,13 @@
 
 .filter-grid {
   display: grid;
-  grid-template-columns: 6fr 2fr 2fr;
+  grid-template-columns: 4fr 3fr 3fr;
   gap: 12px;
   align-items: end;
+}
+
+.filter-grid.basic-3 {
+  grid-template-columns: 4fr 3fr 3fr;
 }
 
 .filter-grid select,
@@ -103,7 +105,7 @@
 
 .stats-mini {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -146,10 +148,19 @@
   overflow: visible;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .resident-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 12px;
   table-layout: auto;
 }
 
@@ -159,7 +170,7 @@
 
 .resident-table th,
 .resident-table td {
-  padding: 12px 16px;
+  padding: 12px 6px;
   border-bottom: 1px solid #f3f4f6;
   text-align: left;
   white-space: normal;
@@ -179,13 +190,13 @@
 }
 
 .resident-table tbody tr:hover {
-  background: #f9fafb;
+  background: #f3f4ff;
 }
 
 .status-badge {
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -250,20 +261,13 @@
   color: #6b7280;
 }
 
-.clickable-row {
-  cursor: pointer;
-}
-
-.clickable-row:hover {
-  background: #f3f4ff;
-}
-
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  font-size: 13px;
+  font-size: 10px;
+  padding: 8px 0 10px;
 }
 
 .pagination button {
@@ -293,6 +297,7 @@
   .filter-grid {
     grid-template-columns: 1fr;
   }
+
   .stats-mini {
     grid-template-columns: 1fr 1fr;
   }
@@ -301,8 +306,6 @@
 .resident-table td.cccd-cell {
   white-space: nowrap;
 }
-
-/* MODAL POPUP */
 
 .resident-modal-overlay {
   position: absolute;
@@ -422,9 +425,9 @@
   resize: vertical;
 }
 
-.detail-value input:focus,
-.detail-value select:focus,
-.detail-value textarea:focus {
+detail-value input:focus,
+detail-value select:focus,
+detail-value textarea:focus {
   border-color: #111827;
   background: #ffffff;
 }
@@ -469,4 +472,9 @@
 
 .btn-danger:hover {
   background: #fecaca;
+}
+.residents-page .stats-mini {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
 }
