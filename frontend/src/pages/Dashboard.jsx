@@ -82,13 +82,7 @@ export default function Dashboard() {
   }));
 
   return (
-    <div className="appMain">
-      <Header />
 
-      <div className="mainContentWrapper">
-        <SideBar />
-
-        <main className="mainContent">
           <div className="dashboard">
             {/* TOP CARDS */}
             <div className="top-cards">
@@ -438,8 +432,6 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
-  );
+
+  )
 }
