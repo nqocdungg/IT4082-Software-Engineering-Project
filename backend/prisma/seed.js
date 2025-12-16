@@ -401,6 +401,7 @@ async function main() {
     },
   ];
 
+
   const feeTypes = [];
   for (let fee of feeTypesData) {
     const newFee = await prisma.feeType.create({ data: fee });
@@ -440,9 +441,11 @@ async function main() {
     });
   }
 
+
   console.log(
     "Seeded successfully (users, households, residents, fees, records)!"
   );
+
 }
 
 main()

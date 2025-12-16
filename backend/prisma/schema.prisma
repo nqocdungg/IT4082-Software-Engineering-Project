@@ -41,7 +41,7 @@ model Household {
 
   ownerId           Int?
   owner             Resident?  @relation("OwnerResident", fields: [ownerId], references: [id])
-
+  transactions      Transaction[]
   residents         Resident[]
   feeRecords        FeeRecord[]
 }
@@ -117,4 +117,25 @@ model FeeRecord {
 
   managerId   Int
   manager     User      @relation("UserManageFee", fields: [managerId], references: [id])
+}
+
+model Fee {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  isMandatory Boolean  @default(false)
+  unitPrice   Float?
+  status      Int      @default(1)
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  date        DateTime @default(now())
+  note        String?
+  feeId       Int
+  householdId Int
+  fee         Fee      @relation(fields: [feeId], references: [id])
+  household   Household @relation(fields: [householdId], references: [id])
 }

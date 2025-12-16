@@ -11,6 +11,7 @@ import residentRoutes from "./src/routes/residentRoutes.js"
 import feeRoutes from "./src/routes/feeRoutes.js"   
 import dashboardRoutes from "./src/routes/dashboardRoutes.js"  
 
+
 dotenv.config()
 
 const app = express()
@@ -35,7 +36,6 @@ app.use("/api/dashboard", dashboardRoutes)
 
 const distPath = path.join(__dirname, "../frontend/dist")
 app.use(express.static(distPath))
-
 app.get("*", (req, res) => {
   res.sendFile(path.join(distPath, "index.html"))
 })
@@ -43,3 +43,5 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
+
