@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import "./Authentication.css";
+import "../styles/Authentication.css";
 import Logo from "../assets/images/Logo.png";
 import UserIcon from "../assets/images/user.jpg";
 

@@ -1,27 +1,21 @@
-:root {
-  --header-height: 60px;
-  --sidebar-width: 260px;
+/* src/styles/layout.css */
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
 }
 
-.appMain {
-  min-height: 100vh;
-  background: #f3f4fb;
+.main-area {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  background-color: #f5f7fb;
 }
 
-.mainContentWrapper {
+.content {
   flex: 1;
-  position: relative;
-  padding: 0 !important;
-  margin: 0;
-}
-
-.mainContent {
-  margin-left: var(--sidebar-width);
-  margin-top: var(--header-height);
-  padding: 0;
-  height: calc(100vh - var(--header-height));
-  box-sizing: border-box;
-  background: #f3f4fb;
+  padding: 24px;
+  overflow-y: auto;
 }

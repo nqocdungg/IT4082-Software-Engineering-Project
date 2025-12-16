@@ -1,9 +1,10 @@
 .login-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; 
   align-items: stretch;
-  width: 100vw;
-  height: 100vh;
+
+  gap: 32px;                   
+  width: 100%;
+  min-height: 100svh;
   background-color: #dce2eb;
-  overflow: hidden;
 }
