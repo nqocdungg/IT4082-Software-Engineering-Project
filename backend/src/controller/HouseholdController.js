@@ -46,6 +46,15 @@ export const createHousehold = async (req, res) => {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const newHousehold = await tx.household.create({
+        data: {
+          address,
+          registrationDate: new Date(),
+          nbrOfResident: 1,
+          status: 1,
+        }
+      })
+
       const newOwner = await tx.resident.create({
         data: {
           residentCCCD: ownerCCCD,
@@ -53,31 +62,25 @@ export const createHousehold = async (req, res) => {
           dob: new Date(ownerDob),
           gender: ownerGender,
           relationToOwner: "HEAD",
-          status: 1
-        }
-      })
-
-      const newHousehold = await tx.household.create({
-        data: {
-          address,
-          registrationDate: new Date(),
-          nbrOfResident: 1,
           status: 1,
-          ownerId: newOwner.id
+          householdId: newHousehold.id
         }
       })
 
-      await tx.resident.update({
-        where: { id: newOwner.id },
-        data: { householdId: newHousehold.id }
+      const updatedHousehold = await tx.household.update({
+        where: { id: newHousehold.id },
+        data: {
+          ownerId: newOwner.id
+        },
+        include: { owner: true }
       })
 
-      return newHousehold
+      return updatedHousehold
     })
 
     return res.status(201).json({
       success: true,
-      message: "Created household",
+      message: "Created household successfully",
       data: result
     })
 
