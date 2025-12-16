@@ -1,5 +1,5 @@
 .sidebar {
-  width: 240px;
+  width: 260px;
   height: 100vh;
   background: #132e57;
   color: #fff;
@@ -16,14 +16,14 @@
 }
 
 .sidebar-logo img {
-  width: 60px;
-  height: 60px;
+  width: 100px;
+  height: 100px;
 }
 
 .sidebar-brand {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
+  font-size: 26px;
+  font-weight: 1200;
+  letter-spacing: 1.5px;
 }
 
 .sidebar-nav {
@@ -38,8 +38,8 @@
   display: flex-start;
   gap: 14px;
   padding: 20px 20px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: rgba(255,255,255,0.75);
   text-decoration: none;
   cursor: pointer;
@@ -53,9 +53,11 @@
 .nav-item:hover {
   background: rgba(255,255,255,0.08);
   color: #fff;
+  font-weight: 800;
 }
 
 .nav-item.active {
   background: rgba(255,255,255,0.15);
   color: #fff;
+  font-weight: 950;
 }
