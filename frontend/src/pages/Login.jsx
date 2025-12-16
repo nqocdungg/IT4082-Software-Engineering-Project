@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import Authentication from "../components/Authentication"
 import SlideShow from "../components/SlideShow.jsx"
-import "./Login.css"
+import "../styles/Login.css"
 
 export default function Login() {
   const navigate = useNavigate()

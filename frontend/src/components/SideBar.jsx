@@ -4,11 +4,10 @@ import { FiGrid, FiHome, FiUsers, FiTrendingUp, FiTrendingDown } from "react-ico
 import logo from "../assets/images/new-logo.png"
 
 const menuItems = [
-  { icon: FiGrid, label: "Dashboard", path: "/dashboard" },
-  { icon: FiHome, label: "Households", path: "/households" },
-  { icon: FiUsers, label: "Residents", path: "/residents" },
-  { icon: FiTrendingUp, label: "Revenues", path: "/revenues" },
-  { icon: FiTrendingDown, label: "Expenses", path: "/expenses" }
+  { icon: FiGrid, label: "Thống kê", path: "/dashboard" },
+  { icon: FiHome, label: "Hộ khẩu", path: "/households" },
+  { icon: FiUsers, label: "Cư dân", path: "/residents" },
+  { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" }
 ]
 
 export default function SideBar() {
