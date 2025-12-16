@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getResidents,
+  getResidentStats,   // ✅ thêm
   getResidentById,
   createResident,
   updateResident,
@@ -13,6 +14,9 @@ import { allowRoles } from "../middleware/roleMiddleware.js";
 const router = express.Router();
 
 router.get("/", authMiddleware, allowRoles("HEAD", "DEPUTY", "ACCOUNTANT"), getResidents);
+
+// ✅ phải đặt trước "/:id"
+router.get("/stats", authMiddleware, allowRoles("HEAD", "DEPUTY", "ACCOUNTANT"), getResidentStats);
 
 router.get("/:id", authMiddleware, allowRoles("HEAD", "DEPUTY", "ACCOUNTANT"), getResidentById);
 

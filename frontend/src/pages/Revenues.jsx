@@ -68,8 +68,8 @@ export default function RevenuesManagement() {
       const list = Array.isArray(data)
         ? data
         : Array.isArray(data?.data)
-        ? data.data
-        : [];
+          ? data.data
+          : [];
       console.log("📌 [DEBUG] Parsed fees list:", list);
       setFees(list);
     } catch (err) {
@@ -358,655 +358,648 @@ export default function RevenuesManagement() {
   console.log("📌 [DEBUG] RENDER fees:", fees);
 
   return (
-    <div className="appMain">
-      <Header />
 
-      <div className="mainContentWrapper">
-        <SideBar />
+    <div className="mainContent revenues-page">
+      <div className="page-header">
+        <h2 className="page-title">
+          <FaMoneyBillWave className="page-title-icon" />
+          Quản lý khoản thu
+        </h2>
 
-        <div className="mainContent revenues-page">
-          <div className="page-header">
-            <h2 className="page-title">
-              <FaMoneyBillWave className="page-title-icon" />
-              Quản lý khoản thu
-            </h2>
+        <button className="btn-primary" onClick={handleOpenAddFee}>
+          <FaPlus /> Thêm khoản thu
+        </button>
+      </div>
 
-            <button className="btn-primary" onClick={handleOpenAddFee}>
-              <FaPlus /> Thêm khoản thu
-            </button>
+      <div className="card filter-card">
+        <div className="filter-grid basic-3">
+          <div className="filter-input search-box">
+            <FaSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="Tìm theo tên khoản thu..."
+              value={search}
+              onChange={(e) => {
+                setFeesPage(1);
+                setSearch(e.target.value);
+              }}
+            />
           </div>
 
-          <div className="card filter-card">
-            <div className="filter-grid basic-3">
-              <div className="filter-input search-box">
-                <FaSearch className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Tìm theo tên khoản thu..."
-                  value={search}
-                  onChange={(e) => {
-                    setFeesPage(1);
-                    setSearch(e.target.value);
-                  }}
-                />
-              </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setFeesPage(1);
+              setStatusFilter(e.target.value);
+            }}
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="1">Đang hoạt động</option>
+            <option value="0">Ngừng áp dụng</option>
+          </select>
 
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setFeesPage(1);
-                  setStatusFilter(e.target.value);
-                }}
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="1">Đang hoạt động</option>
-                <option value="0">Ngừng áp dụng</option>
-              </select>
-
-              <select
-                value={mandatoryFilter}
-                onChange={(e) => {
-                  setFeesPage(1);
-                  setMandatoryFilter(e.target.value);
-                }}
-              >
-                <option value="ALL">Tất cả loại khoản thu</option>
-                <option value="MANDATORY">Bắt buộc</option>
-                <option value="OPTIONAL">Tự nguyện</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="stats-mini">
-            <div className="stat-card">
-              <p className="stat-label">Tổng khoản thu</p>
-              <p className="stat-value">{stats.total}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Khoản thu bắt buộc</p>
-              <p className="stat-value">{stats.mandatory}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Khoản thu tự nguyện</p>
-              <p className="stat-value">{stats.optional}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Đang áp dụng</p>
-              <p className="stat-value">{stats.active}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Ngừng áp dụng</p>
-              <p className="stat-value">{stats.inactive}</p>
-            </div>
-          </div>
-
-          <div className="card table-card">
-            <div className="table-header">
-              Danh sách khoản thu ({filteredFees.length} bản ghi)
-            </div>
-
-            <div className="table-wrapper">
-              <table className="fee-table">
-                <thead>
-                  <tr>
-                    <th>Tên khoản thu</th>
-                    <th>Loại</th>
-                    <th>Đơn giá</th>
-                    <th>Thời gian áp dụng</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageFees.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="empty-row">
-                        Không có khoản thu phù hợp
-                      </td>
-                    </tr>
-                  ) : (
-                    pageFees.map((f) => (
-                      <tr key={f.id} className="clickable-row">
-                        <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                          <div className="fee-name">{f.name}</div>
-                        </td>
-
-                        <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                          <span
-                            className={
-                              f.isMandatory
-                                ? "fee-tag fee-tag-mandatory"
-                                : "fee-tag fee-tag-optional"
-                            }
-                          >
-                            {f.isMandatory ? "Bắt buộc" : "Tự nguyện"}
-                          </span>
-                        </td>
-
-                        <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                          {new Intl.NumberFormat("vi-VN").format(
-                            f.unitPrice || 0
-                          )}{" "}
-                          đ
-                        </td>
-
-                        <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                          <span
-                            className={
-                              f.fromDate || f.toDate
-                                ? "fee-date-range"
-                                : "fee-date-range fee-date-none"
-                            }
-                          >
-                            {getDateRangeLabel(f)}
-                          </span>
-                        </td>
-
-                        <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                          <span
-                            className={
-                              f.status === 1
-                                ? "fee-status-badge fee-status-active"
-                                : "fee-status-badge fee-status-inactive"
-                            }
-                          >
-                            {getStatusLabel(f.status)}
-                          </span>
-                        </td>
-
-                        <td
-                          onClick={(e) => e.stopPropagation()}
-                          className="fee-row-actions-cell"
-                        >
-                          <div className="row-actions">
-                            <button
-                              onClick={() => handleOpenTransactionModal(f)}
-                            >
-                              <FaCashRegister />
-                            </button>
-                            <button
-                              onClick={() => handleOpenFeeDetail(f, "edit")}
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              className="danger"
-                              onClick={() => handleDeleteFee(f.id)}
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pagination">
-              <button
-                disabled={feesPage === 1}
-                onClick={() => setFeesPage((p) => p - 1)}
-              >
-                <FaChevronLeft />
-              </button>
-
-              <span>
-                Trang {feesPage} / {totalFeePages}
-              </span>
-
-              <button
-                disabled={feesPage === totalFeePages}
-                onClick={() => setFeesPage((p) => p + 1)}
-              >
-                <FaChevronRight />
-              </button>
-            </div>
-          </div>
-
-          {isFeeModalOpen && selectedFee && (
-            <div className="resident-modal-overlay">
-              <div className="resident-modal">
-                <div className="resident-modal-header">
-                  <div>
-                    <p className="resident-modal-label">
-                      {feeMode === "view"
-                        ? "Thông tin khoản thu"
-                        : "Chỉnh sửa khoản thu"}
-                    </p>
-                  </div>
-                  <button
-                    className="modal-close-btn"
-                    onClick={handleCloseFeeDetail}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                </div>
-
-                <form
-                  onSubmit={
-                    feeMode === "edit"
-                      ? handleUpdateFeeSubmit
-                      : (e) => e.preventDefault()
-                  }
-                  className="resident-modal-body"
-                >
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Tên khoản thu</span>
-                      {feeMode === "view" ? (
-                        <span className="detail-value">
-                          {selectedFee.name}
-                        </span>
-                      ) : (
-                        <div className="detail-value">
-                          <input
-                            name="name"
-                            value={feeForm.name}
-                            onChange={handleFeeFormChange}
-                            required
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Đơn giá</span>
-                      {feeMode === "view" ? (
-                        <span className="detail-value">
-                          {new Intl.NumberFormat("vi-VN").format(
-                            selectedFee.unitPrice || 0
-                          )}{" "}
-                          đ
-                        </span>
-                      ) : (
-                        <div className="detail-value">
-                          <input
-                            type="number"
-                            name="unitPrice"
-                            value={feeForm.unitPrice}
-                            onChange={handleFeeFormChange}
-                            min="0"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Ngày bắt đầu</span>
-                      {feeMode === "view" ? (
-                        <span className="detail-value">
-                          {selectedFee.fromDate
-                            ? new Date(
-                                selectedFee.fromDate
-                              ).toLocaleDateString("vi-VN")
-                            : "Không có"}
-                        </span>
-                      ) : (
-                        <div className="detail-value">
-                          <input
-                            type="date"
-                            name="fromDate"
-                            value={feeForm.fromDate}
-                            onChange={handleFeeFormChange}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Ngày kết thúc</span>
-                      {feeMode === "view" ? (
-                        <span className="detail-value">
-                          {selectedFee.toDate
-                            ? new Date(
-                                selectedFee.toDate
-                              ).toLocaleDateString("vi-VN")
-                            : "Không có"}
-                        </span>
-                      ) : (
-                        <div className="detail-value">
-                          <input
-                            type="date"
-                            name="toDate"
-                            value={feeForm.toDate}
-                            onChange={handleFeeFormChange}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Loại khoản thu</span>
-                      {feeMode === "view" ? (
-                        <span className="detail-value">
-                          {selectedFee.isMandatory
-                            ? "Bắt buộc"
-                            : "Tự nguyện"}
-                        </span>
-                      ) : (
-                        <div className="detail-value">
-                          <select
-                            name="isMandatory"
-                            value={feeForm.isMandatory ? "1" : "0"}
-                            onChange={(e) =>
-                              setFeeForm((prev) => ({
-                                ...prev,
-                                isMandatory: e.target.value === "1",
-                              }))
-                            }
-                          >
-                            <option value="1">Bắt buộc</option>
-                            <option value="0">Tự nguyện</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Trạng thái</span>
-                      {feeMode === "view" ? (
-                        <span className="detail-value">
-                          {getStatusLabel(selectedFee.status)}
-                        </span>
-                      ) : (
-                        <div className="detail-value">
-                          <select
-                            name="status"
-                            value={feeForm.status}
-                            onChange={handleFeeFormChange}
-                          >
-                            <option value="1">Đang hoạt động</option>
-                            <option value="0">Ngừng áp dụng</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="detail-item detail-wide">
-                      <span className="detail-label">Mô tả</span>
-                      {feeMode === "view" ? (
-                        <span className="detail-value">
-                          {selectedFee.description || "Không có"}
-                        </span>
-                      ) : (
-                        <div className="detail-value">
-                          <textarea
-                            name="description"
-                            value={feeForm.description}
-                            onChange={handleFeeFormChange}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="resident-modal-footer">
-                    {feeMode === "view" ? (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => setFeeMode("edit")}
-                        >
-                          <FaEdit /> Chỉnh sửa
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          onClick={() => handleDeleteFee(selectedFee.id)}
-                        >
-                          <FaTrash /> Xóa
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() => {
-                            setFeeMode("view");
-                            setFeeForm(feeToForm(selectedFee));
-                          }}
-                        >
-                          Hủy
-                        </button>
-                        <button type="submit" className="btn-primary">
-                          Lưu thay đổi
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {isAddFeeOpen && (
-            <div className="resident-modal-overlay">
-              <div className="resident-modal">
-                <div className="resident-modal-header">
-                  <div>
-                    <h3 className="resident-modal-title">
-                      Thêm khoản thu mới
-                    </h3>
-                  </div>
-                  <button
-                    className="modal-close-btn"
-                    onClick={handleCloseAddFee}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                </div>
-
-                <form
-                  onSubmit={handleAddFeeSubmit}
-                  className="resident-modal-body"
-                >
-                  <div className="detail-grid">
-                    <div className="detail-item detail-wide">
-                      <span className="detail-label">Tên khoản thu</span>
-                      <div className="detail-value">
-                        <input
-                          name="name"
-                          value={feeForm.name}
-                          onChange={handleFeeFormChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Đơn giá (VNĐ)</span>
-                      <div className="detail-value">
-                        <input
-                          type="number"
-                          name="unitPrice"
-                          value={feeForm.unitPrice}
-                          min="0"
-                          onChange={handleFeeFormChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Loại khoản thu</span>
-                      <div className="detail-value">
-                        <select
-                          name="isMandatory"
-                          value={feeForm.isMandatory ? "1" : "0"}
-                          onChange={(e) =>
-                            setFeeForm((prev) => ({
-                              ...prev,
-                              isMandatory: e.target.value === "1",
-                            }))
-                          }
-                        >
-                          <option value="1">Bắt buộc</option>
-                          <option value="0">Tự nguyện</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Trạng thái</span>
-                      <div className="detail-value">
-                        <select
-                          name="status"
-                          value={feeForm.status}
-                          onChange={handleFeeFormChange}
-                        >
-                          <option value="1">Đang hoạt động</option>
-                          <option value="0">Ngừng áp dụng</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Ngày bắt đầu</span>
-                      <div className="detail-value">
-                        <input
-                          type="date"
-                          name="fromDate"
-                          value={feeForm.fromDate}
-                          onChange={handleFeeFormChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Ngày kết thúc</span>
-                      <div className="detail-value">
-                        <input
-                          type="date"
-                          name="toDate"
-                          value={feeForm.toDate}
-                          onChange={handleFeeFormChange}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="detail-item detail-wide">
-                      <span className="detail-label">Mô tả</span>
-                      <div className="detail-value">
-                        <textarea
-                          name="description"
-                          value={feeForm.description}
-                          onChange={handleFeeFormChange}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="resident-modal-footer">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={handleCloseAddFee}
-                    >
-                      Hủy
-                    </button>
-                    <button type="submit" className="btn-primary">
-                      Thêm khoản thu
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {isTransactionModalOpen && (
-            <div className="resident-modal-overlay">
-              <div className="resident-modal">
-                <div className="resident-modal-header">
-                  <div>
-                    <h3 className="resident-modal-title">Ghi nhận thu phí</h3>
-                  </div>
-                  <button
-                    className="modal-close-btn"
-                    onClick={handleCloseTransactionModal}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                </div>
-
-                <form
-                  onSubmit={handleCreateTransactionSubmit}
-                  className="resident-modal-body"
-                >
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">ID khoản thu</span>
-                      <div className="detail-value">
-                        <input
-                          name="feeId"
-                          type="number"
-                          value={transactionForm.feeId}
-                          onChange={handleTransactionFormChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">ID hộ khẩu</span>
-                      <div className="detail-value">
-                        <input
-                          name="householdId"
-                          type="number"
-                          value={transactionForm.householdId}
-                          onChange={handleTransactionFormChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Số tiền (VNĐ)</span>
-                      <div className="detail-value">
-                        <input
-                          name="amount"
-                          type="number"
-                          min="0"
-                          value={transactionForm.amount}
-                          onChange={handleTransactionFormChange}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="detail-item detail-wide">
-                      <span className="detail-label">Ghi chú</span>
-                      <div className="detail-value">
-                        <textarea
-                          name="note"
-                          value={transactionForm.note}
-                          onChange={handleTransactionFormChange}
-                          placeholder="Ví dụ: Đã thu đủ, thu một phần..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="resident-modal-footer">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={handleCloseTransactionModal}
-                    >
-                      Hủy
-                    </button>
-                    <button type="submit" className="btn-primary">
-                      Xác nhận thu
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+          <select
+            value={mandatoryFilter}
+            onChange={(e) => {
+              setFeesPage(1);
+              setMandatoryFilter(e.target.value);
+            }}
+          >
+            <option value="ALL">Tất cả loại khoản thu</option>
+            <option value="MANDATORY">Bắt buộc</option>
+            <option value="OPTIONAL">Tự nguyện</option>
+          </select>
         </div>
       </div>
+
+      <div className="stats-mini">
+        <div className="stat-card">
+          <p className="stat-label">Tổng khoản thu</p>
+          <p className="stat-value">{stats.total}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Khoản thu bắt buộc</p>
+          <p className="stat-value">{stats.mandatory}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Khoản thu tự nguyện</p>
+          <p className="stat-value">{stats.optional}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Đang áp dụng</p>
+          <p className="stat-value">{stats.active}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Ngừng áp dụng</p>
+          <p className="stat-value">{stats.inactive}</p>
+        </div>
+      </div>
+
+      <div className="card table-card">
+        <div className="table-header">
+          Danh sách khoản thu ({filteredFees.length} bản ghi)
+        </div>
+
+        <div className="table-wrapper">
+          <table className="fee-table">
+            <thead>
+              <tr>
+                <th>Tên khoản thu</th>
+                <th>Loại</th>
+                <th>Đơn giá</th>
+                <th>Thời gian áp dụng</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageFees.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="empty-row">
+                    Không có khoản thu phù hợp
+                  </td>
+                </tr>
+              ) : (
+                pageFees.map((f) => (
+                  <tr key={f.id} className="clickable-row">
+                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
+                      <div className="fee-name">{f.name}</div>
+                    </td>
+
+                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
+                      <span
+                        className={
+                          f.isMandatory
+                            ? "fee-tag fee-tag-mandatory"
+                            : "fee-tag fee-tag-optional"
+                        }
+                      >
+                        {f.isMandatory ? "Bắt buộc" : "Tự nguyện"}
+                      </span>
+                    </td>
+
+                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
+                      {new Intl.NumberFormat("vi-VN").format(
+                        f.unitPrice || 0
+                      )}{" "}
+                      đ
+                    </td>
+
+                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
+                      <span
+                        className={
+                          f.fromDate || f.toDate
+                            ? "fee-date-range"
+                            : "fee-date-range fee-date-none"
+                        }
+                      >
+                        {getDateRangeLabel(f)}
+                      </span>
+                    </td>
+
+                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
+                      <span
+                        className={
+                          f.status === 1
+                            ? "fee-status-badge fee-status-active"
+                            : "fee-status-badge fee-status-inactive"
+                        }
+                      >
+                        {getStatusLabel(f.status)}
+                      </span>
+                    </td>
+
+                    <td
+                      onClick={(e) => e.stopPropagation()}
+                      className="fee-row-actions-cell"
+                    >
+                      <div className="row-actions">
+                        <button
+                          onClick={() => handleOpenTransactionModal(f)}
+                        >
+                          <FaCashRegister />
+                        </button>
+                        <button
+                          onClick={() => handleOpenFeeDetail(f, "edit")}
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          className="danger"
+                          onClick={() => handleDeleteFee(f.id)}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="pagination">
+          <button
+            disabled={feesPage === 1}
+            onClick={() => setFeesPage((p) => p - 1)}
+          >
+            <FaChevronLeft />
+          </button>
+
+          <span>
+            Trang {feesPage} / {totalFeePages}
+          </span>
+
+          <button
+            disabled={feesPage === totalFeePages}
+            onClick={() => setFeesPage((p) => p + 1)}
+          >
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
+
+      {isFeeModalOpen && selectedFee && (
+        <div className="resident-modal-overlay">
+          <div className="resident-modal">
+            <div className="resident-modal-header">
+              <div>
+                <p className="resident-modal-label">
+                  {feeMode === "view"
+                    ? "Thông tin khoản thu"
+                    : "Chỉnh sửa khoản thu"}
+                </p>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={handleCloseFeeDetail}
+              >
+                <FaTimes size={14} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={
+                feeMode === "edit"
+                  ? handleUpdateFeeSubmit
+                  : (e) => e.preventDefault()
+              }
+              className="resident-modal-body"
+            >
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Tên khoản thu</span>
+                  {feeMode === "view" ? (
+                    <span className="detail-value">
+                      {selectedFee.name}
+                    </span>
+                  ) : (
+                    <div className="detail-value">
+                      <input
+                        name="name"
+                        value={feeForm.name}
+                        onChange={handleFeeFormChange}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Đơn giá</span>
+                  {feeMode === "view" ? (
+                    <span className="detail-value">
+                      {new Intl.NumberFormat("vi-VN").format(
+                        selectedFee.unitPrice || 0
+                      )}{" "}
+                      đ
+                    </span>
+                  ) : (
+                    <div className="detail-value">
+                      <input
+                        type="number"
+                        name="unitPrice"
+                        value={feeForm.unitPrice}
+                        onChange={handleFeeFormChange}
+                        min="0"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Ngày bắt đầu</span>
+                  {feeMode === "view" ? (
+                    <span className="detail-value">
+                      {selectedFee.fromDate
+                        ? new Date(
+                          selectedFee.fromDate
+                        ).toLocaleDateString("vi-VN")
+                        : "Không có"}
+                    </span>
+                  ) : (
+                    <div className="detail-value">
+                      <input
+                        type="date"
+                        name="fromDate"
+                        value={feeForm.fromDate}
+                        onChange={handleFeeFormChange}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Ngày kết thúc</span>
+                  {feeMode === "view" ? (
+                    <span className="detail-value">
+                      {selectedFee.toDate
+                        ? new Date(
+                          selectedFee.toDate
+                        ).toLocaleDateString("vi-VN")
+                        : "Không có"}
+                    </span>
+                  ) : (
+                    <div className="detail-value">
+                      <input
+                        type="date"
+                        name="toDate"
+                        value={feeForm.toDate}
+                        onChange={handleFeeFormChange}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Loại khoản thu</span>
+                  {feeMode === "view" ? (
+                    <span className="detail-value">
+                      {selectedFee.isMandatory
+                        ? "Bắt buộc"
+                        : "Tự nguyện"}
+                    </span>
+                  ) : (
+                    <div className="detail-value">
+                      <select
+                        name="isMandatory"
+                        value={feeForm.isMandatory ? "1" : "0"}
+                        onChange={(e) =>
+                          setFeeForm((prev) => ({
+                            ...prev,
+                            isMandatory: e.target.value === "1",
+                          }))
+                        }
+                      >
+                        <option value="1">Bắt buộc</option>
+                        <option value="0">Tự nguyện</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Trạng thái</span>
+                  {feeMode === "view" ? (
+                    <span className="detail-value">
+                      {getStatusLabel(selectedFee.status)}
+                    </span>
+                  ) : (
+                    <div className="detail-value">
+                      <select
+                        name="status"
+                        value={feeForm.status}
+                        onChange={handleFeeFormChange}
+                      >
+                        <option value="1">Đang hoạt động</option>
+                        <option value="0">Ngừng áp dụng</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item detail-wide">
+                  <span className="detail-label">Mô tả</span>
+                  {feeMode === "view" ? (
+                    <span className="detail-value">
+                      {selectedFee.description || "Không có"}
+                    </span>
+                  ) : (
+                    <div className="detail-value">
+                      <textarea
+                        name="description"
+                        value={feeForm.description}
+                        onChange={handleFeeFormChange}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="resident-modal-footer">
+                {feeMode === "view" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setFeeMode("edit")}
+                    >
+                      <FaEdit /> Chỉnh sửa
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => handleDeleteFee(selectedFee.id)}
+                    >
+                      <FaTrash /> Xóa
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        setFeeMode("view");
+                        setFeeForm(feeToForm(selectedFee));
+                      }}
+                    >
+                      Hủy
+                    </button>
+                    <button type="submit" className="btn-primary">
+                      Lưu thay đổi
+                    </button>
+                  </>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isAddFeeOpen && (
+        <div className="resident-modal-overlay">
+          <div className="resident-modal">
+            <div className="resident-modal-header">
+              <div>
+                <h3 className="resident-modal-title">
+                  Thêm khoản thu mới
+                </h3>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={handleCloseAddFee}
+              >
+                <FaTimes size={14} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleAddFeeSubmit}
+              className="resident-modal-body"
+            >
+              <div className="detail-grid">
+                <div className="detail-item detail-wide">
+                  <span className="detail-label">Tên khoản thu</span>
+                  <div className="detail-value">
+                    <input
+                      name="name"
+                      value={feeForm.name}
+                      onChange={handleFeeFormChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Đơn giá (VNĐ)</span>
+                  <div className="detail-value">
+                    <input
+                      type="number"
+                      name="unitPrice"
+                      value={feeForm.unitPrice}
+                      min="0"
+                      onChange={handleFeeFormChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Loại khoản thu</span>
+                  <div className="detail-value">
+                    <select
+                      name="isMandatory"
+                      value={feeForm.isMandatory ? "1" : "0"}
+                      onChange={(e) =>
+                        setFeeForm((prev) => ({
+                          ...prev,
+                          isMandatory: e.target.value === "1",
+                        }))
+                      }
+                    >
+                      <option value="1">Bắt buộc</option>
+                      <option value="0">Tự nguyện</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Trạng thái</span>
+                  <div className="detail-value">
+                    <select
+                      name="status"
+                      value={feeForm.status}
+                      onChange={handleFeeFormChange}
+                    >
+                      <option value="1">Đang hoạt động</option>
+                      <option value="0">Ngừng áp dụng</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Ngày bắt đầu</span>
+                  <div className="detail-value">
+                    <input
+                      type="date"
+                      name="fromDate"
+                      value={feeForm.fromDate}
+                      onChange={handleFeeFormChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Ngày kết thúc</span>
+                  <div className="detail-value">
+                    <input
+                      type="date"
+                      name="toDate"
+                      value={feeForm.toDate}
+                      onChange={handleFeeFormChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item detail-wide">
+                  <span className="detail-label">Mô tả</span>
+                  <div className="detail-value">
+                    <textarea
+                      name="description"
+                      value={feeForm.description}
+                      onChange={handleFeeFormChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="resident-modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleCloseAddFee}
+                >
+                  Hủy
+                </button>
+                <button type="submit" className="btn-primary">
+                  Thêm khoản thu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isTransactionModalOpen && (
+        <div className="resident-modal-overlay">
+          <div className="resident-modal">
+            <div className="resident-modal-header">
+              <div>
+                <h3 className="resident-modal-title">Ghi nhận thu phí</h3>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={handleCloseTransactionModal}
+              >
+                <FaTimes size={14} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleCreateTransactionSubmit}
+              className="resident-modal-body"
+            >
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <span className="detail-label">ID khoản thu</span>
+                  <div className="detail-value">
+                    <input
+                      name="feeId"
+                      type="number"
+                      value={transactionForm.feeId}
+                      onChange={handleTransactionFormChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">ID hộ khẩu</span>
+                  <div className="detail-value">
+                    <input
+                      name="householdId"
+                      type="number"
+                      value={transactionForm.householdId}
+                      onChange={handleTransactionFormChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Số tiền (VNĐ)</span>
+                  <div className="detail-value">
+                    <input
+                      name="amount"
+                      type="number"
+                      min="0"
+                      value={transactionForm.amount}
+                      onChange={handleTransactionFormChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item detail-wide">
+                  <span className="detail-label">Ghi chú</span>
+                  <div className="detail-value">
+                    <textarea
+                      name="note"
+                      value={transactionForm.note}
+                      onChange={handleTransactionFormChange}
+                      placeholder="Ví dụ: Đã thu đủ, thu một phần..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="resident-modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleCloseTransactionModal}
+                >
+                  Hủy
+                </button>
+                <button type="submit" className="btn-primary">
+                  Xác nhận thu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,116 +7,164 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id         Int        @id @default(autoincrement())
-  username   String     @unique @db.VarChar(30)
-  password   String     @db.VarChar(255)
-  fullname   String     @db.VarChar(50)
-  phone      String     @db.VarChar(12)
-  createdAt  DateTime   @default(now())
-  role       Role
-  isActive   Boolean    @default(true)
+//////////////////////////////////////////////////////
+// USER – CÁN BỘ QUẢN LÝ
+//////////////////////////////////////////////////////
 
-  household  Household?
-  managedFeeRecords FeeRecord[]      @relation("UserManageFee")
-  managedChanges    ResidentChange[] @relation("UserManageChange")
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(30)
+  password  String   @db.VarChar(255)
+  fullname  String   @db.VarChar(50)
+  phone     String   @db.VarChar(12)
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  managedChanges ResidentChange[] @relation("UserManageChange")
+  managedFees    FeeRecord[]      @relation("UserManageFee")
 }
 
 enum Role {
   HEAD
   DEPUTY
   ACCOUNTANT
-  HOUSEHOLD
 }
+
+//////////////////////////////////////////////////////
+// HOUSEHOLD – HỘ KHẨU (THƯỜNG TRÚ)
+//////////////////////////////////////////////////////
 
 model Household {
-  id                Int        @id @default(autoincrement())
-  address           String     @db.VarChar(100)
-  registrationDate  DateTime
-  nbrOfResident     Int
-  status            Int        // 0 active, 1 locked
+  id               Int      @id @default(autoincrement())
+  address          String   @db.VarChar(100)
+  registrationDate DateTime
+  status           Int // 0 active, 1 locked
+  nbrOfResident    Int
 
-  userId            Int?       @unique
-  user              User?      @relation(fields: [userId], references: [id])
+  ownerId Int?
+  owner   Resident? @relation("OwnerResident", fields: [ownerId], references: [id])
 
-  ownerId           Int?
-  owner             Resident?  @relation("OwnerResident", fields: [ownerId], references: [id])
-  transactions      Transaction[]
-  residents         Resident[]
-  feeRecords        FeeRecord[]
+  residents  Resident[]
+  feeRecords FeeRecord[]
 }
+
+//////////////////////////////////////////////////////
+// RESIDENT – NHÂN KHẨU (THƯỜNG TRÚ + TẠM TRÚ)
+//////////////////////////////////////////////////////
 
 model Resident {
-  id                Int        @id @default(autoincrement())
-  residentCCCD      String     @unique
-  fullname          String     @db.VarChar(100)
-  dob               DateTime
-  gender            String?    @db.VarChar(1)
-  relationToOwner   String
-  status            Int        // 0 permanent, 1 temporary, 2 absent, 3 moved_out, 4 deceased
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  id              Int      @id @default(autoincrement())
+  residentCCCD    String?  @unique // NULL cho trẻ sơ sinh
+  fullname        String   @db.VarChar(100)
+  dob             DateTime
+  gender          String?  @db.VarChar(1)
+  relationToOwner String // HEAD, WIFE, SON, DAUGHTER...
 
-  householdId       Int
-  household         Household  @relation(fields: [householdId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  ownedHouseholds   Household[] @relation("OwnerResident")
-  changes           ResidentChange[]
+  // THƯỜNG TRÚ (nullable → cho phép tạm trú từ nơi khác)
+  householdId Int?
+  household   Household? @relation(fields: [householdId], references: [id])
+
+  // Chủ hộ
+  ownedHouseholds Household[] @relation("OwnerResident")
+
+  // Biến động nhân khẩu
+  changes ResidentChange[]
+
+  // Tạm trú hiện tại
+  temporaryResidences TemporaryResidence[]
 }
+
+//////////////////////////////////////////////////////
+// TEMPORARY RESIDENCE – TẠM TRÚ (TRẠNG THÁI HIỆN TẠI)
+//////////////////////////////////////////////////////
+
+model TemporaryResidence {
+  id         Int      @id @default(autoincrement())
+  residentId Int
+  resident   Resident @relation(fields: [residentId], references: [id])
+
+  address  String    @db.VarChar(100)
+  fromDate DateTime
+  toDate   DateTime?
+  status   Int // 0 active, 1 ended
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////
+// RESIDENT CHANGE – BIẾN ĐỘNG / LỊCH SỬ HÀNH CHÍNH
+//////////////////////////////////////////////////////
 
 model ResidentChange {
-  id             Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  changeType     Int       // 0: birth, 1: temp_residence, 2: temp_absence,
-                           // 3: move_in, 4: move_out, 5: update_info,
-                           // 6: join_household, 7: split_household, 8: death
+  changeType Int
+  // 0 birth
+  // 1 temp_residence
+  // 2 temp_absence
+  // 3 move_in
+  // 4 move_out
+  // 5 update_info
+  // 6 join_household
+  // 7 split_household
+  // 8 death
+  // 9 change_household_head
 
-  fromAddress    String
-  toAddress      String
-  fromDate       DateTime
-  toDate         DateTime?
-  reason         String
+  fromAddress String?
+  toAddress   String?
+  fromDate    DateTime
+  toDate      DateTime?
+  reason      String?
 
-  approvalStatus Int       // 0 pending, 1 approved, 2 rejected
+  approvalStatus Int // 0 pending, 1 approved, 2 rejected
 
-  residentId     Int
-  resident       Resident   @relation(fields: [residentId], references: [id])
+  residentId Int
+  resident   Resident @relation(fields: [residentId], references: [id])
 
-  managerId      Int?
-  manager        User?      @relation("UserManageChange", fields: [managerId], references: [id])
+  managerId Int?
+  manager   User? @relation("UserManageChange", fields: [managerId], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
-model FeeType {
-  id           Int       @id @default(autoincrement())
-  name         String    @db.VarChar(100)
-  description  String    @db.VarChar(100)
-  isMandatory  Boolean   @default(true)
-  unitPrice    Float?
-  createdAt    DateTime  @default(now())
-  fromDate     DateTime?
-  toDate       DateTime?
-  isActive     Boolean   @default(true)
+//////////////////////////////////////////////////////
+// FEE – THU PHÍ
+//////////////////////////////////////////////////////
 
-  feeRecords   FeeRecord[]
+model FeeType {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  description String?
+  isMandatory Boolean   @default(true)
+  unitPrice   Float?
+  isActive    Boolean   @default(true)
+  fromDate    DateTime?
+  toDate      DateTime?
+
+  feeRecords FeeRecord[]
 }
 
 model FeeRecord {
-  id          Int       @id @default(autoincrement())
-  description String?   @db.VarChar(200)
-  updatedAt   DateTime  @default(now())
-  fundAmount  Float     @default(0)
-
-  status      Int       // 0 unpaid, 1 partially_paid, 2 fully_paid
-  isActive    Boolean   @default(true)
+  id          Int     @id @default(autoincrement())
+  amount      Float
+  status      Int // 0 unpaid, 1 partial, 2 paid
+  description String?
 
   householdId Int
   household   Household @relation(fields: [householdId], references: [id])
 
-  feeTypeId   Int
-  feeType     FeeType   @relation(fields: [feeTypeId], references: [id])
+  feeTypeId Int
+  feeType   FeeType @relation(fields: [feeTypeId], references: [id])
 
-  managerId   Int
-  manager     User      @relation("UserManageFee", fields: [managerId], references: [id])
+  managerId Int
+  manager   User @relation("UserManageFee", fields: [managerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Fee {

@@ -468,12 +468,12 @@ export default function HouseholdsPage() {
         prev.map((h) =>
           h.id === householdId
             ? {
-                ...h,
-                nbrOfResident: (h.nbrOfResident || 0) + 1,
-                residents: h.residents
-                  ? [...h.residents, newResident]
-                  : [newResident]
-              }
+              ...h,
+              nbrOfResident: (h.nbrOfResident || 0) + 1,
+              residents: h.residents
+                ? [...h.residents, newResident]
+                : [newResident]
+            }
             : h
         )
       )
@@ -481,12 +481,12 @@ export default function HouseholdsPage() {
       setViewHousehold((prev) =>
         prev
           ? {
-              ...prev,
-              nbrOfResident: (prev.nbrOfResident || 0) + 1,
-              residents: prev.residents
-                ? [...prev.residents, newResident]
-                : [newResident]
-            }
+            ...prev,
+            nbrOfResident: (prev.nbrOfResident || 0) + 1,
+            residents: prev.residents
+              ? [...prev.residents, newResident]
+              : [newResident]
+          }
           : prev
       )
     } catch (err) {
@@ -557,9 +557,9 @@ export default function HouseholdsPage() {
       total === 0
         ? 0
         : households.reduce(
-            (sum, h) => sum + (h.nbrOfResident || 0),
-            0
-          ) / total
+          (sum, h) => sum + (h.nbrOfResident || 0),
+          0
+        ) / total
 
     return {
       total,
@@ -573,406 +573,400 @@ export default function HouseholdsPage() {
   if (loading) return <div className="loading">Đang tải dữ liệu...</div>
 
   return (
-    <div className="appMain">
-      <Header />
-      <div className="mainContentWrapper">
-        <SideBar />
 
-        <div className="mainContent households-page">
-          <div className="page-header">
-            <h2 className="page-title">
-              <FaHome className="page-title-icon" />
-              Quản lý hộ khẩu
-            </h2>
+    <div className="mainContent households-page">
+      <div className="page-header">
+        <h2 className="page-title">
+          <FaHome className="page-title-icon" />
+          Quản lý hộ khẩu
+        </h2>
 
-            {allowManage && (
-              <button
-                className="btn-primary"
-                onClick={() => setIsAddOpen(true)}
-              >
-                <FaPlus /> Thêm hộ khẩu
-              </button>
-            )}
-          </div>
+        {allowManage && (
+          <button
+            className="btn-primary"
+            onClick={() => setIsAddOpen(true)}
+          >
+            <FaPlus /> Thêm hộ khẩu
+          </button>
+        )}
+      </div>
 
-          <div className="card filter-card">
-            <div className="filter-grid">
-              <div className="search-box">
-                <FaSearch className="search-icon" />
-                <input
-                  placeholder="Tìm chủ hộ, địa chỉ, CCCD..."
-                  value={search}
-                  onChange={(e) => {
-                    setCurrentPage(1)
-                    setSearch(e.target.value)
-                  }}
-                />
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setCurrentPage(1)
-                  setStatusFilter(e.target.value)
-                }}
-              >
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="stats-mini">
-            <div className="stat-card">
-              <p className="stat-label">Tổng số hộ</p>
-              <p className="stat-value">{stats.total}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Đang hoạt động</p>
-              <p className="stat-value">{stats.active}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Tạm trú</p>
-              <p className="stat-value">{stats.tamTru}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Đã chuyển đi</p>
-              <p className="stat-value">{stats.daChuyenDi}</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">TB nhân khẩu / hộ</p>
-              <p className="stat-value">{stats.avg}</p>
-            </div>
-          </div>
-
-          <div className="card table-card">
-            <div className="table-header">
-              Danh sách hộ khẩu ({filteredHouseholds.length} bản ghi)
-            </div>
-
-            <div className="table-wrapper">
-              <table className="household-table">
-                <thead>
-                  <tr>
-                    <th>Chủ hộ</th>
-                    <th>Địa chỉ</th>
-                    <th>Số nhân khẩu</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày đăng ký</th>
-                    {allowManage && <th>Hành động</th>}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {pageHouseholds.length === 0 ? (
-                    <tr>
-                      <td colSpan={allowManage ? 6 : 5} className="empty-row">
-                        Không có hộ khẩu phù hợp.
-                      </td>
-                    </tr>
-                  ) : (
-                    pageHouseholds.map((h) => {
-                      const statusInfo = getHouseholdStatusInfo(h.status)
-                      const ownerName =
-                        h.owner?.fullname || h.ownerName || "Không rõ"
-
-                      return (
-                        <tr key={h.id}>
-                          <td>{ownerName}</td>
-                          <td>{h.address}</td>
-                          <td>{h.nbrOfResident || 0}</td>
-                          <td>
-                            <span
-                              className={`status-badge ${statusInfo.className}`}
-                            >
-                              {statusInfo.label}
-                            </span>
-                          </td>
-                          <td>
-                            {h.registrationDate
-                              ? String(h.registrationDate).slice(0, 10)
-                              : ""}
-                          </td>
-
-                          {allowManage && (
-                            <td>
-                              <div className="row-actions">
-                                <button onClick={() => handleOpenView(h)}>
-                                  <FaEye />
-                                </button>
-                                <button onClick={() => handleOpenEdit(h)}>
-                                  <FaUserEdit />
-                                </button>
-                                <button
-                                  className="danger"
-                                  onClick={() => handleDelete(h.id)}
-                                >
-                                  <FaTrash />
-                                </button>
-                              </div>
-                            </td>
-                          )}
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="pagination">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-              >
-                <FaChevronLeft />
-              </button>
-
-              <span>
-                Trang {currentPage} / {totalPages}
-              </span>
-
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-              >
-                <FaChevronRight />
-              </button>
-            </div>
-          </div>
-
-          {allowManage && (
-            <AddHouseholdModal
-              open={isAddOpen}
-              onClose={() => setIsAddOpen(false)}
-              onCreate={handleCreateHousehold}
+      <div className="card filter-card">
+        <div className="filter-grid">
+          <div className="search-box">
+            <FaSearch className="search-icon" />
+            <input
+              placeholder="Tìm chủ hộ, địa chỉ, CCCD..."
+              value={search}
+              onChange={(e) => {
+                setCurrentPage(1)
+                setSearch(e.target.value)
+              }}
             />
-          )}
+          </div>
 
-          {viewHousehold && (
-            <div
-              className="resident-modal-overlay"
-              onClick={handleCloseView}
-            >
-              <div
-                className="resident-modal"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="resident-modal-header">
-                  <div>
-                    <p className="resident-modal-label">
-                      Thông tin hộ khẩu
-                    </p>
-                    <h3 className="resident-modal-title">
-                      {viewHousehold.owner?.fullname ||
-                        viewHousehold.ownerName ||
-                        "Chủ hộ"}
-                    </h3>
-                    <p className="resident-modal-sub">
-                      Địa chỉ: {viewHousehold.address}
-                    </p>
-                  </div>
-                  <button
-                    className="modal-close-btn"
-                    onClick={handleCloseView}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setCurrentPage(1)
+              setStatusFilter(e.target.value)
+            }}
+          >
+            {STATUS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
 
-                <div className="resident-modal-body">
-                  <div className="detail-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Chủ hộ</span>
-                      <span className="detail-value">
-                        {viewHousehold.owner?.fullname ||
-                          viewHousehold.ownerName ||
-                          "Không rõ"}
-                      </span>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">CCCD chủ hộ</span>
-                      <span className="detail-value">
-                        {viewHousehold.owner?.residentCCCD ||
-                          viewHousehold.ownerCCCD ||
-                          "Không rõ"}
-                      </span>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Địa chỉ</span>
-                      <span className="detail-value">
-                        {viewHousehold.address}
-                      </span>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Số nhân khẩu</span>
-                      <span className="detail-value">
-                        {viewHousehold.nbrOfResident || 0}
-                      </span>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Trạng thái</span>
-                      <span className="detail-value">
-                        {getHouseholdStatusInfo(viewHousehold.status).label}
-                      </span>
-                    </div>
-
-                    <div className="detail-item">
-                      <span className="detail-label">Ngày đăng ký</span>
-                      <span className="detail-value">
-                        {viewHousehold.registrationDate
-                          ? String(viewHousehold.registrationDate).slice(0, 10)
-                          : ""}
-                      </span>
-                    </div>
-
-                    <div className="detail-item detail-wide">
-                      <span className="detail-label">
-                        Danh sách nhân khẩu trong hộ
-                      </span>
-                      <div className="detail-value">
-                        {viewHousehold.residents?.length > 0 ? (
-                          <ul className="member-list">
-                            {viewHousehold.residents.map((r) => (
-                              <li className="member-item" key={r.id}>
-                                <div className="member-name">
-                                  {r.fullname}
-                                </div>
-                                <div className="member-meta">
-                                  {r.gender === "M"
-                                    ? "Nam"
-                                    : r.gender === "F"
-                                    ? "Nữ"
-                                    : r.gender || "Khác"}{" "}
-                                  • {r.relationToOwner || "Thành viên"} •{" "}
-                                  {r.residentCCCD}
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="sub-text">
-                            Chưa có nhân khẩu trong hộ.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {allowManage && (
-                  <div className="resident-modal-footer">
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => setIsAddResidentOpen(true)}
-                    >
-                      Thêm nhân khẩu vào hộ
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {editHousehold && (
-            <div
-              className="resident-modal-overlay"
-              onClick={handleCloseEdit}
-            >
-              <div
-                className="resident-modal"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="resident-modal-header">
-                  <div>
-                    <p className="resident-modal-label">
-                      Chỉnh sửa hộ khẩu
-                    </p>
-                    <h3 className="resident-modal-title">
-                      {editHousehold.owner?.fullname ||
-                        editHousehold.ownerName ||
-                        "Chủ hộ"}
-                    </h3>
-                    <p className="resident-modal-sub">
-                      Địa chỉ: {editHousehold.address}
-                    </p>
-                  </div>
-                  <button
-                    className="modal-close-btn"
-                    onClick={handleCloseEdit}
-                  >
-                    <FaTimes size={14} />
-                  </button>
-                </div>
-
-                <form
-                  className="resident-modal-body"
-                  onSubmit={handleUpdateHousehold}
-                >
-                  <div className="detail-grid">
-                    <div className="detail-item detail-wide">
-                      <span className="detail-label">
-                        Trạng thái hộ khẩu
-                      </span>
-                      <div className="detail-value">
-                        <select
-                          value={editStatus}
-                          onChange={(e) => setEditStatus(e.target.value)}
-                        >
-                          <option value="0">Đang hoạt động</option>
-                          <option value="1">Tạm trú</option>
-                          <option value="2">Đã chuyển đi</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="resident-modal-footer">
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={handleCloseEdit}
-                    >
-                      Hủy
-                    </button>
-                    <button type="submit" className="btn-primary">
-                      Lưu thay đổi
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {allowManage && (
-            <AddResidentModal
-              open={isAddResidentOpen}
-              onClose={() => setIsAddResidentOpen(false)}
-              household={viewHousehold}
-              onCreate={handleAddResidentToHousehold}
-            />
-          )}
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
+
+      <div className="stats-mini">
+        <div className="stat-card">
+          <p className="stat-label">Tổng số hộ</p>
+          <p className="stat-value">{stats.total}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Đang hoạt động</p>
+          <p className="stat-value">{stats.active}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Tạm trú</p>
+          <p className="stat-value">{stats.tamTru}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Đã chuyển đi</p>
+          <p className="stat-value">{stats.daChuyenDi}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">TB nhân khẩu / hộ</p>
+          <p className="stat-value">{stats.avg}</p>
+        </div>
+      </div>
+
+      <div className="card table-card">
+        <div className="table-header">
+          Danh sách hộ khẩu ({filteredHouseholds.length} bản ghi)
+        </div>
+
+        <div className="table-wrapper">
+          <table className="household-table">
+            <thead>
+              <tr>
+                <th>Chủ hộ</th>
+                <th>Địa chỉ</th>
+                <th>Số nhân khẩu</th>
+                <th>Trạng thái</th>
+                <th>Ngày đăng ký</th>
+                {allowManage && <th>Hành động</th>}
+              </tr>
+            </thead>
+
+            <tbody>
+              {pageHouseholds.length === 0 ? (
+                <tr>
+                  <td colSpan={allowManage ? 6 : 5} className="empty-row">
+                    Không có hộ khẩu phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                pageHouseholds.map((h) => {
+                  const statusInfo = getHouseholdStatusInfo(h.status)
+                  const ownerName =
+                    h.owner?.fullname || h.ownerName || "Không rõ"
+
+                  return (
+                    <tr key={h.id}>
+                      <td>{ownerName}</td>
+                      <td>{h.address}</td>
+                      <td>{h.nbrOfResident || 0}</td>
+                      <td>
+                        <span
+                          className={`status-badge ${statusInfo.className}`}
+                        >
+                          {statusInfo.label}
+                        </span>
+                      </td>
+                      <td>
+                        {h.registrationDate
+                          ? String(h.registrationDate).slice(0, 10)
+                          : ""}
+                      </td>
+
+                      {allowManage && (
+                        <td>
+                          <div className="row-actions">
+                            <button onClick={() => handleOpenView(h)}>
+                              <FaEye />
+                            </button>
+                            <button onClick={() => handleOpenEdit(h)}>
+                              <FaUserEdit />
+                            </button>
+                            <button
+                              className="danger"
+                              onClick={() => handleDelete(h.id)}
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="pagination">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            <FaChevronLeft />
+          </button>
+
+          <span>
+            Trang {currentPage} / {totalPages}
+          </span>
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            <FaChevronRight />
+          </button>
+        </div>
+      </div>
+
+      {allowManage && (
+        <AddHouseholdModal
+          open={isAddOpen}
+          onClose={() => setIsAddOpen(false)}
+          onCreate={handleCreateHousehold}
+        />
+      )}
+
+      {viewHousehold && (
+        <div
+          className="resident-modal-overlay"
+          onClick={handleCloseView}
+        >
+          <div
+            className="resident-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="resident-modal-header">
+              <div>
+                <p className="resident-modal-label">
+                  Thông tin hộ khẩu
+                </p>
+                <h3 className="resident-modal-title">
+                  {viewHousehold.owner?.fullname ||
+                    viewHousehold.ownerName ||
+                    "Chủ hộ"}
+                </h3>
+                <p className="resident-modal-sub">
+                  Địa chỉ: {viewHousehold.address}
+                </p>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={handleCloseView}
+              >
+                <FaTimes size={14} />
+              </button>
+            </div>
+
+            <div className="resident-modal-body">
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <span className="detail-label">Chủ hộ</span>
+                  <span className="detail-value">
+                    {viewHousehold.owner?.fullname ||
+                      viewHousehold.ownerName ||
+                      "Không rõ"}
+                  </span>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">CCCD chủ hộ</span>
+                  <span className="detail-value">
+                    {viewHousehold.owner?.residentCCCD ||
+                      viewHousehold.ownerCCCD ||
+                      "Không rõ"}
+                  </span>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Địa chỉ</span>
+                  <span className="detail-value">
+                    {viewHousehold.address}
+                  </span>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Số nhân khẩu</span>
+                  <span className="detail-value">
+                    {viewHousehold.nbrOfResident || 0}
+                  </span>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Trạng thái</span>
+                  <span className="detail-value">
+                    {getHouseholdStatusInfo(viewHousehold.status).label}
+                  </span>
+                </div>
+
+                <div className="detail-item">
+                  <span className="detail-label">Ngày đăng ký</span>
+                  <span className="detail-value">
+                    {viewHousehold.registrationDate
+                      ? String(viewHousehold.registrationDate).slice(0, 10)
+                      : ""}
+                  </span>
+                </div>
+
+                <div className="detail-item detail-wide">
+                  <span className="detail-label">
+                    Danh sách nhân khẩu trong hộ
+                  </span>
+                  <div className="detail-value">
+                    {viewHousehold.residents?.length > 0 ? (
+                      <ul className="member-list">
+                        {viewHousehold.residents.map((r) => (
+                          <li className="member-item" key={r.id}>
+                            <div className="member-name">
+                              {r.fullname}
+                            </div>
+                            <div className="member-meta">
+                              {r.gender === "M"
+                                ? "Nam"
+                                : r.gender === "F"
+                                  ? "Nữ"
+                                  : r.gender || "Khác"}{" "}
+                              • {r.relationToOwner || "Thành viên"} •{" "}
+                              {r.residentCCCD}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="sub-text">
+                        Chưa có nhân khẩu trong hộ.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {allowManage && (
+              <div className="resident-modal-footer">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => setIsAddResidentOpen(true)}
+                >
+                  Thêm nhân khẩu vào hộ
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {editHousehold && (
+        <div
+          className="resident-modal-overlay"
+          onClick={handleCloseEdit}
+        >
+          <div
+            className="resident-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="resident-modal-header">
+              <div>
+                <p className="resident-modal-label">
+                  Chỉnh sửa hộ khẩu
+                </p>
+                <h3 className="resident-modal-title">
+                  {editHousehold.owner?.fullname ||
+                    editHousehold.ownerName ||
+                    "Chủ hộ"}
+                </h3>
+                <p className="resident-modal-sub">
+                  Địa chỉ: {editHousehold.address}
+                </p>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={handleCloseEdit}
+              >
+                <FaTimes size={14} />
+              </button>
+            </div>
+
+            <form
+              className="resident-modal-body"
+              onSubmit={handleUpdateHousehold}
+            >
+              <div className="detail-grid">
+                <div className="detail-item detail-wide">
+                  <span className="detail-label">
+                    Trạng thái hộ khẩu
+                  </span>
+                  <div className="detail-value">
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value)}
+                    >
+                      <option value="0">Đang hoạt động</option>
+                      <option value="1">Tạm trú</option>
+                      <option value="2">Đã chuyển đi</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="resident-modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleCloseEdit}
+                >
+                  Hủy
+                </button>
+                <button type="submit" className="btn-primary">
+                  Lưu thay đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {allowManage && (
+        <AddResidentModal
+          open={isAddResidentOpen}
+          onClose={() => setIsAddResidentOpen(false)}
+          household={viewHousehold}
+          onCreate={handleAddResidentToHousehold}
+        />
+      )}
     </div>
   )
 }

@@ -15,9 +15,16 @@ export const getDashboard = async (req, res) => {
       where: { status: 0 }
     })
 
-    // 2. tổng nhân khẩu
+    // 2. tổng nhân khẩu (chưa qua đời)
+    const deceasedIds = await prisma.residentChange.findMany({
+      where: { changeType: 8 },
+      select: { residentId: true }
+    })
+
     const totalResidents = await prisma.resident.count({
-      where: { status: { not: 4 } }
+      where: {
+        id: { notIn: deceasedIds.map(r => r.residentId) }
+      }
     })
 
     // 3. hồ sơ cần xử lý
@@ -37,7 +44,7 @@ export const getDashboard = async (req, res) => {
         AND fr."fundAmount" > 0
         AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
       GROUP BY month
-      ORDER BY month;
+      ORDER BY month
     `
 
     const feeByMonth = Array.from({ length: 12 }, (_, i) => {
@@ -69,9 +76,11 @@ export const getDashboard = async (req, res) => {
 
     const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
 
-    // 6. thống kê độ tuổi
+    // 6. thống kê độ tuổi (chưa qua đời)
     const residents = await prisma.resident.findMany({
-      where: { status: { not: 4 } },
+      where: {
+        id: { notIn: deceasedIds.map(r => r.residentId) }
+      },
       select: { dob: true }
     })
 
@@ -102,37 +111,30 @@ export const getDashboard = async (req, res) => {
     }
 
     // 7. tình trạng cư trú
-    const statusGroup = await prisma.resident.groupBy({
-      by: ["status"],
-      where: { status: { in: [0, 1, 2, 3] } },
-      _count: true
+    const permanent = await prisma.resident.count({
+      where: { householdId: { not: null } }
     })
 
-    const residence = {
-      permanent: 0,
-      temporary: 0,
-      absent: 0,
-      moved_out: 0
-    }
+    const temporary = await prisma.temporaryResidence.count({
+      where: { status: 0 }
+    })
 
-    statusGroup.forEach(s => {
-      if (s.status === 0) residence.permanent = s._count
-      if (s.status === 1) residence.temporary = s._count
-      if (s.status === 2) residence.absent = s._count
-      if (s.status === 3) residence.moved_out = s._count
+    const absent = await prisma.residentChange.count({
+      where: { changeType: 2 }
+    })
+
+    const movedOut = await prisma.residentChange.count({
+      where: { changeType: 4 }
     })
 
     const totalResidence =
-      residence.permanent +
-      residence.temporary +
-      residence.absent +
-      residence.moved_out || 1
+      permanent + temporary + absent + movedOut || 1
 
     const residencePercent = {
-      permanent: Math.round((residence.permanent / totalResidence) * 100),
-      temporary: Math.round((residence.temporary / totalResidence) * 100),
-      absent: Math.round((residence.absent / totalResidence) * 100),
-      moved_out: Math.round((residence.moved_out / totalResidence) * 100)
+      permanent: Math.round((permanent / totalResidence) * 100),
+      temporary: Math.round((temporary / totalResidence) * 100),
+      absent: Math.round((absent / totalResidence) * 100),
+      moved_out: Math.round((movedOut / totalResidence) * 100)
     }
 
     // 8. hồ sơ cần xử lý gần đây
