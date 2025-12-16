@@ -34,7 +34,7 @@ model Household {
   address           String     @db.VarChar(100)
   registrationDate  DateTime
   nbrOfResident     Int
-  status            Int        // 0 normal, 1 inactive, 2 locked
+  status            Int        // 0 active, 1 locked
 
   userId            Int?       @unique
   user              User?      @relation(fields: [userId], references: [id])

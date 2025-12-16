@@ -5,7 +5,7 @@ import {
   createResident,
   updateResident,
   deleteResident,
-} from "../controller/residentController.js";
+} from "../controller/ResidentController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
 import { allowRoles } from "../middleware/roleMiddleware.js";

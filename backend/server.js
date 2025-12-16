@@ -9,6 +9,7 @@ import staffRoutes from "./src/routes/staffRoutes.js"
 import householdRoutes from "./src/routes/householdRoutes.js"
 import residentRoutes from "./src/routes/residentRoutes.js"
 import feeRoutes from "./src/routes/feeRoutes.js"   
+import dashboardRoutes from "./src/routes/dashboardRoutes.js"  
 
 dotenv.config()
 
@@ -30,6 +31,7 @@ app.use("/api/staff", staffRoutes)
 app.use("/api/households", householdRoutes)
 app.use("/api/residents", residentRoutes)
 app.use("/api/fees", feeRoutes) 
+app.use("/api/dashboard", dashboardRoutes) 
 
 const distPath = path.join(__dirname, "../frontend/dist")
 app.use(express.static(distPath))
