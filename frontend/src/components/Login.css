@@ -1,0 +1,10 @@
+.login-container {
+  display: flex;
+  justify-content: flex-start; 
+  align-items: stretch;
+
+  gap: 32px;                   
+  width: 100%;
+  min-height: 100svh;
+  background-color: #dce2eb;
+}

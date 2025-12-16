@@ -1,7 +1,7 @@
 .sidebar {
-  width: 260px;
+  width: 240px;
   height: 100vh;
-  background: #0b2c5d;
+  background: #132e57;
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -35,8 +35,9 @@
 .nav-item {
   display: flex;
   align-items: center;
+  display: flex-start;
   gap: 14px;
-  padding: 12px 20px;
+  padding: 20px 20px;
   font-size: 14px;
   font-weight: 500;
   color: rgba(255,255,255,0.75);
