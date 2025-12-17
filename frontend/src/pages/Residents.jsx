@@ -12,6 +12,8 @@ import {
 import "../styles/residents.css"
 import "../styles/layout.css"
 
+const API_BASE = "http://localhost:5000/api"
+
 const RESIDENCY_STATUS = {
   0: { label: "Thường trú", className: "status-thuong_tru" },
   1: { label: "Tạm trú", className: "status-tam_tru" },
@@ -24,6 +26,39 @@ function getResidencyStatusInfo(code) {
   return RESIDENCY_STATUS[code] || { label: "Không rõ", className: "" }
 }
 
+function authHeaders() {
+  const token = localStorage.getItem("token")
+  return { Authorization: `Bearer ${token}` }
+}
+
+function toInputDate(iso) {
+  if (!iso) return ""
+  const d = new Date(iso)
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  const dd = String(d.getDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}`
+}
+
+function calcAge(dob) {
+  if (!dob) return ""
+  const now = new Date()
+  const birth = new Date(dob)
+  let age = now.getFullYear() - birth.getFullYear()
+  const m = now.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--
+  return age
+}
+
+const emptyForm = {
+  residentCCCD: "",
+  fullname: "",
+  dob: "",
+  gender: "M",
+  relationToOwner: "HEAD",
+  householdId: "" // input string, gửi lên Number hoặc null
+}
+
 export default function ResidentManagement() {
   const [residents, setResidents] = useState([])
   const [search, setSearch] = useState("")
@@ -31,13 +66,12 @@ export default function ResidentManagement() {
   const [genderFilter, setGenderFilter] = useState("ALL")
 
   const [selectedResident, setSelectedResident] = useState(null)
-  const [detailMode, setDetailMode] = useState("view")
+  const [detailMode, setDetailMode] = useState("view") // view | edit
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   const [currentPage, setCurrentPage] = useState(1)
-  const rowsPerPage = 5
+  const rowsPerPage = 4
 
-  // ✅ stats LẤY TỪ BACKEND
   const [stats, setStats] = useState({
     total: 0,
     thuongTru: 0,
@@ -47,6 +81,12 @@ export default function ResidentManagement() {
     daQuaDoi: 0
   })
 
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const [editForm, setEditForm] = useState(emptyForm)
+  const [addForm, setAddForm] = useState(emptyForm)
+
   useEffect(() => {
     fetchResidents()
     fetchResidentStats()
@@ -54,26 +94,20 @@ export default function ResidentManagement() {
 
   async function fetchResidents() {
     try {
-      const token = localStorage.getItem("token")
-      const res = await axios.get("http://localhost:5000/api/residents", {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.get(`${API_BASE}/residents`, {
+        headers: authHeaders()
       })
-      setResidents(res.data.data)
+      setResidents(res.data.data || [])
     } catch {
       alert("Không tải được danh sách nhân khẩu")
     }
   }
 
-  // ✅ GỌI API STATS
   async function fetchResidentStats() {
     try {
-      const token = localStorage.getItem("token")
-      const res = await axios.get(
-        "http://localhost:5000/api/residents/stats",
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      )
+      const res = await axios.get(`${API_BASE}/residents/stats`, {
+        headers: authHeaders()
+      })
       setStats(res.data.data)
     } catch {
       console.error("Không tải được thống kê nhân khẩu")
@@ -82,10 +116,12 @@ export default function ResidentManagement() {
 
   const filteredResidents = useMemo(() => {
     return residents.filter(r => {
+      const cccd = (r.residentCCCD || "").toString()
+
       const matchSearch =
         !search.trim() ||
-        r.fullname.toLowerCase().includes(search.toLowerCase()) ||
-        r.residentCCCD.includes(search)
+        r.fullname?.toLowerCase().includes(search.toLowerCase()) ||
+        cccd.includes(search)
 
       const matchStatus =
         statusFilter === "ALL" || String(r.status) === String(statusFilter)
@@ -99,10 +135,7 @@ export default function ResidentManagement() {
     })
   }, [residents, search, statusFilter, genderFilter])
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredResidents.length / rowsPerPage)
-  )
+  const totalPages = Math.max(1, Math.ceil(filteredResidents.length / rowsPerPage))
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1)
@@ -113,22 +146,127 @@ export default function ResidentManagement() {
     return filteredResidents.slice(start, start + rowsPerPage)
   }, [filteredResidents, currentPage])
 
-  const handleOpenDetail = (resident, mode = "view") => {
-    setSelectedResident(resident)
+  const householdDisplay = r => {
+    if (r.householdId != null) return `HK #${r.householdId}` // đúng ý m: lấy id
+    return "Không rõ"
+  }
+
+  const closeDetail = () => {
+    if (saving) return
+    setSelectedResident(null)
+    setDetailMode("view")
+  }
+
+  const handleOpenDetail = async (resident, mode = "view") => {
     setDetailMode(mode)
+    setSelectedResident(resident)
+    setLoadingDetail(true)
+    try {
+      const res = await axios.get(`${API_BASE}/residents/${resident.id}`, {
+        headers: authHeaders()
+      })
+      const full = res.data.data
+      setSelectedResident(full)
+
+      setEditForm({
+        residentCCCD: full.residentCCCD || "",
+        fullname: full.fullname || "",
+        dob: toInputDate(full.dob),
+        gender: full.gender || "M",
+        relationToOwner: full.relationToOwner || "HEAD",
+        householdId: full.householdId != null ? String(full.householdId) : ""
+      })
+    } catch {
+      alert("Không tải được chi tiết nhân khẩu")
+    } finally {
+      setLoadingDetail(false)
+    }
   }
 
   async function handleDelete(id) {
     if (!window.confirm("Bạn có chắc muốn xóa nhân khẩu ID " + id + " ?")) return
     try {
-      const token = localStorage.getItem("token")
-      await axios.delete(`http://localhost:5000/api/residents/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      await axios.delete(`${API_BASE}/residents/${id}`, {
+        headers: authHeaders()
       })
       setResidents(prev => prev.filter(r => r.id !== id))
-      fetchResidentStats() // cập nhật lại stats sau khi xóa
+      fetchResidentStats()
+      if (selectedResident?.id === id) closeDetail()
     } catch {
       alert("Xóa nhân khẩu thất bại")
+    }
+  }
+
+  async function submitEdit() {
+    if (!selectedResident) return
+
+    if (!editForm.fullname.trim() || !editForm.dob || !editForm.relationToOwner.trim()) {
+      alert("Thiếu: Họ tên / Ngày sinh / Quan hệ chủ hộ")
+      return
+    }
+
+    setSaving(true)
+    try {
+      const payload = {
+        residentCCCD: editForm.residentCCCD.trim() || null,
+        fullname: editForm.fullname.trim(),
+        dob: editForm.dob,
+        gender: editForm.gender,
+        relationToOwner: editForm.relationToOwner.trim(),
+        householdId: editForm.householdId ? Number(editForm.householdId) : null
+      }
+
+      const res = await axios.put(
+        `${API_BASE}/residents/${selectedResident.id}`,
+        payload,
+        { headers: authHeaders() }
+      )
+
+      const updated = res.data.data
+
+      setResidents(prev => prev.map(r => (r.id === updated.id ? { ...r, ...updated } : r)))
+      setSelectedResident(prev => (prev ? { ...prev, ...updated } : prev))
+
+      fetchResidentStats()
+      setDetailMode("view")
+    } catch (e) {
+      alert(e?.response?.data?.message || "Cập nhật thất bại")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function submitAdd() {
+    if (!addForm.fullname.trim() || !addForm.dob || !addForm.relationToOwner.trim()) {
+      alert("Thiếu: Họ tên / Ngày sinh / Quan hệ chủ hộ")
+      return
+    }
+
+    setSaving(true)
+    try {
+      const payload = {
+        residentCCCD: addForm.residentCCCD.trim() || null,
+        fullname: addForm.fullname.trim(),
+        dob: addForm.dob,
+        gender: addForm.gender,
+        relationToOwner: addForm.relationToOwner.trim(),
+        householdId: addForm.householdId ? Number(addForm.householdId) : null
+      }
+
+      const res = await axios.post(`${API_BASE}/residents`, payload, {
+        headers: authHeaders()
+      })
+
+      const created = res.data.data
+      setResidents(prev => [created, ...prev])
+      fetchResidentStats()
+
+      setIsAddOpen(false)
+      setAddForm(emptyForm)
+    } catch (e) {
+      alert(e?.response?.data?.message || "Thêm nhân khẩu thất bại")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -140,7 +278,13 @@ export default function ResidentManagement() {
           Quản lý nhân khẩu
         </h2>
 
-        <button className="btn-primary" onClick={() => setIsAddOpen(true)}>
+        <button
+          className="btn-primary"
+          onClick={() => {
+            setIsAddOpen(true)
+            setAddForm(emptyForm)
+          }}
+        >
           <FaPlus /> Thêm nhân khẩu
         </button>
       </div>
@@ -242,9 +386,7 @@ export default function ResidentManagement() {
               ) : (
                 pageResidents.map(r => {
                   const info = getResidencyStatusInfo(r.status)
-                  const age =
-                    new Date().getFullYear() -
-                    new Date(r.dob).getFullYear()
+                  const age = calcAge(r.dob)
 
                   return (
                     <tr
@@ -256,12 +398,13 @@ export default function ResidentManagement() {
                       <td>{r.gender === "M" ? "Nam" : "Nữ"}</td>
 
                       <td>
-                        {r.dob.slice(0, 10)}
+                        {String(r.dob).slice(0, 10)}
                         <div className="sub-text">{age} tuổi</div>
                       </td>
 
-                      <td>{r.residentCCCD}</td>
-                      <td>{r.household?.address || "Không rõ"}</td>
+                      <td className="cccd-cell">{r.residentCCCD}</td>
+
+                      <td>{householdDisplay(r)}</td>
 
                       <td>
                         <span className={`status-badge ${info.className}`}>
@@ -269,19 +412,14 @@ export default function ResidentManagement() {
                         </span>
                       </td>
 
-                      <td>{r.createdAt.slice(0, 10)}</td>
+                      <td>{String(r.createdAt).slice(0, 10)}</td>
 
                       <td onClick={e => e.stopPropagation()}>
                         <div className="row-actions">
-                          <button
-                            onClick={() => handleOpenDetail(r, "edit")}
-                          >
+                          <button onClick={() => handleOpenDetail(r, "edit")}>
                             <FaUserEdit />
                           </button>
-                          <button
-                            className="danger"
-                            onClick={() => handleDelete(r.id)}
-                          >
+                          <button className="danger" onClick={() => handleDelete(r.id)}>
                             <FaTrash />
                           </button>
                         </div>
@@ -296,10 +434,7 @@ export default function ResidentManagement() {
       </div>
 
       <div className="pagination">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => setCurrentPage(p => p - 1)}
-        >
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
           <FaChevronLeft />
         </button>
 
@@ -314,6 +449,307 @@ export default function ResidentManagement() {
           <FaChevronRight />
         </button>
       </div>
+
+      {/* ===== ADD MODAL ===== */}
+      {isAddOpen && (
+        <div className="resident-modal-overlay" onClick={() => !saving && setIsAddOpen(false)}>
+          <div className="resident-modal" onClick={e => e.stopPropagation()}>
+            <div className="resident-modal-header">
+              <div>
+                <p className="resident-modal-label">POPUP</p>
+                <h3 className="resident-modal-title">Thêm nhân khẩu</h3>
+                <p className="resident-modal-sub">Nhập thông tin và bấm Thêm</p>
+              </div>
+
+              <button className="modal-close-btn" onClick={() => !saving && setIsAddOpen(false)}>
+                ✕
+              </button>
+            </div>
+
+            <div className="resident-modal-body">
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <div className="detail-label">Họ và tên *</div>
+                  <div className="detail-value">
+                    <input
+                      value={addForm.fullname}
+                      onChange={e => setAddForm(f => ({ ...f, fullname: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Ngày sinh *</div>
+                  <div className="detail-value">
+                    <input
+                      type="date"
+                      value={addForm.dob}
+                      onChange={e => setAddForm(f => ({ ...f, dob: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Giới tính</div>
+                  <div className="detail-value">
+                    <select
+                      value={addForm.gender}
+                      onChange={e => setAddForm(f => ({ ...f, gender: e.target.value }))}
+                    >
+                      <option value="M">Nam</option>
+                      <option value="F">Nữ</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">CCCD</div>
+                  <div className="detail-value">
+                    <input
+                      value={addForm.residentCCCD}
+                      onChange={e => setAddForm(f => ({ ...f, residentCCCD: e.target.value }))}
+                      placeholder="Có thể để trống"
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Quan hệ chủ hộ *</div>
+                  <div className="detail-value">
+                    <input
+                      value={addForm.relationToOwner}
+                      onChange={e => setAddForm(f => ({ ...f, relationToOwner: e.target.value }))}
+                      placeholder="HEAD / WIFE / SON..."
+                    />
+                  </div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Mã hộ khẩu (Household.id)</div>
+                  <div className="detail-value">
+                    <input
+                      value={addForm.householdId}
+                      onChange={e => setAddForm(f => ({ ...f, householdId: e.target.value }))}
+                      placeholder="VD: 12 (trống nếu tạm trú)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="resident-modal-footer">
+              <button className="btn-secondary" disabled={saving} onClick={() => setIsAddOpen(false)}>
+                Hủy
+              </button>
+              <button className="btn-primary" disabled={saving} onClick={submitAdd}>
+                {saving ? "Đang lưu..." : "Thêm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== DETAIL MODAL (VIEW/EDIT) ===== */}
+      {selectedResident && (
+        <div className="resident-modal-overlay" onClick={closeDetail}>
+          <div className="resident-modal" onClick={e => e.stopPropagation()}>
+            <div className="resident-modal-header">
+              <div>
+                <p className="resident-modal-label">
+                  {detailMode === "edit" ? "EDIT" : "VIEW"}
+                </p>
+                <h3 className="resident-modal-title">
+                  {detailMode === "edit" ? "Chỉnh sửa nhân khẩu" : "Chi tiết nhân khẩu"}
+                </h3>
+                <p className="resident-modal-sub">ID: #{selectedResident.id}</p>
+              </div>
+
+              <button className="modal-close-btn" onClick={closeDetail}>
+                ✕
+              </button>
+            </div>
+
+            <div className="resident-modal-body">
+              {loadingDetail ? (
+                <div className="empty-row">Đang tải chi tiết...</div>
+              ) : detailMode === "view" ? (
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <div className="detail-label">Họ và tên</div>
+                    <div className="detail-value">{selectedResident.fullname}</div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Ngày sinh / Tuổi</div>
+                    <div className="detail-value">
+                      {String(selectedResident.dob).slice(0, 10)}{" "}
+                      <span className="sub-text">({calcAge(selectedResident.dob)} tuổi)</span>
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Giới tính</div>
+                    <div className="detail-value">
+                      {selectedResident.gender === "M" ? "Nam" : "Nữ"}
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">CCCD</div>
+                    <div className="detail-value">{selectedResident.residentCCCD || "—"}</div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Quan hệ chủ hộ</div>
+                    <div className="detail-value">{selectedResident.relationToOwner}</div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Mã hộ khẩu</div>
+                    <div className="detail-value">
+                      {selectedResident.householdId != null
+                        ? `HK #${selectedResident.householdId}`
+                        : "Không rõ"}
+                    </div>
+                  </div>
+
+                  <div className="detail-item detail-wide">
+                    <div className="detail-label">Tình trạng cư trú</div>
+                    <div className="detail-value">
+                      <span
+                        className={`status-badge ${
+                          getResidencyStatusInfo(selectedResident.status).className
+                        }`}
+                      >
+                        {getResidencyStatusInfo(selectedResident.status).label}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="detail-item detail-wide">
+                    <div className="detail-label">Tạm trú đang hoạt động</div>
+                    <div className="detail-value">
+                      {selectedResident.temporaryResidences?.length ? (
+                        <ul style={{ margin: 0, paddingLeft: 18 }}>
+                          {selectedResident.temporaryResidences.map(t => (
+                            <li key={t.id}>
+                              {t.address}{" "}
+                              <span className="sub-text">
+                                ({String(t.fromDate).slice(0, 10)} →{" "}
+                                {t.toDate ? String(t.toDate).slice(0, 10) : "—"})
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="sub-text">Không có</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <div className="detail-label">Họ và tên *</div>
+                    <div className="detail-value">
+                      <input
+                        value={editForm.fullname}
+                        onChange={e => setEditForm(f => ({ ...f, fullname: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Ngày sinh *</div>
+                    <div className="detail-value">
+                      <input
+                        type="date"
+                        value={editForm.dob}
+                        onChange={e => setEditForm(f => ({ ...f, dob: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Giới tính</div>
+                    <div className="detail-value">
+                      <select
+                        value={editForm.gender}
+                        onChange={e => setEditForm(f => ({ ...f, gender: e.target.value }))}
+                      >
+                        <option value="M">Nam</option>
+                        <option value="F">Nữ</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">CCCD</div>
+                    <div className="detail-value">
+                      <input
+                        value={editForm.residentCCCD}
+                        onChange={e =>
+                          setEditForm(f => ({ ...f, residentCCCD: e.target.value }))
+                        }
+                        placeholder="Có thể để trống"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Quan hệ chủ hộ *</div>
+                    <div className="detail-value">
+                      <input
+                        value={editForm.relationToOwner}
+                        onChange={e =>
+                          setEditForm(f => ({ ...f, relationToOwner: e.target.value }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Mã hộ khẩu (Household.id)</div>
+                    <div className="detail-value">
+                      <input
+                        value={editForm.householdId}
+                        onChange={e => setEditForm(f => ({ ...f, householdId: e.target.value }))}
+                        placeholder="Trống nếu tạm trú"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="resident-modal-footer">
+              {detailMode === "view" ? (
+                <>
+                  <button className="btn-secondary" onClick={closeDetail}>
+                    Đóng
+                  </button>
+                  <button className="btn-primary" onClick={() => setDetailMode("edit")}>
+                    <FaUserEdit /> Sửa
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="btn-secondary"
+                    disabled={saving}
+                    onClick={() => setDetailMode("view")}
+                  >
+                    Hủy
+                  </button>
+                  <button className="btn-primary" disabled={saving} onClick={submitEdit}>
+                    {saving ? "Đang lưu..." : "Lưu"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
