@@ -120,12 +120,13 @@
 .stat-label {
   font-size: 14px;
   color: #6b7280;
+  margin: 5px;
 }
 
 .stat-value {
   font-size: 18px;
   font-weight: 700;
-  margin-top: 2px;
+  margin: 5px;
 }
 
 .table-card {

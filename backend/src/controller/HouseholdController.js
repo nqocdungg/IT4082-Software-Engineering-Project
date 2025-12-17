@@ -1,13 +1,10 @@
-import prisma from "../../prisma/prismaClient.js"
+import prisma from '../../prisma/prismaClient.js'
 
 /* GET /api/households */
 export const getAllHouseholds = async (req, res) => {
   try {
     const households = await prisma.household.findMany({
-      include: {
-        owner: true,
-        residents: true
-      }
+      include: { owner: true, residents: true }
     })
 
     return res.status(200).json({
@@ -15,11 +12,9 @@ export const getAllHouseholds = async (req, res) => {
       message: "Fetched households",
       data: households
     })
+
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
 
@@ -28,30 +23,20 @@ export const getHouseholdById = async (req, res) => {
   try {
     const household = await prisma.household.findUnique({
       where: { id: Number(req.params.id) },
-      include: {
-        owner: true,
-        residents: true,
-        feeRecords: true
-      }
+      include: { owner: true, residents: true, feeRecords: true }
     })
 
-    if (!household) {
-      return res.status(404).json({
-        success: false,
-        message: "Not found"
-      })
-    }
+    if (!household)
+      return res.status(404).json({ success: false, message: "Not found" })
 
     return res.status(200).json({
       success: true,
       message: "Fetched household",
       data: household
     })
+
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
 
@@ -60,14 +45,15 @@ export const createHousehold = async (req, res) => {
   const { address, ownerCCCD, ownerName, ownerDob, ownerGender } = req.body
 
   try {
-    const result = await prisma.$transaction(async tx => {
+    const result = await prisma.$transaction(async (tx) => {
       const newOwner = await tx.resident.create({
         data: {
           residentCCCD: ownerCCCD,
           fullname: ownerName,
           dob: new Date(ownerDob),
           gender: ownerGender,
-          relationToOwner: "HEAD"
+          relationToOwner: "HEAD",
+          status: 1
         }
       })
 
@@ -75,7 +61,8 @@ export const createHousehold = async (req, res) => {
         data: {
           address,
           registrationDate: new Date(),
-          status: 0,
+          nbrOfResident: 1,
+          status: 1,
           ownerId: newOwner.id
         }
       })
@@ -93,6 +80,7 @@ export const createHousehold = async (req, res) => {
       message: "Created household",
       data: result
     })
+
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -103,31 +91,19 @@ export const createHousehold = async (req, res) => {
 
 /* POST /api/households/:id/residents */
 export const addResidentToHousehold = async (req, res) => {
-  const { id } = req.params
+  const { householdId } = req.params
   const { residentCCCD, fullname, dob, gender, relationToOwner } = req.body
 
   try {
-    const household = await prisma.household.findUnique({
-      where: { id: Number(id) }
-    })
-
-    if (!household) {
-      return res.status(404).json({
-        success: false,
-        message: "Household not found"
-      })
-    }
-
     const exist = await prisma.resident.findUnique({
       where: { residentCCCD }
     })
 
-    if (exist) {
+    if (exist)
       return res.status(400).json({
         success: false,
         message: "CCCD already exists"
       })
-    }
 
     const newResident = await prisma.resident.create({
       data: {
@@ -136,8 +112,14 @@ export const addResidentToHousehold = async (req, res) => {
         dob: new Date(dob),
         gender,
         relationToOwner,
-        householdId: Number(id)
+        status: 1,
+        householdId: Number(householdId)
       }
+    })
+
+    await prisma.household.update({
+      where: { id: Number(householdId) },
+      data: { nbrOfResident: { increment: 1 } }
     })
 
     return res.status(201).json({
@@ -145,15 +127,12 @@ export const addResidentToHousehold = async (req, res) => {
       message: "Resident added",
       data: newResident
     })
+
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
 
-/* PUT /api/households/:id/status */
 export const changeHouseholdStatus = async (req, res) => {
   try {
     const updated = await prisma.household.update({
@@ -166,10 +145,8 @@ export const changeHouseholdStatus = async (req, res) => {
       message: "Status updated",
       data: updated
     })
+
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
