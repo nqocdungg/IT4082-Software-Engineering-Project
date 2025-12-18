@@ -1,152 +1,207 @@
-import prisma from '../../prisma/prismaClient.js'
+import prisma from "../../prisma/prismaClient.js"
 
-/* GET /api/households */
+/**
+ * GET /api/households
+ */
 export const getAllHouseholds = async (req, res) => {
   try {
     const households = await prisma.household.findMany({
-      include: { owner: true, residents: true }
+      include: {
+        owner: true,
+        residents: true
+      }
     })
 
     return res.status(200).json({
       success: true,
-      message: "Fetched households",
       data: households
     })
-
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message })
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
   }
 }
 
-/* GET /api/households/:id */
+/**
+ * GET /api/households/:id
+ */
 export const getHouseholdById = async (req, res) => {
   try {
     const household = await prisma.household.findUnique({
       where: { id: Number(req.params.id) },
-      include: { owner: true, residents: true, feeRecords: true }
+      include: {
+        owner: true,
+        residents: true,
+        feeRecords: true
+      }
     })
 
-    if (!household)
-      return res.status(404).json({ success: false, message: "Not found" })
+    if (!household) {
+      return res.status(404).json({
+        success: false,
+        message: "Household not found"
+      })
+    }
 
     return res.status(200).json({
       success: true,
-      message: "Fetched household",
       data: household
     })
-
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message })
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
   }
 }
 
-/* POST /api/households */
+/**
+ * POST /api/households
+ * Tạo hộ khẩu mới hoàn toàn (có chủ hộ + danh sách nhân khẩu ban đầu)
+ */
 export const createHousehold = async (req, res) => {
-  const { address, ownerCCCD, ownerName, ownerDob, ownerGender } = req.body
+  const { householdCode, address, owner, members = [] } = req.body
+
+  if (!householdCode || !address || !owner) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields"
+    })
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const newOwner = await tx.resident.create({
+      /* =====================================================
+       * 1. Kiểm tra CCCD chủ hộ đã tồn tại chưa
+       * ===================================================== */
+      if (owner.residentCCCD) {
+        const existedOwner = await tx.resident.findUnique({
+          where: { residentCCCD: owner.residentCCCD }
+        })
+
+        if (existedOwner) {
+          throw new Error("Chủ hộ đã tồn tại trong hệ thống")
+        }
+      }
+
+      /* =====================================================
+       * 2. Kiểm tra CCCD các nhân khẩu khác
+       * ===================================================== */
+      for (const m of members) {
+        if (!m.residentCCCD) continue
+
+        const existed = await tx.resident.findUnique({
+          where: { residentCCCD: m.residentCCCD }
+        })
+
+        if (existed) {
+          throw new Error(
+            `Nhân khẩu ${m.fullname} đã tồn tại trong hệ thống`
+          )
+        }
+      }
+
+      /* =====================================================
+       * 3. Tạo Household (chưa có ownerId)
+       * ===================================================== */
+      const household = await tx.household.create({
         data: {
-          residentCCCD: ownerCCCD,
-          fullname: ownerName,
-          dob: new Date(ownerDob),
-          gender: ownerGender,
-          relationToOwner: "HEAD",
+          householdCode,
+          address,
           status: 1
         }
       })
 
-      const newHousehold = await tx.household.create({
+      /* =====================================================
+       * 4. Tạo Resident CHỦ HỘ
+       * ===================================================== */
+      const ownerResident = await tx.resident.create({
         data: {
-          address,
-          registrationDate: new Date(),
-          nbrOfResident: 1,
-          status: 1,
-          ownerId: newOwner.id
+          residentCCCD: owner.residentCCCD,
+          fullname: owner.fullname,
+          dob: new Date(owner.dob),
+          gender: owner.gender,
+          ethnicity: owner.ethnicity,
+          religion: owner.religion,
+          nationality: owner.nationality,
+          hometown: owner.hometown,
+          occupation: owner.occupation,
+          relationToOwner: "Chủ hộ",
+          householdId: household.id,
+          status: 0
         }
       })
 
-      await tx.resident.update({
-        where: { id: newOwner.id },
-        data: { householdId: newHousehold.id }
+      /* =====================================================
+       * 5. Gán ownerId cho Household
+       * ===================================================== */
+      await tx.household.update({
+        where: { id: household.id },
+        data: {
+          ownerId: ownerResident.id
+        }
       })
 
-      return newHousehold
+      /* =====================================================
+       * 6. Tạo các nhân khẩu còn lại
+       * ===================================================== */
+      for (const m of members) {
+        await tx.resident.create({
+          data: {
+            residentCCCD: m.residentCCCD,
+            fullname: m.fullname,
+            dob: new Date(m.dob),
+            gender: m.gender,
+            ethnicity: m.ethnicity,
+            religion: m.religion,
+            nationality: m.nationality,
+            hometown: m.hometown,
+            occupation: m.occupation,
+            relationToOwner: m.relationToOwner,
+            householdId: household.id,
+            status: 0
+          }
+        })
+      }
+
+      return household
     })
 
     return res.status(201).json({
       success: true,
-      message: "Created household",
       data: result
     })
-
   } catch (err) {
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
-      message: "Create failed: " + err.message
+      message: err.message
     })
   }
 }
 
-/* POST /api/households/:id/residents */
-export const addResidentToHousehold = async (req, res) => {
-  const { householdId } = req.params
-  const { residentCCCD, fullname, dob, gender, relationToOwner } = req.body
-
-  try {
-    const exist = await prisma.resident.findUnique({
-      where: { residentCCCD }
-    })
-
-    if (exist)
-      return res.status(400).json({
-        success: false,
-        message: "CCCD already exists"
-      })
-
-    const newResident = await prisma.resident.create({
-      data: {
-        residentCCCD,
-        fullname,
-        dob: new Date(dob),
-        gender,
-        relationToOwner,
-        status: 1,
-        householdId: Number(householdId)
-      }
-    })
-
-    await prisma.household.update({
-      where: { id: Number(householdId) },
-      data: { nbrOfResident: { increment: 1 } }
-    })
-
-    return res.status(201).json({
-      success: true,
-      message: "Resident added",
-      data: newResident
-    })
-
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message })
-  }
-}
-
+/**
+ * PATCH /api/households/:id/status
+ */
 export const changeHouseholdStatus = async (req, res) => {
+  const householdId = Number(req.params.id)
+  const { status } = req.body
+
   try {
     const updated = await prisma.household.update({
-      where: { id: Number(req.params.id) },
-      data: { status: Number(req.body.status) }
+      where: { id: householdId },
+      data: { status: Number(status) }
     })
 
     return res.status(200).json({
       success: true,
-      message: "Status updated",
       data: updated
     })
-
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message })
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
   }
 }

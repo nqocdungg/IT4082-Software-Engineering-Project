@@ -1,41 +1,52 @@
 import prisma from "../../prisma/prismaClient.js"
 
-function computeStatus(resident) {
-  const latestApprovedChange = resident.latestApprovedChange || null
-  const hasActiveTemp = (resident.temporaryResidences?.length || 0) > 0
-
-  if (latestApprovedChange?.changeType === 8) return 4 // đã qua đời
-  if (latestApprovedChange?.changeType === 4) return 3 // đã chuyển đi
-
-  if (latestApprovedChange?.changeType === 2) {
-    const now = new Date()
-    const from = latestApprovedChange.fromDate
-      ? new Date(latestApprovedChange.fromDate)
-      : null
-    const to = latestApprovedChange.toDate
-      ? new Date(latestApprovedChange.toDate)
-      : null
-    const inRange = (!from || now >= from) && (!to || now <= to)
-    if (inRange) return 2 // tạm vắng
+/**
+ * Tính trạng thái cư trú từ ResidentChange
+ * status:
+ * 0: thường trú
+ * 1: tạm trú
+ * 2: tạm vắng
+ * 3: đã chuyển đi
+ * 4: đã qua đời
+ */
+function computeStatus({ householdId, latestChange }) {
+  if (!latestChange) {
+    return householdId ? 0 : 1
   }
 
-  if (hasActiveTemp) return 1 // tạm trú
-  if (resident.householdId != null) return 0 // thường trú
-  return 1 // mặc định
+  switch (latestChange.changeType) {
+    case 7: // death
+      return 4
+    case 4: // move_out
+      return 3
+    case 2: { // temp_absence
+      const now = new Date()
+      const from = latestChange.fromDate
+      const to = latestChange.toDate
+      if ((!from || now >= from) && (!to || now <= to)) {
+        return 2
+      }
+      return householdId ? 0 : 1
+    }
+    case 1: // temp_residence
+      return 1
+    default:
+      return householdId ? 0 : 1
+  }
 }
 
-// GET /api/residents
+/**
+ * GET /api/residents
+ */
 export const getResidents = async (req, res) => {
   try {
     const { householdId, search, gender } = req.query
     const where = {}
 
     if (householdId) where.householdId = Number(householdId)
-
     if (gender && gender !== "ALL") {
       where.gender = gender === "Nam" ? "M" : "F"
     }
-
     if (search) {
       where.OR = [
         { fullname: { contains: search, mode: "insensitive" } },
@@ -46,354 +57,243 @@ export const getResidents = async (req, res) => {
     const residents = await prisma.resident.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        residentCCCD: true,
-        fullname: true,
-        dob: true,
-        gender: true,
-        relationToOwner: true,
-        createdAt: true,
-        updatedAt: true,
-        householdId: true, // ✅ mã hộ khẩu = Household.id
-        household: { select: { id: true, address: true } },
-        temporaryResidences: {
-          where: { status: 0 },
-          select: { id: true, address: true, fromDate: true, toDate: true }
+      include: {
+        household: {
+          select: { id: true, householdCode: true, address: true }
         }
       }
     })
 
-    const ids = residents.map(r => r.id)
-    if (ids.length === 0) {
-      return res.json({ message: "Fetched residents", data: [] })
+    if (residents.length === 0) {
+      return res.json({ success: true, data: [] })
     }
 
-    const latestApproved = await prisma.residentChange.findMany({
-      where: { residentId: { in: ids }, approvalStatus: 1 },
-      orderBy: [{ residentId: "asc" }, { createdAt: "desc" }],
-      select: {
-        residentId: true,
-        changeType: true,
-        fromDate: true,
-        toDate: true,
-        createdAt: true
-      }
+    const ids = residents.map(r => r.id)
+
+    const latestChanges = await prisma.residentChange.findMany({
+      where: {
+        residentId: { in: ids },
+        approvalStatus: 1
+      },
+      orderBy: [
+        { residentId: "asc" },
+        { createdAt: "desc" }
+      ]
     })
 
     const latestMap = new Map()
-    for (const ch of latestApproved) {
-      if (!latestMap.has(ch.residentId)) latestMap.set(ch.residentId, ch)
+    for (const ch of latestChanges) {
+      if (!latestMap.has(ch.residentId)) {
+        latestMap.set(ch.residentId, ch)
+      }
     }
 
     const mapped = residents.map(r => {
-      const latestApprovedChange = latestMap.get(r.id) || null
-      const status = computeStatus({
-        ...r,
-        latestApprovedChange,
-        temporaryResidences: r.temporaryResidences
-      })
-
+      const latestChange = latestMap.get(r.id) || null
       return {
-        ...r,
+        id: r.id,
         residentCCCD: r.residentCCCD ?? "",
-        householdCode: r.householdId ?? null,
-        status
+        fullname: r.fullname,
+        dob: r.dob,
+        gender: r.gender,
+        relationToOwner: r.relationToOwner,
+        householdId: r.householdId,
+        householdCode: r.household?.householdCode ?? null,
+        address: r.household?.address ?? null,
+        status: computeStatus({
+          householdId: r.householdId,
+          latestChange
+        }),
+        createdAt: r.createdAt
       }
     })
 
     return res.json({
-      message: "Fetched residents",
+      success: true,
       data: mapped
     })
   } catch (err) {
     console.error("getResidents error:", err)
-    return res.status(500).json({ message: err.message || "Server error" })
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
   }
 }
 
-//
-// GET /api/residents/stats
-//
-export const getResidentStats = async (req, res) => {
+/**
+ * GET /api/residents/:id
+ */
+export const getResidentById = async (req, res) => {
   try {
-    const now = new Date()
+    const residentId = Number(req.params.id)
 
-    // latest approved change per resident (chỉ lấy 1 cái mới nhất)
-    const latestApprovedPerResident = await prisma.residentChange.findMany({
-      where: { approvalStatus: 1 },
-      orderBy: [{ residentId: "asc" }, { createdAt: "desc" }],
-      select: {
-        residentId: true,
-        changeType: true,
-        fromDate: true,
-        toDate: true,
-        createdAt: true
-      }
-    })
-
-    const latestChangeMap = new Map()
-    for (const ch of latestApprovedPerResident) {
-      if (!latestChangeMap.has(ch.residentId)) latestChangeMap.set(ch.residentId, ch)
-    }
-
-    // tạm vắng hiện tại: approved + changeType=2 + đang trong khoảng
-    const tamVangRows = await prisma.residentChange.findMany({
-      where: {
-        approvalStatus: 1,
-        changeType: 2,
-        fromDate: { lte: now },
-        OR: [{ toDate: null }, { toDate: { gte: now } }]
-      },
-      select: { residentId: true }
-    })
-    const tamVangSet = new Set(tamVangRows.map(x => x.residentId))
-
-    // residents + temp active
-    const residents = await prisma.resident.findMany({
-      select: {
-        id: true,
-        householdId: true,
-        temporaryResidences: {
-          where: { status: 0 },
-          select: { id: true }
+    const resident = await prisma.resident.findUnique({
+      where: { id: residentId },
+      include: {
+        household: {
+          select: { id: true, householdCode: true, address: true }
+        },
+        changes: {
+          orderBy: { createdAt: "desc" }
         }
       }
     })
 
-    let thuongTru = 0
-    let tamTru = 0
-    let tamVang = 0
-    let daChuyenDi = 0
-    let daQuaDoi = 0
-
-    for (const r of residents) {
-      const latest = latestChangeMap.get(r.id) || null
-      const dead = latest?.changeType === 8
-      const movedOut = latest?.changeType === 4
-
-      if (dead) {
-        daQuaDoi++
-        continue
-      }
-
-      if (movedOut) {
-        daChuyenDi++
-        continue
-      }
-
-      if (tamVangSet.has(r.id)) {
-        tamVang++
-        continue
-      }
-
-      const hasActiveTemp = (r.temporaryResidences?.length || 0) > 0
-      if (hasActiveTemp) {
-        tamTru++
-        continue
-      }
-
-      if (r.householdId != null) {
-        thuongTru++
-        continue
-      }
-
-      // fallback (m đang muốn tính vào "tạm trú")
-      tamTru++
+    if (!resident) {
+      return res.status(404).json({
+        success: false,
+        message: "Resident not found"
+      })
     }
 
-    const total = thuongTru + tamTru + tamVang
-
-    return res.json({
-      message: "Fetched stats",
-      data: { total, thuongTru, tamTru, tamVang, daChuyenDi, daQuaDoi }
-    })
-  } catch (err) {
-    console.error("getResidentStats error:", err)
-    return res.status(500).json({ message: err.message || "Server error" })
-  }
-}
-
-// GET /api/residents/:id
-export const getResidentById = async (req, res) => {
-  try {
-    const { id } = req.params
-    const residentId = Number(id)
-
-    const resident = await prisma.resident.findUnique({
-      where: { id: residentId },
-      select: {
-        id: true,
-        residentCCCD: true,
-        fullname: true,
-        dob: true,
-        gender: true,
-        relationToOwner: true,
-        createdAt: true,
-        updatedAt: true,
-        householdId: true,
-        household: { select: { id: true, address: true } },
-        temporaryResidences: {
-          where: { status: 0 },
-          select: { id: true, address: true, fromDate: true, toDate: true }
-        },
-        changes: { orderBy: { createdAt: "desc" } }
-      }
-    })
-
-    if (!resident) return res.status(404).json({ message: "Resident not found" })
-
     const latestApprovedChange = await prisma.residentChange.findFirst({
-      where: { residentId, approvalStatus: 1 },
-      orderBy: { createdAt: "desc" },
-      select: { changeType: true, fromDate: true, toDate: true, createdAt: true }
+      where: {
+        residentId,
+        approvalStatus: 1
+      },
+      orderBy: { createdAt: "desc" }
     })
 
-    const status = computeStatus({ ...resident, latestApprovedChange })
-
     return res.json({
-      message: "Fetched resident",
+      success: true,
       data: {
-        ...resident,
+        id: resident.id,
         residentCCCD: resident.residentCCCD ?? "",
-        householdCode: resident.householdId ?? null,
-        status
+        fullname: resident.fullname,
+        dob: resident.dob,
+        gender: resident.gender,
+        ethnicity: resident.ethnicity,
+        religion: resident.religion,
+        nationality: resident.nationality,
+        hometown: resident.hometown,
+        occupation: resident.occupation,
+        relationToOwner: resident.relationToOwner,
+        householdId: resident.householdId,
+        householdCode: resident.household?.householdCode ?? null,
+        address: resident.household?.address ?? null,
+        status: computeStatus({
+          householdId: resident.householdId,
+          latestChange: latestApprovedChange
+        }),
+        changes: resident.changes,
+        createdAt: resident.createdAt,
+        updatedAt: resident.updatedAt
       }
     })
   } catch (err) {
     console.error("getResidentById error:", err)
-    return res.status(500).json({ message: err.message || "Server error" })
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
   }
 }
 
-// POST /api/residents
-export const createResident = async (req, res) => {
-  try {
-    const { residentCCCD, fullname, dob, gender, relationToOwner, householdId } = req.body
-
-    if (!fullname || !dob || !relationToOwner) {
-      return res.status(400).json({ message: "Missing required fields" })
-    }
-
-    if (residentCCCD) {
-      const existed = await prisma.resident.findUnique({ where: { residentCCCD } })
-      if (existed) return res.status(400).json({ message: "CCCD already exists" })
-    }
-
-    if (householdId) {
-      const household = await prisma.household.findUnique({
-        where: { id: Number(householdId) }
-      })
-      if (!household) return res.status(400).json({ message: "Household not found" })
-    }
-
-    const newResident = await prisma.resident.create({
-      data: {
-        residentCCCD: residentCCCD || null,
-        fullname,
-        dob: new Date(dob),
-        gender,
-        relationToOwner,
-        householdId: householdId ? Number(householdId) : null
-      }
-    })
-
-    return res.status(201).json({
-      message: "Resident created",
-      data: {
-        ...newResident,
-        residentCCCD: newResident.residentCCCD ?? "",
-        householdCode: newResident.householdId ?? null,
-        status: newResident.householdId ? 0 : 1
-      }
-    })
-  } catch (err) {
-    console.error("createResident error:", err)
-    return res.status(500).json({ message: err.message || "Server error" })
-  }
-}
-
-// PUT /api/residents/:id
+/**
+ * PUT /api/residents/:id
+ * Chỉ cập nhật thông tin hành chính (KHÔNG xử lý biến động cư trú)
+ */
 export const updateResident = async (req, res) => {
   try {
-    const { id } = req.params
-    const residentId = Number(id)
-    const { residentCCCD, fullname, dob, gender, relationToOwner, householdId } = req.body
+    const residentId = Number(req.params.id)
+    const {
+      residentCCCD,
+      fullname,
+      dob,
+      gender,
+      ethnicity,
+      religion,
+      nationality,
+      hometown,
+      occupation,
+      relationToOwner
+    } = req.body
 
-    const existing = await prisma.resident.findUnique({ where: { id: residentId } })
-    if (!existing) return res.status(404).json({ message: "Resident not found" })
+    const existing = await prisma.resident.findUnique({
+      where: { id: residentId }
+    })
 
-    if (residentCCCD && residentCCCD !== existing.residentCCCD) {
-      const dup = await prisma.resident.findUnique({ where: { residentCCCD } })
-      if (dup) return res.status(400).json({ message: "CCCD already exists" })
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Resident not found"
+      })
     }
 
-    if (householdId !== undefined && householdId !== null) {
-      const household = await prisma.household.findUnique({
-        where: { id: Number(householdId) }
+    if (residentCCCD && residentCCCD !== existing.residentCCCD) {
+      const dup = await prisma.resident.findUnique({
+        where: { residentCCCD }
       })
-      if (!household) return res.status(400).json({ message: "Household not found" })
+      if (dup) {
+        return res.status(400).json({
+          success: false,
+          message: "CCCD already exists"
+        })
+      }
     }
 
     const updated = await prisma.resident.update({
       where: { id: residentId },
       data: {
-        residentCCCD:
-          residentCCCD !== undefined ? (residentCCCD || null) : existing.residentCCCD,
+        residentCCCD: residentCCCD ?? existing.residentCCCD,
         fullname: fullname ?? existing.fullname,
         dob: dob ? new Date(dob) : existing.dob,
         gender: gender ?? existing.gender,
-        relationToOwner: relationToOwner ?? existing.relationToOwner,
-        householdId:
-          householdId !== undefined ? (householdId ? Number(householdId) : null) : existing.householdId
+        ethnicity: ethnicity ?? existing.ethnicity,
+        religion: religion ?? existing.religion,
+        nationality: nationality ?? existing.nationality,
+        hometown: hometown ?? existing.hometown,
+        occupation: occupation ?? existing.occupation,
+        relationToOwner: relationToOwner ?? existing.relationToOwner
       }
-    })
-
-    const latestApprovedChange = await prisma.residentChange.findFirst({
-      where: { residentId, approvalStatus: 1 },
-      orderBy: { createdAt: "desc" },
-      select: { changeType: true, fromDate: true, toDate: true, createdAt: true }
-    })
-
-    const tempActive = await prisma.temporaryResidence.count({
-      where: { residentId, status: 0 }
-    })
-
-    const status = computeStatus({
-      ...updated,
-      temporaryResidences: tempActive > 0 ? [{}] : [],
-      latestApprovedChange
     })
 
     return res.json({
-      message: "Resident updated",
-      data: {
-        ...updated,
-        residentCCCD: updated.residentCCCD ?? "",
-        householdCode: updated.householdId ?? null,
-        status
-      }
+      success: true,
+      data: updated
     })
   } catch (err) {
     console.error("updateResident error:", err)
-    return res.status(500).json({ message: err.message || "Server error" })
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
   }
 }
 
-// DELETE /api/residents/:id
+/**
+ * DELETE /api/residents/:id
+ * CHỈ dùng cho DEV (không dùng nghiệp vụ thật)
+ */
 export const deleteResident = async (req, res) => {
   try {
-    const { id } = req.params
-    const residentId = Number(id)
+    const residentId = Number(req.params.id)
 
-    const existing = await prisma.resident.findUnique({ where: { id: residentId } })
-    if (!existing) return res.status(404).json({ message: "Resident not found" })
+    const existing = await prisma.resident.findUnique({
+      where: { id: residentId }
+    })
 
-    await prisma.resident.delete({ where: { id: residentId } })
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Resident not found"
+      })
+    }
 
-    return res.json({ message: "Resident deleted (DEV only)" })
+    await prisma.resident.delete({
+      where: { id: residentId }
+    })
+
+    return res.json({
+      success: true,
+      message: "Resident deleted (DEV only)"
+    })
   } catch (err) {
     console.error("deleteResident error:", err)
-    return res.status(500).json({ message: err.message || "Server error" })
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
   }
 }
