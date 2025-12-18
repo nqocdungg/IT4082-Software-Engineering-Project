@@ -1,12 +1,16 @@
-import express from 'express';
-import {getAllHouseholds, createHousehold, getHouseholdById, changeHouseholdStatus, addResidentToHousehold} from '../controller/HouseholdController.js';
+import express from "express"
+import {
+  getAllHouseholds,
+  createHousehold,
+  getHouseholdById,
+  changeHouseholdStatus
+} from "../controller/HouseholdController.js"
 
-const router = express.Router();
+const router = express.Router()
 
-router.get('/', getAllHouseholds);
-router.post('/', createHousehold);
-router.get('/:id', getHouseholdById);
-router.put('/:id/status', changeHouseholdStatus);
-router.post('/:householdId/residents', addResidentToHousehold);
+router.get("/", getAllHouseholds)
+router.post("/", createHousehold)
+router.get("/:id", getHouseholdById)
+router.put("/:id/status", changeHouseholdStatus)
 
-export default router;
+export default router
