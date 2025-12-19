@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { FaHome, FaUserFriends, FaFolderOpen } from "react-icons/fa";
-import "../styles/dashboard.css";
+import "../../styles/staff/dashboard.css";
 
 import {
   CartesianGrid,

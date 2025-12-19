@@ -15,8 +15,8 @@ import {
 import { GiCoffin } from "react-icons/gi";
 import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
 
-import "../styles/residents.css"
-import "../styles/layout.css"
+import "../../styles/staff/residents.css"
+import "../../styles/staff/layout.css"
 
 const API_BASE = "http://localhost:5000/api"
 

@@ -1,4 +1,4 @@
-import "../styles/header.css"
+import "../../styles/staff/header.css"
 import { FiUser } from "react-icons/fi"
 
 export default function Header() {
