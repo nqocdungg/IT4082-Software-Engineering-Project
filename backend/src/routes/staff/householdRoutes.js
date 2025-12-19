@@ -4,7 +4,7 @@ import {
   createHousehold,
   getHouseholdById,
   changeHouseholdStatus
-} from "../controller/HouseholdController.js"
+} from "../../controller/staff/HouseholdController.js"
 
 const router = express.Router()
 

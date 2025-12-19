@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import Layout from "./components/Layout"
+import StaffLayout from "./components/staff/Layout"
 import ProtectedRoute from "./components/ProtectedRoute"
 
-import Dashboard from "./pages/Dashboard"
-import Households from "./pages/Households"
-import Residents from "./pages/Residents"
-import Revenues from "./pages/Revenues"
+import StaffDashboard from "./pages/staff/Dashboard"
+import StaffHouseholds from "./pages/staff/Households"
+import StaffResidents from "./pages/staff/Residents"
+import StaffRevenues from "./pages/staff/Revenues"
 import Login from "./pages/Login"
 
 import "./index.css"
@@ -17,11 +17,11 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
 
-        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/households" element={<Households />} />
-          <Route path="/residents" element={<Residents />} />
-          <Route path="/revenues" element={<Revenues />} />
+        <Route element={<ProtectedRoute roles={["HEAD", "DEPUTY", "ACCOUNTANT"]}><StaffLayout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<StaffDashboard />} />
+          <Route path="/households" element={<StaffHouseholds />} />
+          <Route path="/residents" element={<StaffResidents />} />
+          <Route path="/revenues" element={<StaffRevenues />} />
         </Route>
       </Routes>
     </BrowserRouter>

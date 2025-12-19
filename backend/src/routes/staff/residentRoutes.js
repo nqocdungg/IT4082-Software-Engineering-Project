@@ -4,10 +4,10 @@ import {
   getResidentById,
   updateResident, 
   deleteResident
-} from "../controller/ResidentController.js"
+} from "../../controller/staff/ResidentController.js"
 
-import authMiddleware from "../middleware/authMiddleware.js"
-import { allowRoles } from "../middleware/roleMiddleware.js"
+import authMiddleware from "../../middleware/authMiddleware.js"
+import { allowRoles } from "../../middleware/roleMiddleware.js"
 
 const router = express.Router()
 

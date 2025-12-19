@@ -2,7 +2,7 @@
 import Sidebar from "./SideBar"
 import Header from "./Header"
 import { Outlet } from "react-router-dom"
-import "../styles/layout.css"
+import "../../styles/staff/layout.css"
 
 export default function Layout() {
   return (

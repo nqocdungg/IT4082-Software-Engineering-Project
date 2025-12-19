@@ -1,7 +1,7 @@
-import "../styles/sidebar.css"
+import "../../styles/staff/sidebar.css"
 import { Link, useLocation } from "react-router-dom"
 import { FiGrid, FiHome, FiUsers, FiTrendingUp, FiTrendingDown } from "react-icons/fi"
-import logo from "../assets/images/new-logo.png"
+import logo from "../../assets/images/new-logo.png"
 
 const menuItems = [
   { icon: FiGrid, label: "Thống kê", path: "/dashboard" },

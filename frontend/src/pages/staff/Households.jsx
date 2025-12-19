@@ -13,9 +13,9 @@ import {
 } from "react-icons/fa"
 import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
 
-import "../styles/households.css"
-import "../styles/residents.css"
-import "../styles/layout.css"
+import "../../styles/staff/households.css"
+import "../../styles/staff/residents.css"
+import "../../styles/staff/layout.css"
 
 const API_BASE = "http://localhost:5000/api"
 
