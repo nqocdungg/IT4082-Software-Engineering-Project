@@ -1,10 +1,8 @@
 import express from "express"
 import {
   getResidents,
-  getResidentStats,
   getResidentById,
-  createResident,
-  updateResident,
+  updateResident, 
   deleteResident
 } from "../controller/ResidentController.js"
 
@@ -13,29 +11,10 @@ import { allowRoles } from "../middleware/roleMiddleware.js"
 
 const router = express.Router()
 
-router.get(
-  "/stats",
-  authMiddleware,
-  allowRoles("HEAD", "DEPUTY", "ACCOUNTANT"),
-  getResidentStats
-)
-
-router.get(
-  "/",
-  authMiddleware,
-  allowRoles("HEAD", "DEPUTY", "ACCOUNTANT"),
-  getResidents
-)
-
-router.get(
-  "/:id",
-  authMiddleware,
-  allowRoles("HEAD", "DEPUTY", "ACCOUNTANT"),
-  getResidentById
-)
-
-router.post("/", authMiddleware, allowRoles("HEAD", "DEPUTY"), createResident)
+router.get("/", authMiddleware, getResidents)
+router.get("/:id", authMiddleware, getResidentById)
 router.put("/:id", authMiddleware, allowRoles("HEAD", "DEPUTY"), updateResident)
 router.delete("/:id", authMiddleware, allowRoles("HEAD", "DEPUTY"), deleteResident)
+
 
 export default router
