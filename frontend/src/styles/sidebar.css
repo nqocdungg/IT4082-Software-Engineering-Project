@@ -27,7 +27,6 @@
 }
 
 .sidebar-nav {
-  margin-top: 12px;
   display: flex;
   flex-direction: column;
 }
@@ -35,15 +34,22 @@
 .nav-item {
   display: flex;
   align-items: center;
-  display: flex-start;
   gap: 14px;
-  padding: 20px 20px;
+  padding: 12px 20px;
+  margin: 10px; 
+
   font-size: 16px;
   font-weight: 600;
   color: rgba(255,255,255,0.75);
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+
+  border-radius: 8px;
+  transition: 
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .nav-item svg {
@@ -54,10 +60,16 @@
   background: rgba(255,255,255,0.08);
   color: #fff;
   font-weight: 800;
+
+  transform: translateY(-2px); 
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
 }
 
 .nav-item.active {
   background: rgba(255,255,255,0.15);
   color: #fff;
-  font-weight: 950;
+  font-weight: 900;
+
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
