@@ -6,7 +6,7 @@ import {
   deleteFee,
   createTransaction,
   getTransactions,
-} from "../controller/FeeController.js";
+} from "../../controller/staff/FeeController.js";
 
 const router = express.Router();
 

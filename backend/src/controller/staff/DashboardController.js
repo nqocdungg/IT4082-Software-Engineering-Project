@@ -1,4 +1,4 @@
-import prisma from "../../prisma/prismaClient.js"
+import prisma from "../../../prisma/prismaClient.js"
 
 // GET /api/dashboard
 export const getDashboard = async (req, res) => {
@@ -10,38 +10,41 @@ export const getDashboard = async (req, res) => {
     const startOfMonth = new Date(currentYear, currentMonth - 1, 1)
     const startOfNextMonth = new Date(currentYear, currentMonth, 1)
 
-    // 1. tổng hộ gia đình
+    // =========================
+    // 1. Tổng hộ gia đình (đang hoạt động)
+    // =========================
     const totalHouseholds = await prisma.household.count({
       where: { status: 0 }
     })
 
-    // 2. tổng nhân khẩu (chưa qua đời)
-    const deceasedIds = await prisma.residentChange.findMany({
-      where: { changeType: 8 },
-      select: { residentId: true }
-    })
-
+    // =========================
+    // 2. Tổng nhân khẩu
+    // (trừ đã chuyển đi + đã qua đời)
+    // =========================
     const totalResidents = await prisma.resident.count({
       where: {
-        id: { notIn: deceasedIds.map(r => r.residentId) }
+        status: { notIn: [3, 4] }
       }
     })
 
-    // 3. hồ sơ cần xử lý
+    // =========================
+    // 3. Hồ sơ chờ duyệt
+    // =========================
     const pendingProfiles = await prisma.residentChange.count({
       where: { approvalStatus: 0 }
     })
 
-    // 4. thống kê thu phí theo tháng
+    // =========================
+    // 4. Thống kê thu phí theo năm
+    // =========================
     const feeRows = await prisma.$queryRaw`
       SELECT
         EXTRACT(MONTH FROM fr."updatedAt")::int AS month,
-        SUM(CASE WHEN ft."isMandatory" = true THEN fr."fundAmount" ELSE 0 END)::float AS mandatory,
-        SUM(CASE WHEN ft."isMandatory" = false THEN fr."fundAmount" ELSE 0 END)::float AS contribution
+        SUM(CASE WHEN ft."isMandatory" = true THEN fr."amount" ELSE 0 END)::float AS mandatory,
+        SUM(CASE WHEN ft."isMandatory" = false THEN fr."amount" ELSE 0 END)::float AS contribution
       FROM "FeeRecord" fr
       JOIN "FeeType" ft ON ft."id" = fr."feeTypeId"
-      WHERE fr."isActive" = true
-        AND fr."fundAmount" > 0
+      WHERE fr."status" = 2
         AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
       GROUP BY month
       ORDER BY month
@@ -57,10 +60,11 @@ export const getDashboard = async (req, res) => {
       }
     })
 
-    // 5. tỷ lệ đóng phí tháng hiện tại
+    // =========================
+    // 5. Tỷ lệ đóng phí tháng hiện tại
+    // =========================
     const paidHouseholds = await prisma.feeRecord.findMany({
       where: {
-        isActive: true,
         status: 2,
         updatedAt: { gte: startOfMonth, lt: startOfNextMonth },
         feeType: { isMandatory: true },
@@ -72,14 +76,19 @@ export const getDashboard = async (req, res) => {
 
     const paidCount = paidHouseholds.length
     const paymentRate =
-      totalHouseholds === 0 ? 0 : Math.round((paidCount / totalHouseholds) * 100)
+      totalHouseholds === 0
+        ? 0
+        : Math.round((paidCount / totalHouseholds) * 100)
 
     const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
 
-    // 6. thống kê độ tuổi (chưa qua đời)
-    const residents = await prisma.resident.findMany({
+    // =========================
+    // 6. Thống kê độ tuổi
+    // (trừ moved_out + deceased)
+    // =========================
+    const residentsForAge = await prisma.resident.findMany({
       where: {
-        id: { notIn: deceasedIds.map(r => r.residentId) }
+        status: { notIn: [3, 4] }
       },
       select: { dob: true }
     })
@@ -91,7 +100,7 @@ export const getDashboard = async (req, res) => {
       elderly: 0
     }
 
-    residents.forEach(r => {
+    residentsForAge.forEach(r => {
       let age = currentYear - r.dob.getFullYear()
       const m = now.getMonth() - r.dob.getMonth()
       if (m < 0 || (m === 0 && now.getDate() < r.dob.getDate())) age--
@@ -102,7 +111,7 @@ export const getDashboard = async (req, res) => {
       else ageGroup.elderly++
     })
 
-    const totalAge = residents.length || 1
+    const totalAge = residentsForAge.length || 1
     const agePercent = {
       children: Math.round((ageGroup.children / totalAge) * 100),
       youth: Math.round((ageGroup.youth / totalAge) * 100),
@@ -110,40 +119,46 @@ export const getDashboard = async (req, res) => {
       elderly: Math.round((ageGroup.elderly / totalAge) * 100)
     }
 
-    // 7. tình trạng cư trú
+    // =========================
+    // 7. Tình trạng cư trú
+    // (CHỈ tính người đang còn trong địa bàn)
+    // =========================
     const permanent = await prisma.resident.count({
-      where: { householdId: { not: null } }
-    })
-
-    const temporary = await prisma.temporaryResidence.count({
       where: { status: 0 }
     })
 
-    const absent = await prisma.residentChange.count({
-      where: { changeType: 2 }
+    const temporary = await prisma.resident.count({
+      where: { status: 1 }
     })
 
-    const movedOut = await prisma.residentChange.count({
-      where: { changeType: 4 }
+    const absent = await prisma.resident.count({
+      where: { status: 2 }
     })
 
+    // moved_out & deceased KHÔNG đưa vào mẫu số
     const totalResidence =
-      permanent + temporary + absent + movedOut || 1
+      permanent + temporary + absent || 1
 
     const residencePercent = {
       permanent: Math.round((permanent / totalResidence) * 100),
       temporary: Math.round((temporary / totalResidence) * 100),
-      absent: Math.round((absent / totalResidence) * 100),
-      moved_out: Math.round((movedOut / totalResidence) * 100)
+      absent: Math.round((absent / totalResidence) * 100)
     }
 
-    // 8. hồ sơ cần xử lý gần đây
+    // =========================
+    // 8. Hồ sơ gần đây (chờ duyệt)
+    // =========================
     const recentRequests = await prisma.residentChange.findMany({
       where: { approvalStatus: 0 },
       orderBy: [{ fromDate: "desc" }, { id: "desc" }],
       take: 8,
       include: {
-        resident: { select: { fullname: true, residentCCCD: true } }
+        resident: {
+          select: {
+            fullname: true,
+            residentCCCD: true
+          }
+        }
       }
     })
 

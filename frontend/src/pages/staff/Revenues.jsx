@@ -1,7 +1,7 @@
 // src/pages/Revenues.jsx
 import React, { useState, useMemo, useEffect } from "react";
-import Header from "../components/Header.jsx";
-import SideBar from "../components/SideBar.jsx";
+import Header from "../../components/staff/Header.jsx";
+import SideBar from "../../components/staff/SideBar.jsx";
 import axios from "axios";
 import {
   FaPlus,
@@ -14,7 +14,7 @@ import {
   FaChevronRight,
   FaTimes,
 } from "react-icons/fa";
-import "../styles/fees.css";
+import "../../styles/staff/fees.css";
 
 const emptyFeeForm = {
   name: "",
