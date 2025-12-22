@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "./Slideshow.css";
+import "../styles/Slideshow.css";
 
 import Vinhomes1 from "../assets/images/Vinhomes-1.png";
 import Vinhomes2 from "../assets/images/Vinhomes-2.png";
