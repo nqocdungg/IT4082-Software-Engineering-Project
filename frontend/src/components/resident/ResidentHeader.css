@@ -1,0 +1,150 @@
+/* ===== HEADER ===== */
+.resident-header {
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: #fff;
+  z-index: 1000;
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo img {
+  height: 60px;
+  cursor: pointer;
+}
+
+.nav-menu {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-item {
+  position: relative;
+  cursor: pointer;
+}
+
+.nav-item span {
+  display: inline-block;
+  background: transparent;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #1f3c88;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+}
+
+.nav-item:hover span {
+  background: #afcbe9ff;
+  color: #0a35a9ff;
+}
+
+/* ===== DROPDOWN ===== */
+.nav-item .dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  background: #ffffff;
+  border: 1px solid #dfe6f3;
+  box-shadow: none;
+  border-radius: 8px;
+  padding: 4px 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  z-index: 999;
+}
+
+.nav-item .dropdown div,
+.nav-item .dropdown a {
+  padding: 10px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #466296;
+  text-decoration: none;
+}
+
+.nav-item .dropdown div:hover,
+.nav-item .dropdown a:hover {
+  background: #afcbe9ff;
+  color: #0a35a9ff;
+}
+
+.nav-item:hover .dropdown {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ===== USER BOX ===== */
+.user-box {
+  position: relative;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.username {
+  background: #1f3c88;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* dropdown */
+.user-box .user-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #ffffff;
+  border: 1px solid #dfe6f3;
+  border-radius: 8px;
+  padding: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  z-index: 999;
+}
+
+.user-box .user-dropdown div {
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #466296;
+
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.user-box .user-dropdown div:hover {
+  background: #afcbe9ff;
+  color: #0a35a9ff;
+}
+
+.user-box:hover .user-dropdown {
+  opacity: 1;
+  visibility: visible;
+}
