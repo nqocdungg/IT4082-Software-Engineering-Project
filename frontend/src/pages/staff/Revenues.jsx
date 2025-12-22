@@ -1,7 +1,5 @@
 // src/pages/Revenues.jsx
 import React, { useState, useMemo, useEffect } from "react";
-import Header from "../../components/staff/Header.jsx";
-import SideBar from "../../components/staff/SideBar.jsx";
 import axios from "axios";
 import {
   FaPlus,
@@ -14,7 +12,11 @@ import {
   FaChevronRight,
   FaTimes,
 } from "react-icons/fa";
+
 import "../../styles/staff/fees.css";
+import "../../styles/staff/layout.css";
+
+const API_BASE = "http://localhost:5000/api";
 
 const emptyFeeForm = {
   name: "",
@@ -33,8 +35,14 @@ const emptyTransactionForm = {
   note: "",
 };
 
+function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function RevenuesManagement() {
   const [fees, setFees] = useState([]);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [mandatoryFilter, setMandatoryFilter] = useState("ALL");
@@ -42,14 +50,20 @@ export default function RevenuesManagement() {
   const [selectedFee, setSelectedFee] = useState(null);
   const [feeMode, setFeeMode] = useState("view");
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
+
   const [isAddFeeOpen, setIsAddFeeOpen] = useState(false);
   const [feeForm, setFeeForm] = useState(emptyFeeForm);
 
-  const [feesPage, setFeesPage] = useState(1);
-  const feesPerPage = 4;
-
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionForm, setTransactionForm] = useState(emptyTransactionForm);
+
+  // ✅ fee records inside fee detail modal
+  const [feeRecords, setFeeRecords] = useState([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [recordsError, setRecordsError] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   useEffect(() => {
     fetchFees();
@@ -57,81 +71,116 @@ export default function RevenuesManagement() {
 
   async function fetchFees() {
     try {
-      console.log("📌 [DEBUG] Fetching FEES...");
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/fees/list", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      console.log("📌 [DEBUG] /api/fees/list response:", res.data);
-
-      const data = res.data;
-      const list = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.data)
-          ? data.data
-          : [];
-      console.log("📌 [DEBUG] Parsed fees list:", list);
+      const res = await axios.get(`${API_BASE}/fees/list`, { headers: authHeaders() });
+      const list = Array.isArray(res.data) ? res.data : [];
       setFees(list);
     } catch (err) {
-      console.error("❌ [DEBUG] fetchFees error:", err);
+      console.error("fetchFees error:", err);
       setFees([]);
       alert("Không tải được danh sách khoản thu");
     }
   }
 
+  async function fetchFeeRecordsByFeeId(feeId) {
+    if (!feeId) return;
+    setRecordsLoading(true);
+    setRecordsError("");
+    try {
+      const res = await axios.get(`${API_BASE}/fees/history`, {
+        headers: authHeaders(),
+        params: { feeId },
+      });
+      setFeeRecords(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("fetchFeeRecordsByFeeId error:", err);
+      setFeeRecords([]);
+      setRecordsError(err.response?.data?.message || "Không tải được lịch sử thu");
+    } finally {
+      setRecordsLoading(false);
+    }
+  }
+
   const filteredFees = useMemo(() => {
     const list = Array.isArray(fees) ? fees : [];
-    console.log("📌 [DEBUG] Filtering fees with:", {
-      search,
-      statusFilter,
-      mandatoryFilter,
-      totalFees: list.length,
-    });
-
-    const result = list.filter((f) => {
+    return list.filter((f) => {
       const matchSearch =
-        !search.trim() ||
-        (f.name || "").toLowerCase().includes(search.toLowerCase());
-      const matchStatus =
-        statusFilter === "ALL" || String(f.status) === String(statusFilter);
+        !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase());
+
+      const matchStatus = statusFilter === "ALL" || String(f.status) === String(statusFilter);
+
       const matchMandatory =
         mandatoryFilter === "ALL" ||
         (mandatoryFilter === "MANDATORY" && f.isMandatory) ||
         (mandatoryFilter === "OPTIONAL" && !f.isMandatory);
+
       return matchSearch && matchStatus && matchMandatory;
     });
-
-    console.log("📌 [DEBUG] filteredFees result:", result);
-    return result;
   }, [fees, search, statusFilter, mandatoryFilter]);
-
-  const totalFeePages = Math.max(
-    1,
-    Math.ceil(filteredFees.length / feesPerPage)
-  );
-
-  useEffect(() => {
-    if (feesPage > totalFeePages) setFeesPage(1);
-  }, [totalFeePages, feesPage]);
-
-  const pageFees = useMemo(() => {
-    const start = (feesPage - 1) * feesPerPage;
-    const slice = filteredFees.slice(start, start + feesPerPage);
-    console.log("📌 [DEBUG] pageFees:", slice);
-    return slice;
-  }, [filteredFees, feesPage]);
 
   const stats = useMemo(() => {
     const list = Array.isArray(fees) ? fees : [];
     const total = list.length;
-    const mandatory = list.filter((f) => f.isMandatory).length;
+    const mandatory = list.filter((f) => !!f.isMandatory).length;
     const optional = list.filter((f) => !f.isMandatory).length;
     const active = list.filter((f) => f.status === 1).length;
     const inactive = list.filter((f) => f.status === 0).length;
-    const result = { total, mandatory, optional, active, inactive };
-    console.log("📌 [DEBUG] stats:", result);
-    return result;
+    return { total, mandatory, optional, active, inactive };
   }, [fees]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, mandatoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredFees.length / rowsPerPage));
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(1);
+  }, [totalPages, currentPage]);
+
+  const pageFees = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredFees.slice(start, start + rowsPerPage);
+  }, [filteredFees, currentPage, rowsPerPage]);
+
+  const rangeText = useMemo(() => {
+    const total = filteredFees.length;
+    if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`;
+    const start = (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, total);
+    return `${start} - ${end} trên tổng số ${total} bản ghi`;
+  }, [filteredFees.length, currentPage, rowsPerPage]);
+
+  function getStatusLabel(status) {
+    if (status === 1) return "Đang hoạt động";
+    if (status === 0) return "Ngừng áp dụng";
+    return "Khác";
+  }
+
+  function getRecordStatusLabel(status) {
+    if (status === 2) return "Đã thu";
+    if (status === 1) return "Thu một phần";
+    return "Chưa thu";
+  }
+
+  function getRecordStatusClass(status) {
+    if (status === 2) return "fee-status-badge fee-status-active";
+    if (status === 1) return "fee-status-badge fee-status-partial";
+    return "fee-status-badge fee-status-inactive";
+  }
+
+  function getDateRangeLabel(fee) {
+    const hasFrom = !!fee.fromDate;
+    const hasTo = !!fee.toDate;
+
+    if (!hasFrom && !hasTo) return "Không thời hạn";
+
+    const fromStr = hasFrom ? new Date(fee.fromDate).toLocaleDateString("vi-VN") : "";
+    const toStr = hasTo ? new Date(fee.toDate).toLocaleDateString("vi-VN") : "";
+
+    if (hasFrom && hasTo) return `${fromStr} – ${toStr}`;
+    if (hasFrom && !hasTo) return `Từ ${fromStr}`;
+    return `Đến ${toStr}`;
+  }
 
   function feeToForm(fee) {
     if (!fee) return emptyFeeForm;
@@ -139,32 +188,39 @@ export default function RevenuesManagement() {
       name: fee.name || "",
       description: fee.description || "",
       isMandatory: !!fee.isMandatory,
-      unitPrice: fee.unitPrice != null ? String(fee.unitPrice) : "",
+      unitPrice: fee.unitPrice === 0 ? "" : fee.unitPrice != null ? String(fee.unitPrice) : "",
       status: String(fee.status ?? 1),
       fromDate: fee.fromDate ? String(fee.fromDate).slice(0, 10) : "",
       toDate: fee.toDate ? String(fee.toDate).slice(0, 10) : "",
     };
   }
 
-  function handleOpenFeeDetail(fee, mode = "view") {
+  function openDetail(fee, mode = "view") {
     setSelectedFee(fee);
     setFeeMode(mode);
     setFeeForm(feeToForm(fee));
     setIsFeeModalOpen(true);
+
+    // ✅ load records for this fee
+    setFeeRecords([]);
+    fetchFeeRecordsByFeeId(fee?.id);
   }
 
-  function handleCloseFeeDetail() {
+  function closeDetail() {
     setSelectedFee(null);
     setFeeMode("view");
     setIsFeeModalOpen(false);
+    setFeeRecords([]);
+    setRecordsError("");
+    setRecordsLoading(false);
   }
 
-  function handleOpenAddFee() {
-    setFeeForm(emptyFeeForm);
+  function openAddFee() {
+    setFeeForm({ ...emptyFeeForm, status: "1" });
     setIsAddFeeOpen(true);
   }
 
-  function handleCloseAddFee() {
+  function closeAddFee() {
     setIsAddFeeOpen(false);
   }
 
@@ -179,36 +235,27 @@ export default function RevenuesManagement() {
   async function handleAddFeeSubmit(e) {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
       const payload = {
         name: feeForm.name.trim(),
         description: feeForm.description.trim(),
         isMandatory: feeForm.isMandatory,
-        unitPrice:
-          feeForm.unitPrice === "" ? 0 : parseFloat(feeForm.unitPrice),
-        status: Number(feeForm.status),
+        unitPrice: feeForm.unitPrice === "" || feeForm.unitPrice == null ? null : parseFloat(feeForm.unitPrice),
         fromDate: feeForm.fromDate || null,
         toDate: feeForm.toDate || null,
       };
 
-      if (!payload.name) {
-        alert("Tên khoản thu không được để trống");
-        return;
-      }
+      if (!payload.name) return alert("Tên khoản thu không được để trống");
 
-      const res = await axios.post(
-        "http://localhost:5000/api/fees/create",
-        payload,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
-      const newFee = res.data?.data || res.data;
-      setFees((prev) => [newFee, ...(Array.isArray(prev) ? prev : [])]);
+      const res = await axios.post(`${API_BASE}/fees/create`, payload, { headers: authHeaders() });
+
+      const created = res.data?.data;
+      if (created) setFees((prev) => [created, ...(Array.isArray(prev) ? prev : [])]);
+      else await fetchFees();
+
       setIsAddFeeOpen(false);
       setFeeForm(emptyFeeForm);
     } catch (err) {
-      console.error("❌ [DEBUG] handleAddFeeSubmit error:", err);
+      console.error("handleAddFeeSubmit error:", err);
       alert("Thêm khoản thu thất bại");
     }
   }
@@ -216,78 +263,64 @@ export default function RevenuesManagement() {
   async function handleUpdateFeeSubmit(e) {
     e.preventDefault();
     if (!selectedFee) return;
+
     try {
-      const token = localStorage.getItem("token");
       const payload = {
         name: feeForm.name.trim(),
         description: feeForm.description.trim(),
         isMandatory: feeForm.isMandatory,
-        unitPrice:
-          feeForm.unitPrice === "" ? 0 : parseFloat(feeForm.unitPrice),
+        unitPrice: feeForm.unitPrice === "" || feeForm.unitPrice == null ? null : parseFloat(feeForm.unitPrice),
         status: Number(feeForm.status),
         fromDate: feeForm.fromDate || null,
         toDate: feeForm.toDate || null,
       };
-      if (!payload.name) {
-        alert("Tên khoản thu không được để trống");
-        return;
+
+      if (!payload.name) return alert("Tên khoản thu không được để trống");
+
+      const res = await axios.put(`${API_BASE}/fees/update/${selectedFee.id}`, payload, {
+        headers: authHeaders(),
+      });
+
+      const updated = res.data?.data;
+      if (updated) {
+        setFees((prev) =>
+          (Array.isArray(prev) ? prev : []).map((f) => (f.id === selectedFee.id ? updated : f))
+        );
+        setSelectedFee(updated);
+      } else {
+        await fetchFees();
       }
-      const res = await axios.put(
-        `http://localhost:5000/api/fees/update/${selectedFee.id}`,
-        payload,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
-      const updated = res.data?.data || res.data;
-      setFees((prev) =>
-        (Array.isArray(prev) ? prev : []).map((f) =>
-          f.id === selectedFee.id ? updated : f
-        )
-      );
-      setSelectedFee(updated);
+
       setFeeMode("view");
     } catch (err) {
-      console.error("❌ [DEBUG] handleUpdateFeeSubmit error:", err);
+      console.error("handleUpdateFeeSubmit error:", err);
       alert("Cập nhật khoản thu thất bại");
     }
   }
 
   async function handleDeleteFee(id) {
-    if (!window.confirm("Bạn có chắc muốn xóa khoản thu ID " + id + " ?"))
-      return;
+    if (!window.confirm("Bạn có chắc muốn xóa khoản thu ID " + id + " ?")) return;
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/fees/delete/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      setFees((prev) =>
-        Array.isArray(prev) ? prev.filter((f) => f.id !== id) : []
-      );
-      if (selectedFee && selectedFee.id === id) {
-        handleCloseFeeDetail();
-      }
+      await axios.delete(`${API_BASE}/fees/delete/${id}`, { headers: authHeaders() });
+      setFees((prev) => (Array.isArray(prev) ? prev.filter((f) => f.id !== id) : []));
+      if (selectedFee?.id === id) closeDetail();
     } catch (err) {
-      const message =
-        err.response?.data?.message || "Xóa khoản thu thất bại";
+      const message = err.response?.data?.message || "Xóa khoản thu thất bại";
       alert(message);
     }
   }
 
-  function handleOpenTransactionModal(fee) {
+  function openTransactionModal(fee) {
     setTransactionForm({
       feeId: fee?.id ? String(fee.id) : "",
       householdId: "",
-      amount:
-        fee?.unitPrice != null && !Number.isNaN(fee.unitPrice)
-          ? String(fee.unitPrice)
-          : "",
+      amount: fee?.unitPrice != null && !Number.isNaN(fee.unitPrice) ? String(fee.unitPrice) : "",
       note: "",
     });
     setIsTransactionModalOpen(true);
   }
 
-  function handleCloseTransactionModal() {
+  function closeTransactionModal() {
     setIsTransactionModalOpen(false);
   }
 
@@ -298,146 +331,98 @@ export default function RevenuesManagement() {
 
   async function handleCreateTransactionSubmit(e) {
     e.preventDefault();
-    if (
-      !transactionForm.feeId ||
-      !transactionForm.householdId ||
-      !transactionForm.amount
-    ) {
-      alert("Vui lòng nhập đầy đủ thông tin giao dịch");
-      return;
+    if (!transactionForm.feeId || !transactionForm.householdId || !transactionForm.amount) {
+      return alert("Vui lòng nhập đầy đủ thông tin giao dịch");
     }
+
     try {
-      const token = localStorage.getItem("token");
       const payload = {
         feeId: Number(transactionForm.feeId),
         householdId: Number(transactionForm.householdId),
         amount: parseFloat(transactionForm.amount),
         note: transactionForm.note.trim(),
       };
-      await axios.post("http://localhost:5000/api/fees/pay", payload, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      alert("Ghi nhận thu phí thành công");
+
+      const res = await axios.post(`${API_BASE}/fees/pay`, payload, { headers: authHeaders() });
+
+      alert(res.data?.message || "Ghi nhận thu phí thành công");
       setIsTransactionModalOpen(false);
       setTransactionForm(emptyTransactionForm);
+
+      // ✅ refresh records if fee modal is open for same fee
+      if (selectedFee?.id && Number(transactionForm.feeId) === Number(selectedFee.id)) {
+        fetchFeeRecordsByFeeId(selectedFee.id);
+      }
     } catch (err) {
-      const message =
-        err.response?.data?.message || "Ghi nhận thu phí thất bại";
+      const message = err.response?.data?.message || "Ghi nhận thu phí thất bại";
       alert(message);
     }
   }
 
-  function getStatusLabel(status) {
-    if (status === 1) return "Đang hoạt động";
-    if (status === 0) return "Ngừng áp dụng";
-    return "Khác";
-  }
+  const recordsTotalAmount = useMemo(() => {
+    if (!Array.isArray(feeRecords)) return 0;
+    return feeRecords.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  }, [feeRecords]);
 
-  function getDateRangeLabel(fee) {
-    const hasFrom = !!fee.fromDate;
-    const hasTo = !!fee.toDate;
-
-    if (!hasFrom && !hasTo) return "Không thời hạn";
-
-    const fromStr = hasFrom
-      ? new Date(fee.fromDate).toLocaleDateString("vi-VN")
-      : "";
-    const toStr = hasTo
-      ? new Date(fee.toDate).toLocaleDateString("vi-VN")
-      : "";
-
-    if (hasFrom && hasTo) {
-      return `Từ ${fromStr} – đến ${toStr}`;
-    }
-    if (hasFrom && !hasTo) {
-      return `Từ ${fromStr}`;
-    }
-    return `Đến ${toStr}`;
-  }
-
-  console.log("📌 [DEBUG] RENDER fees:", fees);
+  const miniCards = [
+    { label: "Tổng khoản thu", value: stats.total, icon: <FaMoneyBillWave />, tone: "blue" },
+    { label: "Bắt buộc", value: stats.mandatory, icon: <FaCashRegister />, tone: "green" },
+    { label: "Tự nguyện", value: stats.optional, icon: <FaPlus />, tone: "amber" },
+    { label: "Đang áp dụng", value: stats.active, icon: <FaEdit />, tone: "slate" },
+    { label: "Ngừng áp dụng", value: stats.inactive, icon: <FaTrash />, tone: "rose" },
+  ];
 
   return (
-
-    <div className="mainContent revenues-page">
-      <div className="page-header">
-        <h2 className="page-title">
-          <FaMoneyBillWave className="page-title-icon" />
-          Quản lý khoản thu
-        </h2>
-
-        <button className="btn-primary" onClick={handleOpenAddFee}>
-          <FaPlus /> Thêm khoản thu
-        </button>
-      </div>
-
-      <div className="card filter-card">
-        <div className="filter-grid basic-3">
-          <div className="filter-input search-box">
-            <FaSearch className="search-icon" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên khoản thu..."
-              value={search}
-              onChange={(e) => {
-                setFeesPage(1);
-                setSearch(e.target.value);
-              }}
-            />
+    <div className="page-container revenues-page">
+      <div className="stats-strip">
+        {miniCards.map((c) => (
+          <div key={c.label} className={`mini-card tone-${c.tone}`}>
+            <div className="mini-ico">{c.icon}</div>
+            <div className="mini-meta">
+              <div className="mini-value">{c.value ?? 0}</div>
+              <div className="mini-label">{c.label}</div>
+            </div>
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setFeesPage(1);
-              setStatusFilter(e.target.value);
-            }}
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="1">Đang hoạt động</option>
-            <option value="0">Ngừng áp dụng</option>
-          </select>
-
-          <select
-            value={mandatoryFilter}
-            onChange={(e) => {
-              setFeesPage(1);
-              setMandatoryFilter(e.target.value);
-            }}
-          >
-            <option value="ALL">Tất cả loại khoản thu</option>
-            <option value="MANDATORY">Bắt buộc</option>
-            <option value="OPTIONAL">Tự nguyện</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="stats-mini">
-        <div className="stat-card">
-          <p className="stat-label">Tổng khoản thu</p>
-          <p className="stat-value">{stats.total}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Khoản thu bắt buộc</p>
-          <p className="stat-value">{stats.mandatory}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Khoản thu tự nguyện</p>
-          <p className="stat-value">{stats.optional}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Đang áp dụng</p>
-          <p className="stat-value">{stats.active}</p>
-        </div>
-        <div className="stat-card">
-          <p className="stat-label">Ngừng áp dụng</p>
-          <p className="stat-value">{stats.inactive}</p>
-        </div>
+        ))}
       </div>
 
       <div className="card table-card">
-        <div className="table-header">
-          Danh sách khoản thu ({filteredFees.length} bản ghi)
+        <div className="table-toolbar">
+          <div className="toolbar-row">
+            <div className="toolbar-left">
+              <div className="toolbar-select">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="1">Đang hoạt động</option>
+                  <option value="0">Ngừng áp dụng</option>
+                </select>
+              </div>
+
+              <div className="toolbar-select">
+                <select value={mandatoryFilter} onChange={(e) => setMandatoryFilter(e.target.value)}>
+                  <option value="ALL">Tất cả loại khoản thu</option>
+                  <option value="MANDATORY">Bắt buộc</option>
+                  <option value="OPTIONAL">Tự nguyện</option>
+                </select>
+              </div>
+
+              <div className="toolbar-search">
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên khoản thu..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="toolbar-right">
+              <button className="btn-primary compact" onClick={openAddFee}>
+                <FaPlus /> Thêm khoản thu
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="table-wrapper">
@@ -449,9 +434,10 @@ export default function RevenuesManagement() {
                 <th>Đơn giá</th>
                 <th>Thời gian áp dụng</th>
                 <th>Trạng thái</th>
-                <th>Hành động</th>
+                <th style={{ width: 130 }}>Thao tác</th>
               </tr>
             </thead>
+
             <tbody>
               {pageFees.length === 0 ? (
                 <tr>
@@ -461,73 +447,42 @@ export default function RevenuesManagement() {
                 </tr>
               ) : (
                 pageFees.map((f) => (
-                  <tr key={f.id} className="clickable-row">
-                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
+                  <tr key={f.id} className="clickable-row" onClick={() => openDetail(f, "view")}>
+                    <td>
                       <div className="fee-name">{f.name}</div>
                     </td>
 
-                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                      <span
-                        className={
-                          f.isMandatory
-                            ? "fee-tag fee-tag-mandatory"
-                            : "fee-tag fee-tag-optional"
-                        }
-                      >
+                    <td>
+                      <span className={f.isMandatory ? "fee-tag fee-tag-mandatory" : "fee-tag fee-tag-optional"}>
                         {f.isMandatory ? "Bắt buộc" : "Tự nguyện"}
                       </span>
                     </td>
 
-                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                      {new Intl.NumberFormat("vi-VN").format(
-                        f.unitPrice || 0
-                      )}{" "}
-                      đ
+                    <td className="money-cell">
+                      {new Intl.NumberFormat("vi-VN").format(f.unitPrice ?? 0)} đ
                     </td>
 
-                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                      <span
-                        className={
-                          f.fromDate || f.toDate
-                            ? "fee-date-range"
-                            : "fee-date-range fee-date-none"
-                        }
-                      >
+                    <td>
+                      <span className={f.fromDate || f.toDate ? "fee-date-range" : "fee-date-range fee-date-none"}>
                         {getDateRangeLabel(f)}
                       </span>
                     </td>
 
-                    <td onClick={() => handleOpenFeeDetail(f, "view")}>
-                      <span
-                        className={
-                          f.status === 1
-                            ? "fee-status-badge fee-status-active"
-                            : "fee-status-badge fee-status-inactive"
-                        }
-                      >
+                    <td>
+                      <span className={f.status === 1 ? "fee-status-badge fee-status-active" : "fee-status-badge fee-status-inactive"}>
                         {getStatusLabel(f.status)}
                       </span>
                     </td>
 
-                    <td
-                      onClick={(e) => e.stopPropagation()}
-                      className="fee-row-actions-cell"
-                    >
+                    <td onClick={(e) => e.stopPropagation()}>
                       <div className="row-actions">
-                        <button
-                          onClick={() => handleOpenTransactionModal(f)}
-                        >
+                        <button type="button" title="Thu phí" onClick={() => openTransactionModal(f)}>
                           <FaCashRegister />
                         </button>
-                        <button
-                          onClick={() => handleOpenFeeDetail(f, "edit")}
-                        >
+                        <button type="button" title="Sửa" onClick={() => openDetail(f, "edit")}>
                           <FaEdit />
                         </button>
-                        <button
-                          className="danger"
-                          onClick={() => handleDeleteFee(f.id)}
-                        >
+                        <button type="button" title="Xóa" className="danger" onClick={() => handleDeleteFee(f.id)}>
                           <FaTrash />
                         </button>
                       </div>
@@ -539,158 +494,98 @@ export default function RevenuesManagement() {
           </table>
         </div>
 
-        <div className="pagination">
-          <button
-            disabled={feesPage === 1}
-            onClick={() => setFeesPage((p) => p - 1)}
-          >
-            <FaChevronLeft />
-          </button>
+        <div className="table-footer">
+          <div className="footer-left">
+            <span className="footer-muted">Số bản ghi</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setCurrentPage(1);
+                setRowsPerPage(Number(e.target.value));
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+            </select>
+          </div>
 
-          <span>
-            Trang {feesPage} / {totalFeePages}
-          </span>
-
-          <button
-            disabled={feesPage === totalFeePages}
-            onClick={() => setFeesPage((p) => p + 1)}
-          >
-            <FaChevronRight />
-          </button>
+          <div className="footer-right">
+            <span className="footer-muted">{rangeText}</span>
+            <div className="pager">
+              <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+                <FaChevronLeft />
+              </button>
+              <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+                <FaChevronRight />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* ===== MODAL: VIEW/EDIT ===== */}
       {isFeeModalOpen && selectedFee && (
-        <div className="resident-modal-overlay">
-          <div className="resident-modal">
+        <div className="resident-modal-overlay" onClick={closeDetail}>
+          <div className="resident-modal" onClick={(e) => e.stopPropagation()}>
             <div className="resident-modal-header">
               <div>
-                <p className="resident-modal-label">
-                  {feeMode === "view"
-                    ? "Thông tin khoản thu"
-                    : "Chỉnh sửa khoản thu"}
-                </p>
+                <h3 className="resident-modal-title">
+                  {feeMode === "view" ? "Chi tiết khoản thu" : "Chỉnh sửa khoản thu"}
+                </h3>
+                <p className="resident-modal-sub">ID: #{selectedFee.id}</p>
               </div>
-              <button
-                className="modal-close-btn"
-                onClick={handleCloseFeeDetail}
-              >
+
+              <button className="modal-close-btn" type="button" onClick={closeDetail}>
                 <FaTimes size={14} />
               </button>
             </div>
 
             <form
-              onSubmit={
-                feeMode === "edit"
-                  ? handleUpdateFeeSubmit
-                  : (e) => e.preventDefault()
-              }
+              onSubmit={feeMode === "edit" ? handleUpdateFeeSubmit : (e) => e.preventDefault()}
               className="resident-modal-body"
             >
               <div className="detail-grid">
-                <div className="detail-item">
-                  <span className="detail-label">Tên khoản thu</span>
+                <div className="detail-item detail-wide">
+                  <div className="detail-label">Tên khoản thu</div>
                   {feeMode === "view" ? (
-                    <span className="detail-value">
-                      {selectedFee.name}
-                    </span>
+                    <div className="detail-value">{selectedFee.name}</div>
                   ) : (
                     <div className="detail-value">
-                      <input
-                        name="name"
-                        value={feeForm.name}
-                        onChange={handleFeeFormChange}
-                        required
-                      />
+                      <input name="name" value={feeForm.name} onChange={handleFeeFormChange} required />
                     </div>
                   )}
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Đơn giá</span>
+                  <div className="detail-label">Đơn giá</div>
                   {feeMode === "view" ? (
-                    <span className="detail-value">
-                      {new Intl.NumberFormat("vi-VN").format(
-                        selectedFee.unitPrice || 0
-                      )}{" "}
-                      đ
-                    </span>
+                    <div className="detail-value">
+                      {new Intl.NumberFormat("vi-VN").format(selectedFee.unitPrice ?? 0)} đ
+                    </div>
                   ) : (
                     <div className="detail-value">
                       <input
-                        type="number"
                         name="unitPrice"
+                        type="number"
+                        min="0"
                         value={feeForm.unitPrice}
                         onChange={handleFeeFormChange}
-                        min="0"
+                        placeholder="Để trống nếu không có"
                       />
                     </div>
                   )}
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Ngày bắt đầu</span>
+                  <div className="detail-label">Loại khoản thu</div>
                   {feeMode === "view" ? (
-                    <span className="detail-value">
-                      {selectedFee.fromDate
-                        ? new Date(
-                          selectedFee.fromDate
-                        ).toLocaleDateString("vi-VN")
-                        : "Không có"}
-                    </span>
-                  ) : (
-                    <div className="detail-value">
-                      <input
-                        type="date"
-                        name="fromDate"
-                        value={feeForm.fromDate}
-                        onChange={handleFeeFormChange}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="detail-item">
-                  <span className="detail-label">Ngày kết thúc</span>
-                  {feeMode === "view" ? (
-                    <span className="detail-value">
-                      {selectedFee.toDate
-                        ? new Date(
-                          selectedFee.toDate
-                        ).toLocaleDateString("vi-VN")
-                        : "Không có"}
-                    </span>
-                  ) : (
-                    <div className="detail-value">
-                      <input
-                        type="date"
-                        name="toDate"
-                        value={feeForm.toDate}
-                        onChange={handleFeeFormChange}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="detail-item">
-                  <span className="detail-label">Loại khoản thu</span>
-                  {feeMode === "view" ? (
-                    <span className="detail-value">
-                      {selectedFee.isMandatory
-                        ? "Bắt buộc"
-                        : "Tự nguyện"}
-                    </span>
+                    <div className="detail-value">{selectedFee.isMandatory ? "Bắt buộc" : "Tự nguyện"}</div>
                   ) : (
                     <div className="detail-value">
                       <select
                         name="isMandatory"
                         value={feeForm.isMandatory ? "1" : "0"}
-                        onChange={(e) =>
-                          setFeeForm((prev) => ({
-                            ...prev,
-                            isMandatory: e.target.value === "1",
-                          }))
-                        }
+                        onChange={(e) => setFeeForm((prev) => ({ ...prev, isMandatory: e.target.value === "1" }))}
                       >
                         <option value="1">Bắt buộc</option>
                         <option value="0">Tự nguyện</option>
@@ -700,18 +595,12 @@ export default function RevenuesManagement() {
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Trạng thái</span>
+                  <div className="detail-label">Trạng thái</div>
                   {feeMode === "view" ? (
-                    <span className="detail-value">
-                      {getStatusLabel(selectedFee.status)}
-                    </span>
+                    <div className="detail-value">{getStatusLabel(selectedFee.status)}</div>
                   ) : (
                     <div className="detail-value">
-                      <select
-                        name="status"
-                        value={feeForm.status}
-                        onChange={handleFeeFormChange}
-                      >
+                      <select name="status" value={feeForm.status} onChange={handleFeeFormChange}>
                         <option value="1">Đang hoạt động</option>
                         <option value="0">Ngừng áp dụng</option>
                       </select>
@@ -719,47 +608,113 @@ export default function RevenuesManagement() {
                   )}
                 </div>
 
-                <div className="detail-item detail-wide">
-                  <span className="detail-label">Mô tả</span>
+                <div className="detail-item">
+                  <div className="detail-label">Ngày bắt đầu</div>
                   {feeMode === "view" ? (
-                    <span className="detail-value">
-                      {selectedFee.description || "Không có"}
-                    </span>
+                    <div className="detail-value">
+                      {selectedFee.fromDate ? new Date(selectedFee.fromDate).toLocaleDateString("vi-VN") : "—"}
+                    </div>
                   ) : (
                     <div className="detail-value">
-                      <textarea
-                        name="description"
-                        value={feeForm.description}
-                        onChange={handleFeeFormChange}
-                      />
+                      <input type="date" name="fromDate" value={feeForm.fromDate} onChange={handleFeeFormChange} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Ngày kết thúc</div>
+                  {feeMode === "view" ? (
+                    <div className="detail-value">
+                      {selectedFee.toDate ? new Date(selectedFee.toDate).toLocaleDateString("vi-VN") : "—"}
+                    </div>
+                  ) : (
+                    <div className="detail-value">
+                      <input type="date" name="toDate" value={feeForm.toDate} onChange={handleFeeFormChange} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-item detail-wide">
+                  <div className="detail-label">Mô tả</div>
+                  {feeMode === "view" ? (
+                    <div className="detail-value">{selectedFee.description || "—"}</div>
+                  ) : (
+                    <div className="detail-value">
+                      <textarea name="description" value={feeForm.description} onChange={handleFeeFormChange} />
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* ✅ FeeRecords section */}
+              <div className="fee-records-section">
+                <div className="fee-records-head">
+                  <div className="fee-records-title">Lịch sử thu (FeeRecord)</div>
+                  <div className="fee-records-sub">
+                    Tổng thu: <b>{new Intl.NumberFormat("vi-VN").format(recordsTotalAmount)} đ</b>
+                  </div>
+                </div>
+
+                {recordsLoading ? (
+                  <div className="fee-records-empty">Đang tải lịch sử thu...</div>
+                ) : recordsError ? (
+                  <div className="fee-records-empty">{recordsError}</div>
+                ) : feeRecords.length === 0 ? (
+                  <div className="fee-records-empty">Chưa có lịch sử thu cho khoản này.</div>
+                ) : (
+                  <div className="fee-records-table-wrap">
+                    <table className="fee-records-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Hộ khẩu</th>
+                          <th>Số tiền</th>
+                          <th>Ngày</th>
+                          <th>Trạng thái</th>
+                          <th>Ghi chú</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {feeRecords.map((r) => (
+                          <tr key={r.id}>
+                            <td>#{r.id}</td>
+                            <td>
+                              <div className="fr-owner">{r.household?.owner?.fullname || "—"}</div>
+                              <div className="fr-address">{r.household?.address || "—"}</div>
+                            </td>
+                            <td className="money-cell">
+                              {new Intl.NumberFormat("vi-VN").format(r.amount ?? 0)} đ
+                            </td>
+                            <td>{r.date ? new Date(r.date).toLocaleDateString("vi-VN") : "—"}</td>
+                            <td>
+                              <span className={getRecordStatusClass(r.status)}>
+                                {getRecordStatusLabel(r.status)}
+                              </span>
+                            </td>
+                            <td className="fr-note">{r.note || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
               <div className="resident-modal-footer">
                 {feeMode === "view" ? (
                   <>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => setFeeMode("edit")}
-                    >
+                    <button className="btn-secondary" type="button" onClick={() => setFeeMode("edit")}>
                       <FaEdit /> Chỉnh sửa
                     </button>
-                    <button
-                      type="button"
-                      className="btn-danger"
-                      onClick={() => handleDeleteFee(selectedFee.id)}
-                    >
+                    <button className="btn-danger" type="button" onClick={() => handleDeleteFee(selectedFee.id)}>
                       <FaTrash /> Xóa
                     </button>
                   </>
                 ) : (
                   <>
                     <button
-                      type="button"
                       className="btn-secondary"
+                      type="button"
                       onClick={() => {
                         setFeeMode("view");
                         setFeeForm(feeToForm(selectedFee));
@@ -767,7 +722,7 @@ export default function RevenuesManagement() {
                     >
                       Hủy
                     </button>
-                    <button type="submit" className="btn-primary">
+                    <button className="btn-primary" type="submit">
                       Lưu thay đổi
                     </button>
                   </>
@@ -778,65 +733,51 @@ export default function RevenuesManagement() {
         </div>
       )}
 
+      {/* ===== MODAL: ADD ===== */}
       {isAddFeeOpen && (
-        <div className="resident-modal-overlay">
-          <div className="resident-modal">
+        <div className="resident-modal-overlay" onClick={closeAddFee}>
+          <div className="resident-modal" onClick={(e) => e.stopPropagation()}>
             <div className="resident-modal-header">
               <div>
-                <h3 className="resident-modal-title">
-                  Thêm khoản thu mới
-                </h3>
+                <h3 className="resident-modal-title">Thêm khoản thu mới</h3>
+                <p className="resident-modal-sub">Tạo mới khoản thu</p>
               </div>
-              <button
-                className="modal-close-btn"
-                onClick={handleCloseAddFee}
-              >
+
+              <button className="modal-close-btn" type="button" onClick={closeAddFee}>
                 <FaTimes size={14} />
               </button>
             </div>
 
-            <form
-              onSubmit={handleAddFeeSubmit}
-              className="resident-modal-body"
-            >
+            <form onSubmit={handleAddFeeSubmit} className="resident-modal-body">
               <div className="detail-grid">
                 <div className="detail-item detail-wide">
-                  <span className="detail-label">Tên khoản thu</span>
+                  <div className="detail-label">Tên khoản thu</div>
                   <div className="detail-value">
-                    <input
-                      name="name"
-                      value={feeForm.name}
-                      onChange={handleFeeFormChange}
-                      required
-                    />
+                    <input name="name" value={feeForm.name} onChange={handleFeeFormChange} required />
                   </div>
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Đơn giá (VNĐ)</span>
+                  <div className="detail-label">Đơn giá</div>
                   <div className="detail-value">
                     <input
-                      type="number"
                       name="unitPrice"
-                      value={feeForm.unitPrice}
+                      type="number"
                       min="0"
+                      value={feeForm.unitPrice}
                       onChange={handleFeeFormChange}
+                      placeholder="Để trống nếu không có"
                     />
                   </div>
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Loại khoản thu</span>
+                  <div className="detail-label">Loại khoản thu</div>
                   <div className="detail-value">
                     <select
                       name="isMandatory"
                       value={feeForm.isMandatory ? "1" : "0"}
-                      onChange={(e) =>
-                        setFeeForm((prev) => ({
-                          ...prev,
-                          isMandatory: e.target.value === "1",
-                        }))
-                      }
+                      onChange={(e) => setFeeForm((prev) => ({ ...prev, isMandatory: e.target.value === "1" }))}
                     >
                       <option value="1">Bắt buộc</option>
                       <option value="0">Tự nguyện</option>
@@ -845,64 +786,39 @@ export default function RevenuesManagement() {
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Trạng thái</span>
+                  <div className="detail-label">Trạng thái</div>
                   <div className="detail-value">
-                    <select
-                      name="status"
-                      value={feeForm.status}
-                      onChange={handleFeeFormChange}
-                    >
-                      <option value="1">Đang hoạt động</option>
-                      <option value="0">Ngừng áp dụng</option>
-                    </select>
+                    <input value="Đang hoạt động" disabled />
                   </div>
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Ngày bắt đầu</span>
+                  <div className="detail-label">Ngày bắt đầu</div>
                   <div className="detail-value">
-                    <input
-                      type="date"
-                      name="fromDate"
-                      value={feeForm.fromDate}
-                      onChange={handleFeeFormChange}
-                    />
+                    <input type="date" name="fromDate" value={feeForm.fromDate} onChange={handleFeeFormChange} />
                   </div>
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Ngày kết thúc</span>
+                  <div className="detail-label">Ngày kết thúc</div>
                   <div className="detail-value">
-                    <input
-                      type="date"
-                      name="toDate"
-                      value={feeForm.toDate}
-                      onChange={handleFeeFormChange}
-                    />
+                    <input type="date" name="toDate" value={feeForm.toDate} onChange={handleFeeFormChange} />
                   </div>
                 </div>
 
                 <div className="detail-item detail-wide">
-                  <span className="detail-label">Mô tả</span>
+                  <div className="detail-label">Mô tả</div>
                   <div className="detail-value">
-                    <textarea
-                      name="description"
-                      value={feeForm.description}
-                      onChange={handleFeeFormChange}
-                    />
+                    <textarea name="description" value={feeForm.description} onChange={handleFeeFormChange} />
                   </div>
                 </div>
               </div>
 
               <div className="resident-modal-footer">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={handleCloseAddFee}
-                >
+                <button className="btn-secondary" type="button" onClick={closeAddFee}>
                   Hủy
                 </button>
-                <button type="submit" className="btn-primary">
+                <button className="btn-primary" type="submit">
                   Thêm khoản thu
                 </button>
               </div>
@@ -911,41 +827,32 @@ export default function RevenuesManagement() {
         </div>
       )}
 
+      {/* ===== MODAL: TRANSACTION ===== */}
       {isTransactionModalOpen && (
-        <div className="resident-modal-overlay">
-          <div className="resident-modal">
+        <div className="resident-modal-overlay" onClick={closeTransactionModal}>
+          <div className="resident-modal" onClick={(e) => e.stopPropagation()}>
             <div className="resident-modal-header">
               <div>
                 <h3 className="resident-modal-title">Ghi nhận thu phí</h3>
+                <p className="resident-modal-sub">Tạo giao dịch thu phí</p>
               </div>
-              <button
-                className="modal-close-btn"
-                onClick={handleCloseTransactionModal}
-              >
+
+              <button className="modal-close-btn" type="button" onClick={closeTransactionModal}>
                 <FaTimes size={14} />
               </button>
             </div>
 
-            <form
-              onSubmit={handleCreateTransactionSubmit}
-              className="resident-modal-body"
-            >
+            <form onSubmit={handleCreateTransactionSubmit} className="resident-modal-body">
               <div className="detail-grid">
                 <div className="detail-item">
-                  <span className="detail-label">ID khoản thu</span>
+                  <div className="detail-label">ID khoản thu</div>
                   <div className="detail-value">
-                    <input
-                      name="feeId"
-                      type="number"
-                      value={transactionForm.feeId}
-                      onChange={handleTransactionFormChange}
-                      required
-                    />
+                    <input name="feeId" type="number" value={transactionForm.feeId} readOnly />
                   </div>
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">ID hộ khẩu</span>
+                  <div className="detail-label">ID hộ khẩu</div>
                   <div className="detail-value">
                     <input
                       name="householdId"
@@ -958,7 +865,7 @@ export default function RevenuesManagement() {
                 </div>
 
                 <div className="detail-item">
-                  <span className="detail-label">Số tiền (VNĐ)</span>
+                  <div className="detail-label">Số tiền (VNĐ)</div>
                   <div className="detail-value">
                     <input
                       name="amount"
@@ -972,7 +879,7 @@ export default function RevenuesManagement() {
                 </div>
 
                 <div className="detail-item detail-wide">
-                  <span className="detail-label">Ghi chú</span>
+                  <div className="detail-label">Ghi chú</div>
                   <div className="detail-value">
                     <textarea
                       name="note"
@@ -985,14 +892,10 @@ export default function RevenuesManagement() {
               </div>
 
               <div className="resident-modal-footer">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={handleCloseTransactionModal}
-                >
+                <button className="btn-secondary" type="button" onClick={closeTransactionModal}>
                   Hủy
                 </button>
-                <button type="submit" className="btn-primary">
+                <button className="btn-primary" type="submit">
                   Xác nhận thu
                 </button>
               </div>
