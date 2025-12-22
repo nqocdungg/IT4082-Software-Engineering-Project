@@ -1,15 +1,26 @@
-import Authentication from "../components/Authentication.jsx";
-import Slideshow from "../components/SLideShow.jsx";
+import { useNavigate } from "react-router-dom"
+import Authentication from "../components/Authentication"
+import SlideShow from "../components/SlideShow.jsx"
+import "../styles/Login.css"
 
-import "./Login.css";
+export default function Login() {
+  const navigate = useNavigate()
 
-function Login() {
   return (
     <div className="login-container">
-      <Slideshow />
-      <Authentication />
-    </div>
-  );
-}
+      <SlideShow />
+      <Authentication
+        mode="login"
+        onSuccess={() => {
+          const role = localStorage.getItem("role")?.toLowerCase()
 
-export default Login;
+          if (role === "head") navigate("/dashboard")
+          else if (role === "deputy") navigate("/dashboard")
+          else if (role === "accountant") navigate("/dashboard")
+          else if (role === "household") navigate("/")
+          else navigate("/")
+        }}
+      />
+    </div>
+  )
+}
