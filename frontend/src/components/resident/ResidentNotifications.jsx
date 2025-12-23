@@ -1,7 +1,7 @@
 // src/components/resident/ResidentNotifications.jsx
 import React from "react";
 import TBImage from "../../assets/images/thongbao.png";
-import "./ResidentNotifications.css";
+import "../../styles/resident/ResidentNotifications.css";
 
 const latest = {
   title: "Thông báo bảo trì hệ thống",

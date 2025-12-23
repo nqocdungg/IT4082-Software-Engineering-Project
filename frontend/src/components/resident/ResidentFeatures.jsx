@@ -1,6 +1,6 @@
 // src/components/resident/ResidentFeatures.jsx
 import React from "react";
-import "./ResidentFeatures.css";
+import "../../styles/resident/ResidentFeatures.css";
 
 export default function ResidentFeatures() {
   return (

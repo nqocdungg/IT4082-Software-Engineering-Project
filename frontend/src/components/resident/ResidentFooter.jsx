@@ -1,6 +1,6 @@
 // src/components/resident/ResidentFooter.jsx
 import React from "react";
-import "./ResidentFooter.css";
+import "../../styles/resident/ResidentFooter.css";
 
 export default function ResidentFooter() {
   return (

@@ -1,5 +1,11 @@
 import prisma from "../../../prisma/prismaClient.js";
 
+/**
+ * =========================
+ * GET ALL FEE TYPES
+ * GET /api/fees/list
+ * =========================
+ */
 export const getAllFees = async (req, res) => {
   try {
     const feeTypes = await prisma.feeType.findMany({
@@ -25,8 +31,15 @@ export const getAllFees = async (req, res) => {
   }
 };
 
+/**
+ * =========================
+ * CREATE FEE TYPE
+ * POST /api/fees/create
+ * =========================
+ */
 export const createFee = async (req, res) => {
   const { name, description, isMandatory, unitPrice, fromDate, toDate } = req.body;
+
   try {
     const newFeeType = await prisma.feeType.create({
       data: {
@@ -43,29 +56,36 @@ export const createFee = async (req, res) => {
       },
     });
 
-    const mapped = {
-      id: newFeeType.id,
-      name: newFeeType.name,
-      description: newFeeType.description,
-      isMandatory: newFeeType.isMandatory,
-      unitPrice: newFeeType.unitPrice ?? 0,
-      status: newFeeType.isActive ? 1 : 0,
-      fromDate: newFeeType.fromDate,
-      toDate: newFeeType.toDate,
-    };
-
-    res
-      .status(201)
-      .json({ message: "Fee created successfully", data: mapped });
+    res.status(201).json({
+      message: "Fee created successfully",
+      data: {
+        id: newFeeType.id,
+        name: newFeeType.name,
+        description: newFeeType.description,
+        isMandatory: newFeeType.isMandatory,
+        unitPrice: newFeeType.unitPrice ?? 0,
+        status: newFeeType.isActive ? 1 : 0,
+        fromDate: newFeeType.fromDate,
+        toDate: newFeeType.toDate,
+      },
+    });
   } catch (error) {
     console.error("POST /api/fees/create error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
+/**
+ * =========================
+ * UPDATE FEE TYPE
+ * PUT /api/fees/update/:id
+ * =========================
+ */
 export const updateFee = async (req, res) => {
   const { id } = req.params;
-  const { name, description, isMandatory, unitPrice, status, fromDate, toDate } = req.body;
+  const { name, description, isMandatory, unitPrice, status, fromDate, toDate } =
+    req.body;
+
   try {
     const updated = await prisma.feeType.update({
       where: { id: parseInt(id) },
@@ -96,39 +116,50 @@ export const updateFee = async (req, res) => {
       },
     });
 
-    const mapped = {
-      id: updated.id,
-      name: updated.name,
-      description: updated.description,
-      isMandatory: updated.isMandatory,
-      unitPrice: updated.unitPrice ?? 0,
-      status: updated.isActive ? 1 : 0,
-      fromDate: updated.fromDate,
-      toDate: updated.toDate,
-    };
-
-    res.status(200).json({ message: "Updated successfully", data: mapped });
+    res.status(200).json({
+      message: "Updated successfully",
+      data: {
+        id: updated.id,
+        name: updated.name,
+        description: updated.description,
+        isMandatory: updated.isMandatory,
+        unitPrice: updated.unitPrice ?? 0,
+        status: updated.isActive ? 1 : 0,
+        fromDate: updated.fromDate,
+        toDate: updated.toDate,
+      },
+    });
   } catch (error) {
     console.error("PUT /api/fees/update error:", error);
     res.status(500).json({ error: "Fee not found or server error" });
   }
 };
 
+/**
+ * =========================
+ * DELETE FEE TYPE
+ * DELETE /api/fees/delete/:id
+ * =========================
+ */
 export const deleteFee = async (req, res) => {
   const { id } = req.params;
+
   try {
-    const records = await prisma.feeRecord.findFirst({
+    const record = await prisma.feeRecord.findFirst({
       where: { feeTypeId: parseInt(id) },
     });
 
-    if (records) {
+    if (record) {
       return res.status(400).json({
         message:
           "Không thể xóa khoản thu đã có lịch sử thu. Hãy chuyển trạng thái sang ngừng áp dụng.",
       });
     }
 
-    await prisma.feeType.delete({ where: { id: parseInt(id) } });
+    await prisma.feeType.delete({
+      where: { id: parseInt(id) },
+    });
+
     res.status(200).json({ message: "Fee deleted successfully" });
   } catch (error) {
     console.error("DELETE /api/fees/delete error:", error);
@@ -136,12 +167,20 @@ export const deleteFee = async (req, res) => {
   }
 };
 
+/**
+ * =========================
+ * CREATE TRANSACTION (PAY FEE)
+ * POST /api/fees/pay
+ * =========================
+ */
 export const createTransaction = async (req, res) => {
   const { feeId, householdId, amount, note } = req.body;
+
   try {
     const feeType = await prisma.feeType.findUnique({
       where: { id: parseInt(feeId) },
     });
+
     const household = await prisma.household.findUnique({
       where: { id: parseInt(householdId) },
     });
@@ -152,7 +191,9 @@ export const createTransaction = async (req, res) => {
         .json({ message: "FeeType hoặc Household không tồn tại" });
     }
 
+    // Ưu tiên ACCOUNTANT → HEAD → DEPUTY
     const manager =
+      (await prisma.user.findFirst({ where: { role: "ACCOUNTANT" } })) ||
       (await prisma.user.findFirst({ where: { role: "HEAD" } })) ||
       (await prisma.user.findFirst({ where: { role: "DEPUTY" } }));
 
@@ -164,10 +205,9 @@ export const createTransaction = async (req, res) => {
 
     const newRecord = await prisma.feeRecord.create({
       data: {
+        amount: parseFloat(amount),
+        status: 2, // paid
         description: note || "",
-        fundAmount: parseFloat(amount),
-        status: 2,
-        isActive: true,
         householdId: parseInt(householdId),
         feeTypeId: parseInt(feeId),
         managerId: manager.id,
@@ -183,24 +223,29 @@ export const createTransaction = async (req, res) => {
       },
     });
 
-    const mapped = {
-      id: newRecord.id,
-      amount: newRecord.fundAmount,
-      note: newRecord.description,
-      date: newRecord.updatedAt,
-      fee: newRecord.feeType,
-      household: newRecord.household,
-    };
-
-    res
-      .status(201)
-      .json({ message: "Transaction created successfully", data: mapped });
+    res.status(201).json({
+      message: "Transaction created successfully",
+      data: {
+        id: newRecord.id,
+        amount: newRecord.amount,
+        note: newRecord.description,
+        date: newRecord.updatedAt,
+        fee: newRecord.feeType,
+        household: newRecord.household,
+      },
+    });
   } catch (error) {
     console.error("POST /api/fees/pay error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
+/**
+ * =========================
+ * GET TRANSACTION HISTORY
+ * GET /api/fees/history
+ * =========================
+ */
 export const getTransactions = async (req, res) => {
   const { feeId, householdId } = req.query;
 
@@ -225,7 +270,7 @@ export const getTransactions = async (req, res) => {
 
     const mapped = history.map((r) => ({
       id: r.id,
-      amount: r.fundAmount,
+      amount: r.amount,
       note: r.description,
       date: r.updatedAt,
       fee: r.feeType,
