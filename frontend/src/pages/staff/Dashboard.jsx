@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { FaHome, FaUserFriends, FaFolderOpen } from "react-icons/fa";
-import "../../styles/staff/dashboard.css";
+import React, { useState, useEffect, useMemo } from "react"
+import { FaHome, FaUserFriends, FaFolderOpen } from "react-icons/fa"
+import "../../styles/staff/dashboard.css"
 
 import {
   CartesianGrid,
@@ -14,72 +14,103 @@ import {
   BarChart,
   Bar,
   XAxis,
-  YAxis,
-} from "recharts";
+  YAxis
+} from "recharts"
 
 export default function Dashboard() {
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady] = useState(false)
+  const [dashboard, setDashboard] = useState(null)
 
   useEffect(() => {
-    setIsReady(true);
-  }, []);
+    async function fetchDashboard() {
+      try {
+        const token = localStorage.getItem("token")
+        const res = await fetch("http://localhost:5000/api/dashboard", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        const data = await res.json()
+        setDashboard(data)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setIsReady(true)
+      }
+    }
+    fetchDashboard()
+  }, [])
 
   const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
+    "Jan","Feb","Mar","Apr","May","Jun",
+    "Jul","Aug","Sep","Oct","Nov","Dec"
+  ]
 
-  const fixedFee = [3.2, 3.1, 3.3, 3.2, 3.4, 3.3, 3.5, 3.6, 3.4, 3.5, 3.6, 3.8];
-  const contribution = [0.6, 1.1, 0.9, 1.4, 1.0, 1.3, 1.2, 1.8, 1.1, 1.6, 1.0, 2.2];
-  const totalFixedFee = fixedFee[fixedFee.length - 1];
-  const totalContribution = contribution[contribution.length - 1];
-  const totalRevenue = totalFixedFee + totalContribution;
+  const fixedFee = dashboard
+    ? dashboard.feeByMonth.map(m => m.mandatoryTotal)
+    : [3.2,3.1,3.3,3.2,3.4,3.3,3.5,3.6,3.4,3.5,3.6,3.8]
 
-  const fixedPct = totalRevenue > 0 ? (totalFixedFee / totalRevenue) * 100 : 0;
-  const contribPct = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : 0;
+  const contribution = dashboard
+    ? dashboard.feeByMonth.map(m => m.contributionTotal)
+    : [0.6,1.1,0.9,1.4,1.0,1.3,1.2,1.8,1.1,1.6,1.0,2.2]
+
+  const totalFixedFee = fixedFee[fixedFee.length - 1]
+  const totalContribution = contribution[contribution.length - 1]
+  const totalRevenue = totalFixedFee + totalContribution
+
+  const fixedPct = totalRevenue > 0 ? (totalFixedFee / totalRevenue) * 100 : 0
+  const contribPct = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : 0
 
   const feeChartData = useMemo(
     () =>
       months.map((month, index) => ({
         month,
         fixedFee: fixedFee[index],
-        contribution: contribution[index],
+        contribution: contribution[index]
       })),
-    []
-  );
+    [dashboard]
+  )
 
-  const populationStructureData = [
-    { name: "Trẻ em (<15)", value: 620, color: "#22C55E" },
-    { name: "Thanh niên (15–35)", value: 1450, color: "#0EA5E9" },
-    { name: "Trung niên (36–60)", value: 980, color: "#F97316" },
-    { name: "Cao tuổi (>60)", value: 518, color: "#A855F7" },
-  ];
+  const populationStructureData = dashboard
+    ? [
+        { name: "Trẻ em (<15)", value: dashboard.agePercent.children, color: "#22C55E" },
+        { name: "Thanh niên (15–35)", value: dashboard.agePercent.youth, color: "#0EA5E9" },
+        { name: "Trung niên (36–60)", value: dashboard.agePercent.middle, color: "#F97316" },
+        { name: "Cao tuổi (>60)", value: dashboard.agePercent.elderly, color: "#A855F7" }
+      ]
+    : [
+        { name: "Trẻ em (<15)", value: 620, color: "#22C55E" },
+        { name: "Thanh niên (15–35)", value: 1450, color: "#0EA5E9" },
+        { name: "Trung niên (36–60)", value: 980, color: "#F97316" },
+        { name: "Cao tuổi (>60)", value: 518, color: "#A855F7" }
+      ]
 
   const totalPopulation = useMemo(
     () => populationStructureData.reduce((sum, item) => sum + item.value, 0),
-    []
-  );
-  const residencyPieData = [
-    { name: "Thường trú", value: 2100, color: "#16A34A" },
-    { name: "Tạm trú", value: 680, color: "#F59E0B" },
-    { name: "Tạm vắng", value: 420, color: "#3B82F6" },
-    { name: "Chuyển đi", value: 240, color: "#6B7280" },
-  ];
+    [populationStructureData]
+  )
+
+  const residencyPieData = dashboard
+    ? [
+        { name: "Thường trú", value: dashboard.residencePercent.permanent, color: "#16A34A" },
+        { name: "Tạm trú", value: dashboard.residencePercent.temporary, color: "#F59E0B" },
+        { name: "Tạm vắng", value: dashboard.residencePercent.absent, color: "#3B82F6" }
+      ]
+    : [
+        { name: "Thường trú", value: 2100, color: "#16A34A" },
+        { name: "Tạm trú", value: 680, color: "#F59E0B" },
+        { name: "Tạm vắng", value: 420, color: "#3B82F6" },
+        { name: "Chuyển đi", value: 240, color: "#6B7280" }
+      ]
 
   const totalResidency = useMemo(
     () => residencyPieData.reduce((sum, item) => sum + item.value, 0),
-    []
-  );
+    [residencyPieData]
+  )
+
+  const totalHouseholds = dashboard?.cards.totalHouseholds ?? 1234
+  const totalResidents = dashboard?.cards.totalResidents ?? 3568
+  const pendingProfiles = dashboard?.cards.pendingProfiles ?? 12
 
   return (
     <div className="dashboard">
@@ -88,16 +119,14 @@ export default function Dashboard() {
           <div className="card-content">
             <div className="revenue-head">
               <h4>Tổng thu trong tháng</h4>
-              <span className="revenue-total">
-                {totalRevenue.toFixed(1)} triệu
-              </span>
+              <span className="revenue-total">{totalRevenue.toFixed(1)} VND</span>
             </div>
 
             <div className="revenue-lines">
               <div className="revenue-line">
                 <div className="revenue-line-top">
                   <span>Thu cố định</span>
-                  <strong>{totalFixedFee.toFixed(1)} triệu</strong>
+                  <strong>{totalFixedFee.toFixed(1)} VND</strong>
                 </div>
                 <div className="revenue-bar">
                   <div className="fixed" style={{ width: `${fixedPct}%` }} />
@@ -106,7 +135,7 @@ export default function Dashboard() {
               <div className="revenue-line">
                 <div className="revenue-line-top">
                   <span>Đóng góp</span>
-                  <strong>{totalContribution.toFixed(1)} triệu</strong>
+                  <strong>{totalContribution.toFixed(1)} VND</strong>
                 </div>
                 <div className="revenue-bar">
                   <div className="contrib" style={{ width: `${contribPct}%` }} />
@@ -115,28 +144,23 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
         <div className="card">
           <div className="card-content">
             <h4>Tổng số hộ gia đình</h4>
-
             <div className="value-row">
-              <span className="icon-container blue">
-                <FaHome />
-              </span>
-              <span className="value">1234</span>
+              <span className="icon-container blue"><FaHome /></span>
+              <span className="value">{totalHouseholds}</span>
             </div>
           </div>
         </div>
-
 
         <div className="card">
           <div className="card-content">
             <h4 className="card-title">Tổng số nhân khẩu</h4>
             <div className="value-row">
-              <span className="icon-container green">
-                <FaUserFriends />
-              </span>
-              <span className="value">3568</span>
+              <span className="icon-container green"><FaUserFriends /></span>
+              <span className="value">{totalResidents}</span>
             </div>
           </div>
         </div>
@@ -145,10 +169,8 @@ export default function Dashboard() {
           <div className="card-content">
             <h4>Hồ sơ cần xử lý</h4>
             <div className="value-row">
-              <span className="icon-container purple">
-                <FaFolderOpen />
-              </span>
-              <span className="value">12</span>
+              <span className="icon-container purple"><FaFolderOpen /></span>
+              <span className="value">{pendingProfiles}</span>
             </div>
           </div>
         </div>
@@ -195,12 +217,12 @@ export default function Dashboard() {
                       borderRadius: 12,
                       border: "1px solid rgba(17,24,39,0.08)",
                       boxShadow: "0 10px 25px rgba(15,23,42,0.08)",
-                      padding: 10,
+                      padding: 10
                     }}
                     labelStyle={{ fontSize: 12, fontWeight: 700 }}
                     formatter={(value, name) => [
-                      `${Number(value).toFixed(1)} triệu`,
-                      name === "fixedFee" ? "Thu cố định" : "Đóng góp",
+                      `${Number(value).toFixed(1)} VND`,
+                      name === "fixedFee" ? "Thu cố định" : "Đóng góp"
                     ]}
                   />
                   <RechartsLegend
@@ -214,14 +236,14 @@ export default function Dashboard() {
                     dataKey="fixedFee"
                     name="Thu cố định"
                     fill="#639beb"
-                    radius={[8, 8, 8, 8]}
+                    radius={[8,8,8,8]}
                     barSize={14}
                   />
                   <Bar
                     dataKey="contribution"
                     name="Đóng góp"
                     fill="#d8e7f7"
-                    radius={[8, 8, 8, 8]}
+                    radius={[8,8,8,8]}
                     barSize={14}
                   />
                 </BarChart>
@@ -229,6 +251,7 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
         <div className="panel panel-two-rows">
           <div className="panel-head">
             <h3>Thu phí / Nợ phí</h3>
@@ -242,13 +265,18 @@ export default function Dashboard() {
                 <span className="row-change up">▲ 4%</span>
               </div>
 
-              <p className="mini-value">92%</p>
+              <p className="mini-value">{dashboard?.currentMonthPayment.paymentRate ?? 92}%</p>
 
               <div className="progress-bar">
-                <div className="progress-fill green" style={{ width: "92%" }} />
+                <div
+                  className="progress-fill green"
+                  style={{ width: `${dashboard?.currentMonthPayment.paymentRate ?? 92}%` }}
+                />
               </div>
 
-              <p className="mini-sub">1.136 / 1.234 hộ đã đóng phí</p>
+              <p className="mini-sub">
+                {totalHouseholds - (dashboard?.currentMonthPayment.unpaidHouseholds ?? 98)} / {totalHouseholds} hộ đã đóng phí
+              </p>
             </div>
 
             <div className="mini-card">
@@ -257,13 +285,15 @@ export default function Dashboard() {
                 <span className="row-change down">▼ 5%</span>
               </div>
 
-              <p className="mini-value">18 hộ</p>
+              <p className="mini-value">{dashboard?.currentMonthPayment.unpaidHouseholds ?? 18} hộ</p>
 
               <div className="progress-bar">
                 <div className="progress-fill red" style={{ width: "1.46%" }} />
               </div>
 
-              <p className="mini-sub">18 / 1.234 hộ chưa hoàn thành</p>
+              <p className="mini-sub">
+                {dashboard?.currentMonthPayment.unpaidHouseholds ?? 18} / {totalHouseholds} hộ chưa hoàn thành
+              </p>
             </div>
           </div>
         </div>
@@ -288,28 +318,23 @@ export default function Dashboard() {
                       paddingAngle={2}
                     >
                       {populationStructureData.map((entry, index) => (
-                        <Cell key={`cell-age-${index}`} fill={entry.color} />
+                        <Cell key={index} fill={entry.color} />
                       ))}
 
                       <Label
                         position="center"
                         content={({ viewBox }) => {
-                          if (!viewBox) return null;
-                          const cx = Number(viewBox.cx);
-                          const cy = Number(viewBox.cy);
-                          if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
-
+                          if (!viewBox) return null
+                          const cx = Number(viewBox.cx)
+                          const cy = Number(viewBox.cy)
+                          if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null
                           return (
                             <g>
                               <text
                                 x={cx}
                                 y={cy - 2}
                                 textAnchor="middle"
-                                style={{
-                                  fontSize: "16px",
-                                  fontWeight: 800,
-                                  fill: "#111827",
-                                }}
+                                style={{ fontSize: "16px", fontWeight: 800, fill: "#111827" }}
                               >
                                 {totalPopulation}
                               </text>
@@ -322,7 +347,7 @@ export default function Dashboard() {
                                 Nhân khẩu
                               </text>
                             </g>
-                          );
+                          )
                         }}
                       />
                     </Pie>
@@ -331,8 +356,8 @@ export default function Dashboard() {
               )}
 
               <div className="mini-legend">
-                {populationStructureData.map((item) => {
-                  const percent = Math.round((item.value / totalPopulation) * 100);
+                {populationStructureData.map(item => {
+                  const percent = Math.round((item.value / totalPopulation) * 100)
                   return (
                     <div key={item.name} className="mini-legend-row">
                       <div className="mini-legend-left">
@@ -343,11 +368,12 @@ export default function Dashboard() {
                         {item.value} ({percent}%)
                       </span>
                     </div>
-                  );
+                  )
                 })}
               </div>
             </div>
           </div>
+
           <div className="panel panel-pie">
             <div className="panel-head">
               <h3>Tình trạng cư trú</h3>
@@ -367,28 +393,23 @@ export default function Dashboard() {
                       paddingAngle={2}
                     >
                       {residencyPieData.map((entry, index) => (
-                        <Cell key={`cell-res-${index}`} fill={entry.color} />
+                        <Cell key={index} fill={entry.color} />
                       ))}
 
                       <Label
                         position="center"
                         content={({ viewBox }) => {
-                          if (!viewBox) return null;
-                          const cx = Number(viewBox.cx);
-                          const cy = Number(viewBox.cy);
-                          if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
-
+                          if (!viewBox) return null
+                          const cx = Number(viewBox.cx)
+                          const cy = Number(viewBox.cy)
+                          if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null
                           return (
                             <g>
                               <text
                                 x={cx}
                                 y={cy - 2}
                                 textAnchor="middle"
-                                style={{
-                                  fontSize: "16px",
-                                  fontWeight: 800,
-                                  fill: "#111827",
-                                }}
+                                style={{ fontSize: "16px", fontWeight: 800, fill: "#111827" }}
                               >
                                 {totalResidency}
                               </text>
@@ -401,7 +422,7 @@ export default function Dashboard() {
                                 Bản ghi
                               </text>
                             </g>
-                          );
+                          )
                         }}
                       />
                     </Pie>
@@ -410,8 +431,8 @@ export default function Dashboard() {
               )}
 
               <div className="mini-legend">
-                {residencyPieData.map((item) => {
-                  const percent = Math.round((item.value / totalResidency) * 100);
+                {residencyPieData.map(item => {
+                  const percent = Math.round((item.value / totalResidency) * 100)
                   return (
                     <div key={item.name} className="mini-legend-row">
                       <div className="mini-legend-left">
@@ -422,7 +443,7 @@ export default function Dashboard() {
                         {item.value} ({percent}%)
                       </span>
                     </div>
-                  );
+                  )
                 })}
               </div>
             </div>
@@ -435,33 +456,47 @@ export default function Dashboard() {
             </div>
 
             <div className="panel-body">
-              <div className="req-row">
-                <div className="req-main">
-                  <div className="req-title">Xác nhận tạm trú</div>
-                  <div className="req-sub">Hộ 277 West 11th Street</div>
-                </div>
-                <span className="pill inprogress">Đang xử lý</span>
-              </div>
+              {dashboard?.recentRequests
+                ? dashboard.recentRequests.map(r => (
+                    <div key={r.id} className="req-row">
+                      <div className="req-main">
+                        <div className="req-title">{r.resident.fullname}</div>
+                        <div className="req-sub">{r.resident.residentCCCD}</div>
+                      </div>
+                      <span className="pill inprogress">Đang xử lý</span>
+                    </div>
+                  ))
+                : (
+                  <>
+                    <div className="req-row">
+                      <div className="req-main">
+                        <div className="req-title">Xác nhận tạm trú</div>
+                        <div className="req-sub">Hộ 277 West 11th Street</div>
+                      </div>
+                      <span className="pill inprogress">Đang xử lý</span>
+                    </div>
 
-              <div className="req-row">
-                <div className="req-main">
-                  <div className="req-title">Cập nhật nhân khẩu</div>
-                  <div className="req-sub">Hộ 123 Johnson Drive</div>
-                </div>
-                <span className="pill done">Hoàn tất</span>
-              </div>
+                    <div className="req-row">
+                      <div className="req-main">
+                        <div className="req-title">Cập nhật nhân khẩu</div>
+                        <div className="req-sub">Hộ 123 Johnson Drive</div>
+                      </div>
+                      <span className="pill done">Hoàn tất</span>
+                    </div>
 
-              <div className="req-row">
-                <div className="req-main">
-                  <div className="req-title">Khai báo chuyển đi</div>
-                  <div className="req-sub">Hộ 44 Lock Brook</div>
-                </div>
-                <span className="pill overdue">Quá hạn</span>
-              </div>
+                    <div className="req-row">
+                      <div className="req-main">
+                        <div className="req-title">Khai báo chuyển đi</div>
+                        <div className="req-sub">Hộ 44 Lock Brook</div>
+                      </div>
+                      <span className="pill overdue">Quá hạn</span>
+                    </div>
+                  </>
+                )}
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

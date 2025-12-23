@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../../assets/images/Logo.png";
-import "./ResidentHeader.css";
+import "../../styles/resident/ResidentHeader.css";
 
 export default function ResidentHeader() {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -18,12 +18,12 @@ export default function ResidentHeader() {
         </div>
 
         <nav className="nav-menu">
-          <div className="nav-item" onClick={() => toggleDropdown("home")}>
+          <div className="nav-item-resident" onClick={() => toggleDropdown("home")}>
             <span>Trang chủ</span>
           </div>
 
           <div
-            className={`nav-item ${
+            className={`nav-item-resident ${
               openDropdown === "notification" ? "active" : ""
             }`}
             onClick={() => toggleDropdown("notification")}
@@ -36,7 +36,7 @@ export default function ResidentHeader() {
           </div>
 
           <div
-            className={`nav-item ${openDropdown === "bill" ? "active" : ""}`}
+            className={`nav-item-resident ${openDropdown === "bill" ? "active" : ""}`}
             onClick={() => toggleDropdown("bill")}
           >
             <span>Hóa đơn</span>
@@ -48,7 +48,7 @@ export default function ResidentHeader() {
           </div>
 
           {/* <div
-            className={`nav-item ${openDropdown === "service" ? "active" : ""}`}
+            className={`nav-item-resident ${openDropdown === "service" ? "active" : ""}`}
             onClick={() => toggleDropdown("service")}
           >
              <span>Dịch vụ</span> 
@@ -60,7 +60,7 @@ export default function ResidentHeader() {
           </div> */}
 
           <div
-            className={`nav-item ${
+            className={`nav-item-resident ${
               openDropdown === "household" ? "active" : ""
             }`}
             onClick={() => toggleDropdown("household")}

@@ -1,33 +1,48 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 
-import StaffDashboard from "./pages/staff/Dashboard";
-import StaffHouseholds from "./pages/staff/Households";
-import StaffResidents from "./pages/staff/Residents";
-import StaffRevenues from "./pages/staff/Revenues";
-import ResidentHome from "./pages/resident/ResidentHome.jsx";
-import HouseholdInfo from "./pages/resident/HouseholdInfo.jsx";
+import StaffLayout from "./components/staff/Layout"
+import ProtectedRoute from "./components/ProtectedRoute"
 
-import Login from "./pages/Login";
+import StaffDashboard from "./pages/staff/Dashboard"
+import StaffHouseholds from "./pages/staff/Households"
+import StaffResidents from "./pages/staff/Residents"
+import StaffRevenues from "./pages/staff/Revenues"
 
-import "./index.css";
+import ResidentHome from "./pages/resident/ResidentHome.jsx"
+import HouseholdInfo from "./pages/resident/HouseholdInfo.jsx"
+
+import Login from "./pages/Login"
+
+import "./index.css"
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Redirect root */}
         <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Public */}
         <Route path="/login" element={<Login />} />
 
-        <Route path="/dashboard" element={<StaffDashboard />} />
-        <Route path="/households" element={<StaffHouseholds />} />
-        <Route path="/residents" element={<StaffResidents />} />
-        <Route path="/revenues" element={<StaffRevenues />} />
+        {/* STAFF */}
+        <Route
+          element={
+            <ProtectedRoute roles={["HEAD", "DEPUTY", "ACCOUNTANT"]}>
+              <StaffLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<StaffDashboard />} />
+          <Route path="/households" element={<StaffHouseholds />} />
+          <Route path="/residents" element={<StaffResidents />} />
+          <Route path="/revenues" element={<StaffRevenues />} />
+        </Route>
 
-        <Route path="/resident-home" element={<ResidentHome />} />
-        <Route path="/resident/household/info" element={<HouseholdInfo />} />
+        
       </Routes>
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App

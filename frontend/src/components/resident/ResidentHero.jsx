@@ -1,7 +1,7 @@
 // src/components/resident/ResidentHero.jsx
 import React, { useState, useEffect } from "react";
 import HeroImage from "../../assets/images/anh1.jpg";
-import "./ResidentHero.css";
+import "../../styles/resident/ResidentHero.css";
 
 export default function ResidentHero() {
   const fullText = "Kết nối cư dân – Quản lý minh bạch";

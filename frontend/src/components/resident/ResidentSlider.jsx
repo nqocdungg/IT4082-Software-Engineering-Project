@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import SLide1image from "../../assets/images/Slide1.png";
 import SLide2image from "../../assets/images/Slide2.png";
-import "./ResidentSlider.css";
+import "../../styles/resident/ResidentSlider.css";
 
 const slides = [
   {
