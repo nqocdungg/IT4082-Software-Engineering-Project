@@ -82,9 +82,7 @@ export const getHouseholdById = async (req, res) => {
  * ===================================================== */
 export const generateHouseholdCode = async (req, res) => {
   try {
-    const code = await prisma.$transaction(tx =>
-      generateUniqueHouseholdCode(tx)
-    )
+    const code = await prisma.$transaction(tx => generateUniqueHouseholdCode(tx))
 
     return res.status(200).json({
       success: true,
@@ -113,7 +111,7 @@ export const createHousehold = async (req, res) => {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       /* ============================
        * 1. Sinh mã hộ khẩu
        * ============================ */
@@ -225,15 +223,58 @@ export const createHousehold = async (req, res) => {
 
 /* =====================================================
  * PATCH /api/households/:id/status
+ * - active (1): moved_out (3) -> active (0)
+ * - inactive (0): active(0), temporary(1), absent(2) -> moved_out (3)
+ * - deceased (4) không đổi
  * ===================================================== */
 export const changeHouseholdStatus = async (req, res) => {
   const householdId = Number(req.params.id)
-  const { status } = req.body
+  const nextStatus = Number(req.body?.status)
+
+  if (!householdId || Number.isNaN(householdId)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid household id"
+    })
+  }
+
+  if (![0, 1].includes(nextStatus)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid status (only 0 or 1)"
+    })
+  }
 
   try {
-    const updated = await prisma.household.update({
-      where: { id: householdId },
-      data: { status: Number(status) }
+    const updated = await prisma.$transaction(async tx => {
+      const household = await tx.household.update({
+        where: { id: householdId },
+        data: { status: nextStatus }
+      })
+
+      if (nextStatus === 1) {
+        await tx.resident.updateMany({
+          where: {
+            householdId,
+            status: 3
+          },
+          data: {
+            status: 0
+          }
+        })
+      } else {
+        await tx.resident.updateMany({
+          where: {
+            householdId,
+            status: { in: [0, 1, 2] }
+          },
+          data: {
+            status: 3
+          }
+        })
+      }
+
+      return household
     })
 
     return res.status(200).json({

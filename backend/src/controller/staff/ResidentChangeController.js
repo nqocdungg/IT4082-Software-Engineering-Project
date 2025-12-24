@@ -1,12 +1,5 @@
 import prisma from "../../../prisma/prismaClient.js"
 
-/**
- * GET /api/resident-changes
- * Query:
- *  - search: fullname / CCCD / householdCode
- *  - approvalStatus: 0|1|2
- *  - changeType: 0..7
- */
 export const getResidentChanges = async (req, res) => {
   try {
     const { search, approvalStatus, changeType } = req.query
@@ -49,9 +42,6 @@ export const getResidentChanges = async (req, res) => {
   }
 }
 
-/**
- * GET /api/resident-changes/:id
- */
 export const getResidentChangeById = async (req, res) => {
   try {
     const id = Number(req.params.id)
@@ -76,35 +66,19 @@ export const getResidentChangeById = async (req, res) => {
   }
 }
 
-/**
- * POST /api/resident-changes
- * ✅ Luôn tạo ở trạng thái "Chờ duyệt" (approvalStatus=0)
- * ✅ Type 0/3: KHÔNG tạo Resident thật, chỉ lưu extraData vào reason (JSON)
- */
 export const createResidentChange = async (req, res) => {
   try {
-    const {
-      residentId,
-      changeType,
-      fromAddress,
-      toAddress,
-      fromDate,
-      toDate,
-      reason,
-      extraData
-    } = req.body
+    const { residentId, changeType, fromAddress, toAddress, fromDate, toDate, reason, extraData } = req.body
 
     const ct = Number(changeType)
     if (Number.isNaN(ct)) return res.status(400).json({ message: "changeType is invalid" })
 
-    // type 0/3 tạo người mới => bắt buộc có extraData đủ field
     if (ct === 0 || ct === 3) {
       const extra = extraData || {}
       if (!extra.fullname || !extra.dob || !extra.householdId) {
         return res.status(400).json({ message: "Missing resident info (fullname/dob/householdId)" })
       }
     } else {
-      // type khác => phải có residentId
       if (!residentId) return res.status(400).json({ message: "residentId is required" })
     }
 
@@ -116,9 +90,8 @@ export const createResidentChange = async (req, res) => {
         toAddress,
         fromDate: fromDate ? new Date(fromDate) : new Date(),
         toDate: toDate ? new Date(toDate) : null,
-        // ưu tiên JSON extraData (để approve xử lý)
-        reason: extraData ? JSON.stringify(extraData) : (reason ?? null),
-        approvalStatus: 0, // ✅ luôn chờ duyệt
+        reason: extraData ? JSON.stringify(extraData) : reason ?? null,
+        approvalStatus: 0,
         managerId: null
       }
     })
@@ -130,11 +103,6 @@ export const createResidentChange = async (req, res) => {
   }
 }
 
-/**
- * POST /api/resident-changes/:id/approve
- * ✅ Approve mới thực sự áp dụng thay đổi
- * ✅ Type 0/3: tạo resident tại đây, rồi update residentId vào change
- */
 export const approveResidentChange = async (req, res) => {
   const changeId = Number(req.params.id)
   const managerId = req.user.id
@@ -146,15 +114,12 @@ export const approveResidentChange = async (req, res) => {
     }
 
     const approved = await prisma.$transaction(async tx => {
-      // 1) mark approved
       const c1 = await tx.residentChange.update({
         where: { id: changeId },
         data: { approvalStatus: 1, managerId }
       })
 
-      // 2) apply effect
       const updated = await handleApprovedChange(tx, c1)
-
       return updated
     })
 
@@ -165,9 +130,6 @@ export const approveResidentChange = async (req, res) => {
   }
 }
 
-/**
- * POST /api/resident-changes/:id/reject
- */
 export const rejectResidentChange = async (req, res) => {
   const changeId = Number(req.params.id)
   const managerId = req.user.id
@@ -190,19 +152,11 @@ export const rejectResidentChange = async (req, res) => {
   }
 }
 
-/**
- * Xử lý sau khi duyệt
- * - Type 0: birth => tạo resident mới
- * - Type 3: move_in => tạo resident mới + gán householdId
- * - Type 4: move_out => set householdId null
- * - Type 6: change_household_head => update household.ownerId
- */
 async function handleApprovedChange(tx, change) {
   const extra = change.reason ? safeParseJSON(change.reason) : {}
 
   switch (change.changeType) {
-    case 0: { // birth
-      // tạo resident mới
+    case 0: {
       const newborn = await tx.resident.create({
         data: {
           residentCCCD: null,
@@ -220,7 +174,6 @@ async function handleApprovedChange(tx, change) {
         }
       })
 
-      // update residentId vào change
       return await tx.residentChange.update({
         where: { id: change.id },
         data: { residentId: newborn.id },
@@ -231,7 +184,7 @@ async function handleApprovedChange(tx, change) {
       })
     }
 
-    case 3: { // move_in
+    case 3: {
       if (extra.residentCCCD) {
         const existed = await tx.resident.findUnique({ where: { residentCCCD: extra.residentCCCD } })
         if (existed) throw new Error("Resident already exists")
@@ -264,17 +217,26 @@ async function handleApprovedChange(tx, change) {
       })
     }
 
-    case 4: { // move_out
+    case 4: {
       if (!change.residentId) throw new Error("residentId missing for move_out")
+
+      const r = await tx.resident.findUnique({
+        where: { id: change.residentId },
+        select: { status: true }
+      })
+      if (!r) throw new Error("Resident not found")
+
+      if (r.status === 4) return change
 
       await tx.resident.update({
         where: { id: change.residentId },
-        data: { householdId: null }
+        data: { status: 3, householdId: null }
       })
+
       return change
     }
 
-    case 6: { // change_household_head
+    case 6: {
       if (extra.householdId && extra.newOwnerId) {
         await tx.household.update({
           where: { id: Number(extra.householdId) },

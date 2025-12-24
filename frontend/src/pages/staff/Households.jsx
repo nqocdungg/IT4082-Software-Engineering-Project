@@ -11,7 +11,7 @@ import {
   FaPlus,
   FaTrash
 } from "react-icons/fa"
-import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
+import { HiOutlineLogout } from "react-icons/hi"
 import { useNavigate } from "react-router-dom"
 
 import "../../styles/staff/households.css"
@@ -21,9 +21,8 @@ import "../../styles/staff/layout.css"
 const API_BASE = "http://localhost:5000/api"
 
 const HOUSEHOLD_STATUS_MAP = {
-  0: { label: "Đang hoạt động", className: "status-hk-thuong_tru" },
-  1: { label: "Tạm trú", className: "status-hk-tam_tru" },
-  2: { label: "Đã chuyển đi", className: "status-hk-da_chuyen_di" }
+  0: { label: "Đã chuyển đi", className: "status-hk-da_chuyen_di" },
+  1: { label: "Đang hoạt động", className: "status-hk-thuong_tru" }
 }
 
 function getHouseholdStatusInfo(code) {
@@ -83,6 +82,10 @@ function AddMemberModal({ open, onClose, onAdd }) {
       alert("Nhân khẩu cần có Họ tên và Ngày sinh.")
       return
     }
+    if (!form.relationToOwner.trim()) {
+      alert("Nhân khẩu cần có Quan hệ với chủ hộ.")
+      return
+    }
 
     onAdd({
       residentCCCD: form.residentCCCD.trim(),
@@ -117,33 +120,21 @@ function AddMemberModal({ open, onClose, onAdd }) {
             <div className="detail-item">
               <div className="detail-label">Họ và tên *</div>
               <div className="detail-value">
-                <input
-                  required
-                  value={form.fullname}
-                  onChange={e => setField("fullname", e.target.value)}
-                />
+                <input required value={form.fullname} onChange={e => setField("fullname", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">CCCD</div>
               <div className="detail-value">
-                <input
-                  value={form.residentCCCD}
-                  onChange={e => setField("residentCCCD", e.target.value)}
-                />
+                <input value={form.residentCCCD} onChange={e => setField("residentCCCD", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Ngày sinh *</div>
               <div className="detail-value">
-                <input
-                  type="date"
-                  required
-                  value={form.dob}
-                  onChange={e => setField("dob", e.target.value)}
-                />
+                <input type="date" required value={form.dob} onChange={e => setField("dob", e.target.value)} />
               </div>
             </div>
 
@@ -160,57 +151,43 @@ function AddMemberModal({ open, onClose, onAdd }) {
             <div className="detail-item">
               <div className="detail-label">Dân tộc</div>
               <div className="detail-value">
-                <input
-                  value={form.ethnicity}
-                  onChange={e => setField("ethnicity", e.target.value)}
-                />
+                <input value={form.ethnicity} onChange={e => setField("ethnicity", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Tôn giáo</div>
               <div className="detail-value">
-                <input
-                  value={form.religion}
-                  onChange={e => setField("religion", e.target.value)}
-                />
+                <input value={form.religion} onChange={e => setField("religion", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Quốc tịch</div>
               <div className="detail-value">
-                <input
-                  value={form.nationality}
-                  onChange={e => setField("nationality", e.target.value)}
-                />
+                <input value={form.nationality} onChange={e => setField("nationality", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Quê quán</div>
               <div className="detail-value">
-                <input
-                  value={form.hometown}
-                  onChange={e => setField("hometown", e.target.value)}
-                />
+                <input value={form.hometown} onChange={e => setField("hometown", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Nghề nghiệp</div>
               <div className="detail-value">
-                <input
-                  value={form.occupation}
-                  onChange={e => setField("occupation", e.target.value)}
-                />
+                <input value={form.occupation} onChange={e => setField("occupation", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
-              <div className="detail-label">Quan hệ với chủ hộ</div>
+              <div className="detail-label">Quan hệ với chủ hộ *</div>
               <div className="detail-value">
                 <input
+                  required
                   value={form.relationToOwner}
                   onChange={e => setField("relationToOwner", e.target.value)}
                   placeholder="VD: Vợ, Con, Ông, Bà..."
@@ -249,14 +226,10 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
   if (!open) return null
 
   const setHouseholdField = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
-  const setOwnerField = (k, v) =>
-    setForm(prev => ({ ...prev, owner: { ...prev.owner, [k]: v } }))
+  const setOwnerField = (k, v) => setForm(prev => ({ ...prev, owner: { ...prev.owner, [k]: v } }))
 
   const removeMember = idx => setMembers(prev => prev.filter((_, i) => i !== idx))
-
-  const addMember = m => {
-    setMembers(prev => [...prev, m])
-  }
+  const addMember = m => setMembers(prev => [...prev, m])
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -320,65 +293,42 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
             <div className="detail-item">
               <div className="detail-label">Mã hộ khẩu *</div>
               <div className="detail-value">
-                <input
-                  required
-                  value={form.householdCode}
-                  onChange={e => setHouseholdField("householdCode", e.target.value)}
-                />
+                <input required value={form.householdCode} onChange={e => setHouseholdField("householdCode", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Địa chỉ *</div>
               <div className="detail-value">
-                <input
-                  required
-                  value={form.address}
-                  onChange={e => setHouseholdField("address", e.target.value)}
-                />
+                <input required value={form.address} onChange={e => setHouseholdField("address", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Họ tên chủ hộ *</div>
               <div className="detail-value">
-                <input
-                  required
-                  value={form.owner.fullname}
-                  onChange={e => setOwnerField("fullname", e.target.value)}
-                />
+                <input required value={form.owner.fullname} onChange={e => setOwnerField("fullname", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">CCCD chủ hộ</div>
               <div className="detail-value">
-                <input
-                  value={form.owner.residentCCCD}
-                  onChange={e => setOwnerField("residentCCCD", e.target.value)}
-                />
+                <input value={form.owner.residentCCCD} onChange={e => setOwnerField("residentCCCD", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Ngày sinh chủ hộ *</div>
               <div className="detail-value">
-                <input
-                  type="date"
-                  required
-                  value={form.owner.dob}
-                  onChange={e => setOwnerField("dob", e.target.value)}
-                />
+                <input type="date" required value={form.owner.dob} onChange={e => setOwnerField("dob", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Giới tính chủ hộ</div>
               <div className="detail-value">
-                <select
-                  value={form.owner.gender}
-                  onChange={e => setOwnerField("gender", e.target.value)}
-                >
+                <select value={form.owner.gender} onChange={e => setOwnerField("gender", e.target.value)}>
                   <option value="M">Nam</option>
                   <option value="F">Nữ</option>
                 </select>
@@ -388,61 +338,42 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
             <div className="detail-item">
               <div className="detail-label">Dân tộc</div>
               <div className="detail-value">
-                <input
-                  value={form.owner.ethnicity}
-                  onChange={e => setOwnerField("ethnicity", e.target.value)}
-                />
+                <input value={form.owner.ethnicity} onChange={e => setOwnerField("ethnicity", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Tôn giáo</div>
               <div className="detail-value">
-                <input
-                  value={form.owner.religion}
-                  onChange={e => setOwnerField("religion", e.target.value)}
-                />
+                <input value={form.owner.religion} onChange={e => setOwnerField("religion", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Quốc tịch</div>
               <div className="detail-value">
-                <input
-                  value={form.owner.nationality}
-                  onChange={e => setOwnerField("nationality", e.target.value)}
-                />
+                <input value={form.owner.nationality} onChange={e => setOwnerField("nationality", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Quê quán</div>
               <div className="detail-value">
-                <input
-                  value={form.owner.hometown}
-                  onChange={e => setOwnerField("hometown", e.target.value)}
-                />
+                <input value={form.owner.hometown} onChange={e => setOwnerField("hometown", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item">
               <div className="detail-label">Nghề nghiệp</div>
               <div className="detail-value">
-                <input
-                  value={form.owner.occupation}
-                  onChange={e => setOwnerField("occupation", e.target.value)}
-                />
+                <input value={form.owner.occupation} onChange={e => setOwnerField("occupation", e.target.value)} />
               </div>
             </div>
 
             <div className="detail-item detail-wide">
               <div className="detail-label">Danh sách nhân khẩu trong hộ</div>
               <div className="detail-value">
-                <button
-                  type="button"
-                  className="btn-mini-add"
-                  onClick={() => setAddMemberOpen(true)}
-                >
+                <button type="button" className="btn-mini-add" onClick={() => setAddMemberOpen(true)}>
                   <FaPlus /> Thêm nhân khẩu
                 </button>
 
@@ -452,20 +383,9 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
                       <li key={idx} className="member-item">
                         <div className="member-name">{m.fullname}</div>
                         <div className="member-meta">
-                          {(m.gender === "M" ? "Nam" : "Nữ") +
-                            " • " +
-                            (m.relationToOwner || "Thành viên") +
-                            " • " +
-                            (m.residentCCCD || "—") +
-                            " • " +
-                            String(m.dob).slice(0, 10)}
+                          {(m.gender === "M" ? "Nam" : "Nữ") + " • " + (m.relationToOwner || "Thành viên") + " • " + (m.residentCCCD || "—") + " • " + String(m.dob).slice(0, 10)}
                         </div>
-                        <button
-                          type="button"
-                          className="member-remove"
-                          onClick={() => removeMember(idx)}
-                          title="Xóa khỏi danh sách"
-                        >
+                        <button type="button" className="member-remove" onClick={() => removeMember(idx)} title="Xóa khỏi danh sách">
                           <FaTrash />
                         </button>
                       </li>
@@ -490,11 +410,7 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
           </div>
         </form>
 
-        <AddMemberModal
-          open={addMemberOpen}
-          onClose={() => setAddMemberOpen(false)}
-          onAdd={addMember}
-        />
+        <AddMemberModal open={addMemberOpen} onClose={() => setAddMemberOpen(false)} onAdd={addMember} />
       </div>
     </div>
   )
@@ -580,17 +496,15 @@ export default function HouseholdsPage() {
     const count = code => households.filter(h => Number(h.status) === Number(code)).length
     return {
       total,
-      active: count(0),
-      tamTru: count(1),
-      daChuyenDi: count(2)
+      active: count(1),
+      inactive: count(0)
     }
   }, [households])
 
   const miniCards = [
     { label: "Tất cả", value: stats.total, icon: <FaUsers />, tone: "blue" },
     { label: "Đang hoạt động", value: stats.active, icon: <FaUserCheck />, tone: "green" },
-    { label: "Tạm trú", value: stats.tamTru, icon: <HiOutlineLogin />, tone: "amber" },
-    { label: "Đã chuyển đi", value: stats.daChuyenDi, icon: <HiOutlineLogout />, tone: "rose" },
+    { label: "Đã chuyển đi", value: stats.inactive, icon: <HiOutlineLogout />, tone: "rose" },
     {
       label: "Thêm hộ khẩu",
       value: null,
@@ -666,12 +580,9 @@ export default function HouseholdsPage() {
           >
             <div className="mini-ico">{c.icon}</div>
             <div className="mini-meta">
-              {"value" in c && (
-                <div className="mini-value">{c.value}</div>
-              )}
+              {"value" in c && <div className="mini-value">{c.value}</div>}
               <div className="mini-label">{c.label}</div>
             </div>
-
           </div>
         ))}
       </div>
@@ -689,9 +600,8 @@ export default function HouseholdsPage() {
                   }}
                 >
                   <option value="ALL">Tất cả trạng thái hộ khẩu</option>
-                  <option value="0">Đang hoạt động</option>
-                  <option value="1">Tạm trú</option>
-                  <option value="2">Đã chuyển đi</option>
+                  <option value="1">Đang hoạt động</option>
+                  <option value="0">Đã chuyển đi</option>
                 </select>
               </div>
             </div>
@@ -736,7 +646,7 @@ export default function HouseholdsPage() {
                 pageHouseholds.map(h => {
                   const statusInfo = getHouseholdStatusInfo(h.status)
                   const ownerName = h.owner?.fullname || "Không rõ"
-                  const membersCount = h.residents?.length ?? 0
+                  const membersCount = h.residents?.filter(r => [0, 1, 2].includes(r.status)).length ?? 0
 
                   return (
                     <tr key={h.id} className="clickable-row" onClick={() => handleOpenDetail(h)}>
@@ -787,11 +697,7 @@ export default function HouseholdsPage() {
               <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
                 <FaChevronLeft />
               </button>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
-              >
+              <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
                 <FaChevronRight />
               </button>
             </div>
@@ -853,15 +759,16 @@ export default function HouseholdsPage() {
                     <div className="detail-value">
                       {viewHousehold.residents?.length ? (
                         <ul className="member-list">
-                          {viewHousehold.residents.map(r => (
-                            <li className="member-item" key={r.id}>
-                              <div className="member-name">{r.fullname}</div>
-                              <div className="member-meta">
-                                {r.gender === "M" ? "Nam" : "Nữ"} • {r.relationToOwner || "Thành viên"} •{" "}
-                                {r.residentCCCD || "—"}
-                              </div>
-                            </li>
-                          ))}
+                          {viewHousehold.residents
+                            .filter(r => r.status !== 3 && r.status !== 4)
+                            .map(r => (
+                              <li className="member-item" key={r.id}>
+                                <div className="member-name">{r.fullname}</div>
+                                <div className="member-meta">
+                                  {r.gender === "M" ? "Nam" : "Nữ"} • {r.relationToOwner || "Thành viên"} • {r.residentCCCD || "—"}
+                                </div>
+                              </li>
+                            ))}
                         </ul>
                       ) : (
                         <div className="sub-text">Chưa có nhân khẩu trong hộ.</div>
@@ -902,9 +809,8 @@ export default function HouseholdsPage() {
                   <div className="detail-label">Trạng thái</div>
                   <div className="detail-value">
                     <select value={editStatus} onChange={e => setEditStatus(e.target.value)}>
-                      <option value="0">Đang hoạt động</option>
-                      <option value="1">Tạm trú</option>
-                      <option value="2">Đã chuyển đi</option>
+                      <option value="1">Đang hoạt động</option>
+                      <option value="0">Đã chuyển đi</option>
                     </select>
                   </div>
                 </div>
