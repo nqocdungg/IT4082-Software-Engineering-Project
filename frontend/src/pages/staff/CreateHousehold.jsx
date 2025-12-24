@@ -35,7 +35,7 @@ function CreateHousehold() {
   const [owner, setOwner] = useState({ ...emptyPerson })
   const [members, setMembers] = useState([])
 
-  const [mode, setMode] = useState("OWNER") // OWNER | MEMBER
+  const [mode, setMode] = useState("OWNER")
   const [personForm, setPersonForm] = useState({ ...emptyPerson })
   const [ownerLocked, setOwnerLocked] = useState(false)
 
@@ -53,10 +53,15 @@ function CreateHousehold() {
     if (ownerLocked && owner?.fullname) {
       list.push({
         type: "OWNER",
+        residentCCCD: owner.residentCCCD,
         fullname: owner.fullname,
         gender: owner.gender,
         dob: owner.dob,
-        residentCCCD: owner.residentCCCD,
+        ethnicity: owner.ethnicity,
+        religion: owner.religion,
+        nationality: owner.nationality,
+        hometown: owner.hometown,
+        occupation: owner.occupation,
         relationToOwner: "Chủ hộ"
       })
     }
@@ -76,7 +81,12 @@ function CreateHousehold() {
     setOwner({
       ...o,
       residentCCCD: String(o.residentCCCD || "").trim(),
-      fullname: String(o.fullname || "").trim()
+      fullname: String(o.fullname || "").trim(),
+      ethnicity: String(o.ethnicity || "").trim(),
+      religion: String(o.religion || "").trim(),
+      nationality: String(o.nationality || "Việt Nam").trim(),
+      hometown: String(o.hometown || "").trim(),
+      occupation: String(o.occupation || "").trim()
     })
     setOwnerLocked(true)
     setMode("MEMBER")
@@ -100,6 +110,11 @@ function CreateHousehold() {
         ...m,
         residentCCCD: String(m.residentCCCD || "").trim(),
         fullname: String(m.fullname || "").trim(),
+        ethnicity: String(m.ethnicity || "").trim(),
+        religion: String(m.religion || "").trim(),
+        nationality: String(m.nationality || "Việt Nam").trim(),
+        hometown: String(m.hometown || "").trim(),
+        occupation: String(m.occupation || "").trim(),
         relationToOwner: String(m.relationToOwner || "").trim()
       }
     ])
@@ -121,11 +136,7 @@ function CreateHousehold() {
       return
     }
     try {
-      await axios.post(
-        `${API_BASE}/households`,
-        { address, owner, members },
-        { headers: authHeaders() }
-      )
+      await axios.post(`${API_BASE}/households`, { address, owner, members }, { headers: authHeaders() })
       alert("Tạo hộ khẩu thành công")
       navigate("/households")
     } catch (err) {
@@ -188,19 +199,25 @@ function CreateHousehold() {
                         <div className="resident-name">
                           {r.fullname} {r.type === "OWNER" && <span>(Chủ hộ)</span>}
                         </div>
+
                         <div className="resident-meta">
-                          {r.gender === "M" ? "Nam" : "Nữ"} • {r.relationToOwner || "Thành viên"} •{" "}
-                          {r.residentCCCD || "—"}
+                          {r.residentCCCD || "—"} • {r.dob ? String(r.dob).slice(0, 10) : "—"} •{" "}
+                          {r.gender === "M" ? "Nam" : "Nữ"}
+                        </div>
+
+                        <div className="resident-meta">
+                          Dân tộc: {r.ethnicity || "—"} • Quốc tịch: {r.nationality || "Việt Nam"} • Tôn giáo:{" "}
+                          {r.religion || "—"}
+                        </div>
+
+                        <div className="resident-meta">
+                          Nghề nghiệp: {r.occupation || "—"} • Quê quán: {r.hometown || "—"} • Quan hệ:{" "}
+                          {r.relationToOwner || "Thành viên"}
                         </div>
                       </div>
 
                       {r.type !== "OWNER" && (
-                        <button
-                          type="button"
-                          className="icon-btn danger"
-                          onClick={() => removeMember(idx - 1)}
-                          title="Xóa"
-                        >
+                        <button type="button" className="icon-btn danger" onClick={() => removeMember(idx - 1)} title="Xóa">
                           <FaTrash />
                         </button>
                       )}
@@ -226,9 +243,9 @@ function CreateHousehold() {
 
             {mode === "OWNER" ? (
               <>
-                <div className="form-grid grid-person">
-                  <div className="form-field span-2">
-                    <label>Họ và tên</label>
+                <div className="form-grid grid-person grid-person--owner">
+                  <div className="form-field">
+                    <label>Họ tên đầy đủ</label>
                     <input
                       required
                       value={owner.fullname}
@@ -238,7 +255,7 @@ function CreateHousehold() {
                   </div>
 
                   <div className="form-field">
-                    <label>Số CCCD</label>
+                    <label>Số định danh cá nhân</label>
                     <input
                       value={owner.residentCCCD}
                       onChange={e => updateOwner("residentCCCD", e.target.value)}
@@ -260,6 +277,24 @@ function CreateHousehold() {
                   </div>
 
                   <div className="form-field">
+                    <label>Tôn giáo</label>
+                    <input
+                      value={owner.religion}
+                      onChange={e => updateOwner("religion", e.target.value)}
+                      placeholder="VD: Không, Phật giáo..."
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Dân tộc</label>
+                    <input
+                      value={owner.ethnicity}
+                      onChange={e => updateOwner("ethnicity", e.target.value)}
+                      placeholder="VD: Kinh, Tày..."
+                    />
+                  </div>
+
+                  <div className="form-field">
                     <label>Quốc tịch</label>
                     <input value={owner.nationality} onChange={e => updateOwner("nationality", e.target.value)} />
                   </div>
@@ -269,7 +304,7 @@ function CreateHousehold() {
                     <input value={owner.occupation} onChange={e => updateOwner("occupation", e.target.value)} />
                   </div>
 
-                  <div className="form-field span-2">
+                  <div className="form-field">
                     <label>Quê quán</label>
                     <input value={owner.hometown} onChange={e => updateOwner("hometown", e.target.value)} />
                   </div>
@@ -283,9 +318,9 @@ function CreateHousehold() {
               </>
             ) : (
               <>
-                <div className="form-grid grid-person">
-                  <div className="form-field span-2">
-                    <label>Họ và tên</label>
+                <div className="form-grid grid-person grid-person--member">
+                  <div className="form-field">
+                    <label>Họ tên đầy đủ</label>
                     <input
                       value={personForm.fullname}
                       onChange={e => updateForm("fullname", e.target.value)}
@@ -294,7 +329,7 @@ function CreateHousehold() {
                   </div>
 
                   <div className="form-field">
-                    <label>Số CCCD</label>
+                    <label>Số định danh cá nhân</label>
                     <input
                       value={personForm.residentCCCD}
                       onChange={e => updateForm("residentCCCD", e.target.value)}
@@ -316,12 +351,26 @@ function CreateHousehold() {
                   </div>
 
                   <div className="form-field">
-                    <label>Quan hệ với chủ hộ *</label>
+                    <label>Tôn giáo</label>
                     <input
-                      value={personForm.relationToOwner}
-                      onChange={e => updateForm("relationToOwner", e.target.value)}
-                      placeholder="VD: Vợ, Con, Ông, Bà..."
+                      value={personForm.religion}
+                      onChange={e => updateForm("religion", e.target.value)}
+                      placeholder="VD: Không, Phật giáo..."
                     />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Dân tộc</label>
+                    <input
+                      value={personForm.ethnicity}
+                      onChange={e => updateForm("ethnicity", e.target.value)}
+                      placeholder="VD: Kinh, Tày..."
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Quốc tịch</label>
+                    <input value={personForm.nationality} onChange={e => updateForm("nationality", e.target.value)} />
                   </div>
 
                   <div className="form-field">
@@ -329,9 +378,18 @@ function CreateHousehold() {
                     <input value={personForm.occupation} onChange={e => updateForm("occupation", e.target.value)} />
                   </div>
 
-                  <div className="form-field span-2">
+                  <div className="form-field">
                     <label>Quê quán</label>
                     <input value={personForm.hometown} onChange={e => updateForm("hometown", e.target.value)} />
+                  </div>
+
+                  <div className="form-field">
+                    <label>Quan hệ với chủ hộ *</label>
+                    <input
+                      value={personForm.relationToOwner}
+                      onChange={e => updateForm("relationToOwner", e.target.value)}
+                      placeholder="VD: Vợ, Con, Ông, Bà..."
+                    />
                   </div>
                 </div>
 
