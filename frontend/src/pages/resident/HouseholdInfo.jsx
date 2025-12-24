@@ -8,6 +8,9 @@ export default function HouseholdInfo() {
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem("token");
+  console.log("token:", localStorage.getItem("token"))
+  console.log("role:", localStorage.getItem("role"))
+
 
   useEffect(() => {
     if (!token) {
