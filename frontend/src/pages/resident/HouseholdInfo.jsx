@@ -57,7 +57,7 @@ export default function HouseholdInfo() {
                 {household.residents?.length === 0 ? (
                   <p>Không có nhân khẩu</p>
                 ) : (
-                  <table className="resident-table">
+                  <table className="resident-table-household">
                     <thead>
                       <tr>
                         <th>STT</th>

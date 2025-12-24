@@ -1,5 +1,7 @@
 import express from "express"
 import {
+  getResidentChanges,
+  getResidentChangeById,
   createResidentChange,
   approveResidentChange,
   rejectResidentChange
@@ -10,13 +12,29 @@ import { allowRoles } from "../../middleware/roleMiddleware.js"
 
 const router = express.Router()
 
-// tạo thủ tục (HEAD/DEPUTY auto-approve)
-router.post("/", authMiddleware, allowRoles(["HEAD", "DEPUTY"]), createResidentChange)
+// ==========================
+// GET: danh sách biến động (tất cả staff)
+// ==========================
+router.get("/", authMiddleware, getResidentChanges)
 
-// duyệt (chức năng trong tương lai)
-router.post("/:id/approve", authMiddleware, allowRoles(["HEAD", "DEPUTY"]), approveResidentChange)
+// ==========================
+// GET: chi tiết biến động (tất cả staff)
+// ==========================
+router.get("/:id", authMiddleware, getResidentChangeById)
 
-// từ chối (chức năng trong tương lai)
-router.post("/:id/reject", authMiddleware, allowRoles(["HEAD", "DEPUTY"]), rejectResidentChange)
+// ==========================
+// POST: tạo thủ tục (tất cả staff)
+// ==========================
+router.post("/", authMiddleware, createResidentChange)
+
+// ==========================
+// POST: duyệt (chỉ HEAD / DEPUTY)
+// ==========================
+router.post("/:id/approve", authMiddleware, allowRoles("HEAD", "DEPUTY"), approveResidentChange)
+
+// ==========================
+// POST: từ chối (chỉ HEAD / DEPUTY)
+// ==========================
+router.post("/:id/reject", authMiddleware, allowRoles("HEAD", "DEPUTY"), rejectResidentChange)
 
 export default router
