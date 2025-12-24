@@ -12,6 +12,7 @@ import {
   FaTrash
 } from "react-icons/fa"
 import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
+import { useNavigate } from "react-router-dom"
 
 import "../../styles/staff/households.css"
 import "../../styles/staff/residents.css"
@@ -500,6 +501,7 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
 }
 
 export default function HouseholdsPage() {
+  const navigate = useNavigate()
   const [households, setHouseholds] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -594,7 +596,7 @@ export default function HouseholdsPage() {
       value: null,
       icon: <FaPlus />,
       tone: "slate",
-      onClick: () => setCreateOpen(true)
+      onClick: () => navigate("/households/create")
     }
   ]
 

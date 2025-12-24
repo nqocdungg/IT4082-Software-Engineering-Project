@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 
 import StaffDashboard from "./pages/staff/Dashboard"
 import StaffHouseholds from "./pages/staff/Households"
+import StaffCreateHousehold from "./pages/staff/CreateHousehold"
 import StaffResidents from "./pages/staff/Residents"
 import StaffRevenues from "./pages/staff/Revenues"
 
@@ -35,6 +36,7 @@ function App() {
         >
           <Route path="/dashboard" element={<StaffDashboard />} />
           <Route path="/households" element={<StaffHouseholds />} />
+          <Route path="/households/create" element={<StaffCreateHousehold />} />
           <Route path="/residents" element={<StaffResidents />} />
           <Route path="/revenues" element={<StaffRevenues />} />
         </Route>
