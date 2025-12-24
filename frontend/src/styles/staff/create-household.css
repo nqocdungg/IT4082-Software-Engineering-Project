@@ -1,168 +1,21 @@
 .create-household {
-  max-width: 1100px;
-  margin: auto;
-}
-
-.ch-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.ch-header button {
-  background: none;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-.card h3 {
-  margin-bottom: 16px;
-  color: #132e57;
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 16px;
-}
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-input, select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.member-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.member-header button {
-  background: #132e57;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.member-form {
-  margin-top: 16px;
-}
-
-.member-actions {
-  grid-column: span 3;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.member-actions button {
-  padding: 8px 16px;
-}
-
-.member-actions .primary {
-  background: #132e57;
-  color: white;
-  border: none;
-}
-
-.member-list {
-  margin-top: 16px;
-}
-
-.member-list li {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px dashed #ddd;
-}
-
-.form-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.form-footer button {
-  padding: 10px 18px;
-}
-
-.form-footer .primary {
-  background: #132e57;
-  color: white;
-  border: none;
-}
-
-/* ===============================
-   READONLY / AUTO-GENERATED
-================================ */
-.input-readonly {
-  background: #f3f4f6;
-  color: #555;
-  cursor: not-allowed;
-}
-
-/* ===============================
-   ADDRESS TEXTAREA
-================================ */
-.address-textarea {
-  width: 100%;
+  flex: 1;
+  min-height: 0;
   padding: 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  resize: none;
-  font-family: inherit;
+  background: #f6f7fb;
+  position: relative;
 }
 
-/* ===============================
-   SPACING HELPER
-================================ */
-.mt-16 {
-  margin-top: 16px;
-}
-
-/* ===============================
-   GRID FOR OWNER (4 COLUMNS)
-================================ */
-.grid-4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-}
-
-.span-2 {
-  grid-column: span 2;
-}
-.create-household {
-  max-width: 1100px;
-  margin: auto;
-}
-
-/* ================= HEADER ================= */
 .ch-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+}
+
+.ch-header h3 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f2a56;
 }
 
 .ch-header button {
@@ -172,29 +25,70 @@ input, select {
   cursor: pointer;
 }
 
-/* ================= CARD ================= */
 .card {
   background: #fff;
   padding: 20px;
-  border-radius: 10px;
+  border-radius: 14px;
   margin-bottom: 20px;
+  border: 1px solid #eef0f6;
 }
 
 .card h3 {
-  margin-bottom: 0;
+  margin: 0;
   color: #132e57;
 }
 
-/* ================= INPUT BASE ================= */
+.form-section {
+  padding-top: 8px;
+}
+
+.section-header h4 {
+  margin: 10px 0;
+  color: #132e57;
+}
+
+.section-header p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.section-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
 input,
 select,
 textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: inherit;
   background: #f9fafb;
+  box-sizing: border-box;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+input,
+select {
+  height: 44px;
+}
+
+textarea {
+  line-height: 1.35;
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9aa3b2;
+  font-weight: 600;
 }
 
 input:focus,
@@ -203,124 +97,189 @@ textarea:focus {
   outline: none;
   border-color: #2563eb;
   background: #fff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
-/* ================= READONLY ================= */
 .input-readonly {
   background: #f3f4f6;
-  color: #555;
+  color: #475569;
   cursor: not-allowed;
 }
 
-/* ================= ADDRESS ================= */
-.address-textarea {
-  resize: none;
-}
-
-/* ================= SECTION HEADER ================= */
-.form-section {
-  padding-top: 8px;
-}
-
-.section-header h3 {
-  margin: 0;
-  color: #132e57;
-}
-
-.section-header p {
-  margin: 4px 0 16px;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-/* ================= SUB TITLE ================= */
-.sub-title {
-  font-weight: 600;
-  margin: 18px 0 10px;
-  color: #374151;
-}
-
-/* ================= GRID SYSTEM ================= */
-.form-grid-2 {
+.form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
+  align-items: start;
+}
+
+.grid-household {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 32px;
+  width: 100%;
+}
+
+.grid-person {
+  grid-template-columns: 2fr 1fr 1fr;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .form-field label {
   font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: #374151;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #0f172a;
+}
+
+.span-3 {
+  grid-column: 1 / -1;
 }
 
 .span-2 {
   grid-column: span 2;
 }
 
-/* ================= MEMBER ================= */
-.member-header {
+
+
+.household-residents {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.residents-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.member-header button {
-  background: #132e57;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
+.household-residents h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  color: #111827;
 }
 
-.member-form {
-  margin-top: 16px;
+.residents-hint {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
 }
 
-.member-actions {
+.resident-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
   gap: 10px;
-  margin-top: 12px;
 }
 
-.member-actions button {
-  padding: 8px 16px;
-}
-
-.member-actions .primary {
-  background: #132e57;
-  color: white;
-  border: none;
-}
-
-/* ================= MEMBER LIST ================= */
-.member-list {
-  margin-top: 16px;
-}
-
-.member-list li {
+.resident-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px dashed #ddd;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid #eef0f6;
+  border-radius: 12px;
+  background: #fff;
 }
 
-.member-list button {
-  background: none;
-  border: none;
+.resident-item.owner {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.resident-left {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resident-name {
+  font-weight: 900;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resident-name span {
+  font-weight: 800;
+  font-size: 12px;
+  color: #2563eb;
+  margin-left: 6px;
+}
+
+.resident-meta {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resident-empty {
+  padding: 10px 12px;
+  color: #9ca3af;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #eef0f6;
+  background: #fff;
   cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.icon-btn.danger {
   color: #b91c1c;
 }
 
-/* ================= FOOTER ================= */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #132e57;
+  border: none;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.btn-outline {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #dbe2ee;
+  color: #0f2a56;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.actions-row {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .form-footer {
   display: flex;
   justify-content: flex-end;
@@ -330,7 +289,11 @@ textarea:focus {
 
 .form-footer button {
   padding: 10px 18px;
-  border-radius: 6px;
+  border-radius: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid #dbe2ee;
+  background: #fff;
 }
 
 .form-footer .primary {

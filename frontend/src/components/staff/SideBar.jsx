@@ -1,6 +1,6 @@
 import "../../styles/staff/sidebar.css"
-import { Link, useLocation } from "react-router-dom"
-import { FiGrid, FiHome, FiUsers, FiTrendingUp, FiRepeat } from "react-icons/fi"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { FiGrid, FiHome, FiUsers, FiTrendingUp, FiRepeat, FiLogOut } from "react-icons/fi"
 import logo from "../../assets/images/new-logo.png"
 
 const menuItems = [
@@ -8,12 +8,18 @@ const menuItems = [
   { icon: FiHome, label: "Hộ khẩu", path: "/households" },
   { icon: FiUsers, label: "Cư dân", path: "/residents" },
   { icon: FiRepeat, label: "Biến đổi nhân khẩu", path: "/resident-change" },
-  { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" },
-  
+  { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" }
 ]
 
 export default function SideBar() {
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const logout = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("accessToken")
+    navigate("/login")
+  }
 
   return (
     <aside className="sidebar">
@@ -28,13 +34,26 @@ export default function SideBar() {
           const isActive = location.pathname === item.path
 
           return (
-            <Link key={item.path} to={item.path} className={`nav-item ${isActive ? "active" : ""}`}>
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`nav-item ${isActive ? "active" : ""}`}
+            >
               <Icon />
               <span>{item.label}</span>
             </Link>
           )
         })}
       </nav>
+
+      {/* ===== LOGOUT ===== */}
+      <div className="sidebar-footer">
+        <div className="sidebar-divider" />
+        <button className="logout-btn" onClick={logout}>
+          <FiLogOut />
+          <span>Đăng xuất</span>
+        </button>
+      </div>
     </aside>
   )
 }
