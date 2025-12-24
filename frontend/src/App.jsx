@@ -7,6 +7,7 @@ import StaffDashboard from "./pages/staff/Dashboard"
 import StaffHouseholds from "./pages/staff/Households"
 import StaffResidents from "./pages/staff/Residents"
 import StaffRevenues from "./pages/staff/Revenues"
+import StaffResidentChange from "./pages/staff/ResidentChange"
 
 import ResidentHome from "./pages/resident/ResidentHome.jsx"
 import HouseholdInfo from "./pages/resident/HouseholdInfo.jsx"
@@ -37,6 +38,7 @@ function App() {
           <Route path="/households" element={<StaffHouseholds />} />
           <Route path="/residents" element={<StaffResidents />} />
           <Route path="/revenues" element={<StaffRevenues />} />
+          <Route path="/resident-change" element={<StaffResidentChange />} />
         </Route>
 
         {/* HOUSEHOLD / RESIDENT */}

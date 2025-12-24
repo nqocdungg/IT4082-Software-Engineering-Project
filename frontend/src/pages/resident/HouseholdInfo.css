@@ -65,7 +65,7 @@
   padding-bottom: 6px;
 }
 
-.resident-table {
+.resident-table-household {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -75,23 +75,23 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
 }
 
-.resident-table th,
-.resident-table td {
+.resident-table-household th,
+.resident-table-household-household td {
   padding: 14px 16px;
   text-align: left;
 }
 
-.resident-table th {
+.resident-table-household th {
   background-color: #e6edf8;
   font-weight: 600;
   color: #0d1b2a;
 }
 
-.resident-table tr:nth-child(even) td {
+.resident-table-household tr:nth-child(even) td {
   background-color: #f7f9fc;
 }
 
-.resident-table tr:hover td {
+.resident-table-household tr:hover td {
   background-color: #e2e8f0;
 }
 

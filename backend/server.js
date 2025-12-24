@@ -35,7 +35,7 @@ app.use("/api/dashboard", staffDashboardRoutes)
 app.use("/api/households", staffHouseholdRoutes)
 app.use("/api/residents", staffResidentRoutes)
 app.use("/api/fees", staffFeeRoutes)
-app.use("/api/resident-change", staffResidentChangeRoutes)
+app.use("/api/resident-changes", staffResidentChangeRoutes)
 
 const distPath = path.join(__dirname, "../frontend/dist")
 app.use(express.static(distPath))
