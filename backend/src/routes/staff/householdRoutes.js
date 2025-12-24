@@ -3,14 +3,16 @@ import {
   getAllHouseholds,
   createHousehold,
   getHouseholdById,
-  changeHouseholdStatus
+  changeHouseholdStatus, 
+  generateHouseholdCode
 } from "../../controller/staff/HouseholdController.js"
 
 const router = express.Router()
 
 router.get("/", getAllHouseholds)
-router.post("/", createHousehold)
+router.get("/generate-code", generateHouseholdCode)
 router.get("/:id", getHouseholdById)
+router.post("/", createHousehold)
 router.put("/:id/status", changeHouseholdStatus)
 
 export default router

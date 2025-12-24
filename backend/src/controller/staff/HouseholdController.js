@@ -1,8 +1,27 @@
 import prisma from "../../../prisma/prismaClient.js"
 
-/**
+/* =====================================================
+ * UTIL: Generate random 9-digit household code (unique)
+ * ===================================================== */
+function random9Digits() {
+  return Math.floor(100000000 + Math.random() * 900000000).toString()
+}
+
+async function generateUniqueHouseholdCode(tx) {
+  while (true) {
+    const code = random9Digits()
+
+    const existed = await tx.household.findUnique({
+      where: { householdCode: code }
+    })
+
+    if (!existed) return code
+  }
+}
+
+/* =====================================================
  * GET /api/households
- */
+ * ===================================================== */
 export const getAllHouseholds = async (req, res) => {
   try {
     const households = await prisma.household.findMany({
@@ -24,9 +43,9 @@ export const getAllHouseholds = async (req, res) => {
   }
 }
 
-/**
+/* =====================================================
  * GET /api/households/:id
- */
+ * ===================================================== */
 export const getHouseholdById = async (req, res) => {
   try {
     const household = await prisma.household.findUnique({
@@ -57,14 +76,36 @@ export const getHouseholdById = async (req, res) => {
   }
 }
 
-/**
- * POST /api/households
- * Tạo hộ khẩu mới hoàn toàn (có chủ hộ + danh sách nhân khẩu ban đầu)
- */
-export const createHousehold = async (req, res) => {
-  const { householdCode, address, owner, members = [] } = req.body
+/* =====================================================
+ * GET /api/households/generate-code
+ * Sinh mã hộ khẩu 9 số (KHÔNG tạo household)
+ * ===================================================== */
+export const generateHouseholdCode = async (req, res) => {
+  try {
+    const code = await prisma.$transaction(tx =>
+      generateUniqueHouseholdCode(tx)
+    )
 
-  if (!householdCode || !address || !owner) {
+    return res.status(200).json({
+      success: true,
+      code
+    })
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
+}
+
+/* =====================================================
+ * POST /api/households
+ * Tạo hộ khẩu mới (có chủ hộ + nhân khẩu ban đầu)
+ * ===================================================== */
+export const createHousehold = async (req, res) => {
+  const { address, owner, members = [] } = req.body
+
+  if (!address || !owner) {
     return res.status(400).json({
       success: false,
       message: "Missing required fields"
@@ -73,9 +114,14 @@ export const createHousehold = async (req, res) => {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      /* =====================================================
-       * 1. Kiểm tra CCCD chủ hộ đã tồn tại chưa
-       * ===================================================== */
+      /* ============================
+       * 1. Sinh mã hộ khẩu
+       * ============================ */
+      const householdCode = await generateUniqueHouseholdCode(tx)
+
+      /* ============================
+       * 2. Kiểm tra CCCD chủ hộ
+       * ============================ */
       if (owner.residentCCCD) {
         const existedOwner = await tx.resident.findUnique({
           where: { residentCCCD: owner.residentCCCD }
@@ -86,9 +132,9 @@ export const createHousehold = async (req, res) => {
         }
       }
 
-      /* =====================================================
-       * 2. Kiểm tra CCCD các nhân khẩu khác
-       * ===================================================== */
+      /* ============================
+       * 3. Kiểm tra CCCD các thành viên
+       * ============================ */
       for (const m of members) {
         if (!m.residentCCCD) continue
 
@@ -97,15 +143,13 @@ export const createHousehold = async (req, res) => {
         })
 
         if (existed) {
-          throw new Error(
-            `Nhân khẩu ${m.fullname} đã tồn tại trong hệ thống`
-          )
+          throw new Error(`Nhân khẩu ${m.fullname} đã tồn tại trong hệ thống`)
         }
       }
 
-      /* =====================================================
-       * 3. Tạo Household (chưa có ownerId)
-       * ===================================================== */
+      /* ============================
+       * 4. Tạo Household
+       * ============================ */
       const household = await tx.household.create({
         data: {
           householdCode,
@@ -114,9 +158,9 @@ export const createHousehold = async (req, res) => {
         }
       })
 
-      /* =====================================================
-       * 4. Tạo Resident CHỦ HỘ
-       * ===================================================== */
+      /* ============================
+       * 5. Tạo Resident CHỦ HỘ
+       * ============================ */
       const ownerResident = await tx.resident.create({
         data: {
           residentCCCD: owner.residentCCCD,
@@ -134,19 +178,17 @@ export const createHousehold = async (req, res) => {
         }
       })
 
-      /* =====================================================
-       * 5. Gán ownerId cho Household
-       * ===================================================== */
+      /* ============================
+       * 6. Gán ownerId cho Household
+       * ============================ */
       await tx.household.update({
         where: { id: household.id },
-        data: {
-          ownerId: ownerResident.id
-        }
+        data: { ownerId: ownerResident.id }
       })
 
-      /* =====================================================
-       * 6. Tạo các nhân khẩu còn lại
-       * ===================================================== */
+      /* ============================
+       * 7. Tạo các thành viên còn lại
+       * ============================ */
       for (const m of members) {
         await tx.resident.create({
           data: {
@@ -181,9 +223,9 @@ export const createHousehold = async (req, res) => {
   }
 }
 
-/**
+/* =====================================================
  * PATCH /api/households/:id/status
- */
+ * ===================================================== */
 export const changeHouseholdStatus = async (req, res) => {
   const householdId = Number(req.params.id)
   const { status } = req.body
