@@ -54,4 +54,52 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6I
 
 ### Get all households
 GET http://localhost:5000/api/households
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6Ik5ndXnhu4VuIFbEg24gQSIsImlhdCI6MTc2NTMwOTMyNSwiZXhwIjoxNzY1Mzk1NzI1fQ.gGkLiX94SA8ayh_xiSaAtQI9jBbuwIp0oo7ZNNXzefw
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6IlThu5QgVFLGr-G7nk5HIiwiaWF0IjoxNzY2NTUxNzM2LCJleHAiOjE3NjY2MzgxMzZ9.QwikuaKSwfXvnsj3PXm678xU9MGgcwomrbLH-52_LmA
+
+
+###############################################
+# GENERATE HOUSEHOLD CODE (PREVIEW)
+###############################################
+
+### Generate household code (9 digits)
+GET http://localhost:5000/api/households/generate-code
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6IlThu5QgVFLGr-G7nk5HIiwiaWF0IjoxNzY2NTUxNzM2LCJleHAiOjE3NjY2MzgxMzZ9.QwikuaKSwfXvnsj3PXm678xU9MGgcwomrbLH-52_LmA
+
+###############################################
+# CREATE HOUSEHOLD (NO householdCode)
+###############################################
+
+### Create household
+POST http://localhost:5000/api/households
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6IlThu5QgVFLGr-G7nk5HIiwiaWF0IjoxNzY2NTUxNzM2LCJleHAiOjE3NjY2MzgxMzZ9.QwikuaKSwfXvnsj3PXm678xU9MGgcwomrbLH-52_LmA
+
+{
+  "address": "Số 12 Nguyễn Trãi, Hà Đông",
+  "owner": {
+    "residentCCCD": "012345678999",
+    "fullname": "Nguyễn Văn Đông",
+    "dob": "1990-01-01",
+    "gender": "M",
+    "ethnicity": "Kinh",
+    "religion": "Không",
+    "nationality": "Việt Nam",
+    "hometown": "Hà Nội",
+    "occupation": "Kỹ sư"
+  },
+  "members": [
+    {
+      "residentCCCD": "012345678998",
+      "fullname": "Nguyễn Thị Tét",
+      "dob": "1992-05-05",
+      "gender": "F",
+      "ethnicity": "Kinh",
+      "religion": "Không",
+      "nationality": "Việt Nam",
+      "hometown": "Hà Nội",
+      "occupation": "Nhân viên",
+      "relationToOwner": "Vợ"
+    }
+  ]
+}
+
