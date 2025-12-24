@@ -44,9 +44,7 @@ function App() {
         {/* HOUSEHOLD / RESIDENT */}
         <Route
           element={
-            <ProtectedRoute roles={["HOUSEHOLD"]}>
-              <></>
-            </ProtectedRoute>
+            <ProtectedRoute roles={["HOUSEHOLD"]}/>
           }
         >
           <Route path="/resident-home" element={<ResidentHome />} />
