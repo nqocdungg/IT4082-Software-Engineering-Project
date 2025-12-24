@@ -1,13 +1,15 @@
 import "../../styles/staff/sidebar.css"
 import { Link, useLocation } from "react-router-dom"
-import { FiGrid, FiHome, FiUsers, FiTrendingUp, FiTrendingDown } from "react-icons/fi"
+import { FiGrid, FiHome, FiUsers, FiTrendingUp, FiRepeat } from "react-icons/fi"
 import logo from "../../assets/images/new-logo.png"
 
 const menuItems = [
   { icon: FiGrid, label: "Thống kê", path: "/dashboard" },
   { icon: FiHome, label: "Hộ khẩu", path: "/households" },
   { icon: FiUsers, label: "Cư dân", path: "/residents" },
-  { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" }
+  { icon: FiRepeat, label: "Biến đổi nhân khẩu", path: "/resident-change" },
+  { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" },
+  
 ]
 
 export default function SideBar() {
