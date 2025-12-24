@@ -7,6 +7,7 @@
   flex-direction: column;
 }
 
+/* ================= LOGO ================= */
 .sidebar-logo {
   padding: 24px 20px 20px;
   display: flex;
@@ -26,6 +27,7 @@
   letter-spacing: 1.5px;
 }
 
+/* ================= NAV ================= */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -36,16 +38,16 @@
   align-items: center;
   gap: 14px;
   padding: 12px 20px;
-  margin: 10px; 
+  margin: 10px;
 
   font-size: 16px;
   font-weight: 600;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.75);
   text-decoration: none;
   cursor: pointer;
 
   border-radius: 8px;
-  transition: 
+  transition:
     background 0.2s ease,
     color 0.2s ease,
     transform 0.15s ease,
@@ -56,24 +58,81 @@
   font-size: 18px;
 }
 
+.nav-item span {
+  color: white;
+}
+
 .nav-item:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
   font-weight: 800;
 
-  transform: translateY(-2px); 
-  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
 }
 
 .nav-item.active {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
   font-weight: 900;
 
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.nav-item span{
-  color: white;
+/* ================= FOOTER ================= */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px;
+}
+
+/* gạch trắng mỏng */
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 10px 12px;
+}
+
+/* ================= LOGOUT ================= */
+.logout-btn {
+  width: calc(100% - 20px);
+  margin: 0 10px;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.logout-btn svg {
+  font-size: 18px;
+}
+
+.logout-btn:hover {
+  background:  rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-weight: 800;
+
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.logout-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
