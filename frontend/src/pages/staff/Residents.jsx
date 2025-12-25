@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react"
-import axios from "axios"
+import React, { useState, useMemo, useEffect } from "react";
+import axios from "axios";
 import {
   FaSearch,
   FaTrash,
@@ -10,41 +10,41 @@ import {
   FaUserCheck,
   FaUserSlash,
   FaSkull,
-  FaCross
-} from "react-icons/fa"
+  FaCross,
+} from "react-icons/fa";
 import { GiCoffin } from "react-icons/gi";
-import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
+import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi";
 
-import "../../styles/staff/residents.css"
-import "../../styles/staff/layout.css"
+import "../../styles/staff/residents.css";
+import "../../styles/staff/layout.css";
 
-const API_BASE = "http://localhost:5000/api"
+const API_BASE = "http://localhost:5000/api";
 
 const RESIDENCY_STATUS = {
   0: { label: "Thường trú", className: "status-thuong_tru" },
   1: { label: "Tạm trú", className: "status-tam_tru" },
   2: { label: "Tạm vắng", className: "status-tam_vang" },
   3: { label: "Đã chuyển đi", className: "status-da_chuyen_di" },
-  4: { label: "Đã qua đời", className: "status-da_qua_doi" }
-}
+  4: { label: "Đã qua đời", className: "status-da_qua_doi" },
+};
 
 function getResidencyStatusInfo(code) {
-  return RESIDENCY_STATUS[code] || { label: "Không rõ", className: "" }
+  return RESIDENCY_STATUS[code] || { label: "Không rõ", className: "" };
 }
 
 function authHeaders() {
-  const token = localStorage.getItem("token")
-  return { Authorization: `Bearer ${token}` }
+  const token = localStorage.getItem("token");
+  return { Authorization: `Bearer ${token}` };
 }
 
 function calcAge(dob) {
-  if (!dob) return ""
-  const now = new Date()
-  const birth = new Date(dob)
-  let age = now.getFullYear() - birth.getFullYear()
-  const m = now.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--
-  return age
+  if (!dob) return "";
+  const now = new Date();
+  const birth = new Date(dob);
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  return age;
 }
 
 function computeStats(list) {
@@ -54,43 +54,43 @@ function computeStats(list) {
     tamTru: 0,
     tamVang: 0,
     daChuyenDi: 0,
-    daQuaDoi: 0
-  }
+    daQuaDoi: 0,
+  };
 
-  s.total = list.length
+  s.total = list.length;
   for (const r of list) {
-    if (r.status === 0) s.thuongTru++
-    else if (r.status === 1) s.tamTru++
-    else if (r.status === 2) s.tamVang++
-    else if (r.status === 3) s.daChuyenDi++
-    else if (r.status === 4) s.daQuaDoi++
+    if (r.status === 0) s.thuongTru++;
+    else if (r.status === 1) s.tamTru++;
+    else if (r.status === 2) s.tamVang++;
+    else if (r.status === 3) s.daChuyenDi++;
+    else if (r.status === 4) s.daQuaDoi++;
   }
-  return s
+  return s;
 }
 
 // debounce nhỏ cho ô search (đỡ spam API)
 function useDebouncedValue(value, delay = 350) {
-  const [debounced, setDebounced] = useState(value)
+  const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(t)
-  }, [value, delay])
-  return debounced
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
 }
 
 export default function ResidentManagement() {
-  const [residents, setResidents] = useState([])
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("ALL")
-  const [genderFilter, setGenderFilter] = useState("ALL")
+  const [residents, setResidents] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [genderFilter, setGenderFilter] = useState("ALL");
 
-  const [householdIdFilter, setHouseholdIdFilter] = useState("")
+  const [householdIdFilter, setHouseholdIdFilter] = useState("");
 
-  const [selectedResident, setSelectedResident] = useState(null)
-  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [selectedResident, setSelectedResident] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(5)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -98,123 +98,151 @@ export default function ResidentManagement() {
     tamTru: 0,
     tamVang: 0,
     daChuyenDi: 0,
-    daQuaDoi: 0
-  })
+    daQuaDoi: 0,
+  });
 
-  const debouncedSearch = useDebouncedValue(search, 350)
+  const debouncedSearch = useDebouncedValue(search, 350);
 
   // ✅ Backend mới: GET /residents có query search + gender + householdId
   useEffect(() => {
-    fetchResidents()
+    fetchResidents();
     // reset trang khi đổi filter server-side
-    setCurrentPage(1)
+    setCurrentPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, genderFilter, householdIdFilter])
+  }, [debouncedSearch, genderFilter, householdIdFilter]);
 
   async function fetchResidents() {
     try {
-      const params = {}
+      const params = {};
 
-      if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
-      if (genderFilter !== "ALL") params.gender = genderFilter // backend nhận "Nam"/"Nữ"
-      if (String(householdIdFilter).trim()) params.householdId = String(householdIdFilter).trim()
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      if (genderFilter !== "ALL") params.gender = genderFilter; // backend nhận "Nam"/"Nữ"
+      if (String(householdIdFilter).trim())
+        params.householdId = String(householdIdFilter).trim();
 
       const res = await axios.get(`${API_BASE}/residents`, {
         headers: authHeaders(),
-        params
-      })
+        params,
+      });
 
-      const list = res.data?.data || []
-      setResidents(list)
-      setStats(computeStats(list))
+      const list = res.data?.data || [];
+      setResidents(list);
+      setStats(computeStats(list));
     } catch (err) {
-      console.error(err)
-      alert("Không tải được danh sách nhân khẩu")
-      setResidents([])
-      setStats(computeStats([]))
+      console.error(err);
+      alert("Không tải được danh sách nhân khẩu");
+      setResidents([]);
+      setStats(computeStats([]));
     }
   }
 
   // ✅ statusFilter backend chưa hỗ trợ -> lọc client-side
   const filteredResidents = useMemo(() => {
-    return residents.filter(r => {
-      const matchStatus = statusFilter === "ALL" || String(r.status) === String(statusFilter)
-      return matchStatus
-    })
-  }, [residents, statusFilter])
+    return residents.filter((r) => {
+      const matchStatus =
+        statusFilter === "ALL" || String(r.status) === String(statusFilter);
+      return matchStatus;
+    });
+  }, [residents, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredResidents.length / rowsPerPage))
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredResidents.length / rowsPerPage)
+  );
 
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(1)
-  }, [totalPages, currentPage])
+    if (currentPage > totalPages) setCurrentPage(1);
+  }, [totalPages, currentPage]);
 
   const pageResidents = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage
-    return filteredResidents.slice(start, start + rowsPerPage)
-  }, [filteredResidents, currentPage, rowsPerPage])
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredResidents.slice(start, start + rowsPerPage);
+  }, [filteredResidents, currentPage, rowsPerPage]);
 
   const rangeText = useMemo(() => {
-    const total = filteredResidents.length
-    if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`
-    const start = (currentPage - 1) * rowsPerPage + 1
-    const end = Math.min(currentPage * rowsPerPage, total)
-    return `${start} - ${end} trên tổng số ${total} bản ghi`
-  }, [filteredResidents.length, currentPage, rowsPerPage])
+    const total = filteredResidents.length;
+    if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`;
+    const start = (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, total);
+    return `${start} - ${end} trên tổng số ${total} bản ghi`;
+  }, [filteredResidents.length, currentPage, rowsPerPage]);
 
-  const householdDisplay = r => {
+  const householdDisplay = (r) => {
     // backend trả householdCode + address (có thể null)
-    if (r.householdId == null && !r.householdCode) return "—"
-    if (r.householdCode) return `${r.householdCode}`
-    return `HK #${r.householdId}`
-  }
+    if (r.householdId == null && !r.householdCode) return "—";
+    if (r.householdCode) return `${r.householdCode}`;
+    return `HK #${r.householdId}`;
+  };
 
-  const closeDetail = () => setSelectedResident(null)
+  const closeDetail = () => setSelectedResident(null);
 
-  const handleOpenDetail = async resident => {
-    setSelectedResident(resident)
-    setLoadingDetail(true)
+  const handleOpenDetail = async (resident) => {
+    setSelectedResident(resident);
+    setLoadingDetail(true);
     try {
       const res = await axios.get(`${API_BASE}/residents/${resident.id}`, {
-        headers: authHeaders()
-      })
-      setSelectedResident(res.data.data)
+        headers: authHeaders(),
+      });
+      setSelectedResident(res.data.data);
     } catch {
-      alert("Không tải được chi tiết nhân khẩu")
+      alert("Không tải được chi tiết nhân khẩu");
     } finally {
-      setLoadingDetail(false)
+      setLoadingDetail(false);
     }
-  }
+  };
 
   async function handleDelete(id) {
-    if (!window.confirm("Bạn có chắc muốn xóa nhân khẩu ID " + id + " ?")) return
+    if (!window.confirm("Bạn có chắc muốn xóa nhân khẩu ID " + id + " ?"))
+      return;
     try {
-      await axios.delete(`${API_BASE}/residents/${id}`, { headers: authHeaders() })
+      await axios.delete(`${API_BASE}/residents/${id}`, {
+        headers: authHeaders(),
+      });
 
       // xoá ở local + update stats + nếu đang mở detail thì đóng
-      setResidents(prev => {
-        const next = prev.filter(r => r.id !== id)
-        setStats(computeStats(next))
-        return next
-      })
-      if (selectedResident?.id === id) closeDetail()
+      setResidents((prev) => {
+        const next = prev.filter((r) => r.id !== id);
+        setStats(computeStats(next));
+        return next;
+      });
+      if (selectedResident?.id === id) closeDetail();
     } catch {
-      alert("Xóa nhân khẩu thất bại")
+      alert("Xóa nhân khẩu thất bại");
     }
   }
 
   const miniCards = [
     { label: "Tất cả", value: stats.total, icon: <FaUsers />, tone: "blue" },
-    { label: "Thường trú", value: stats.thuongTru, icon: <FaUserCheck />, tone: "green" },
-    { label: "Tạm trú", value: stats.tamTru, icon: <HiOutlineLogin />, tone: "amber" },
-    { label: "Đã chuyển đi", value: stats.daChuyenDi, icon: <HiOutlineLogout />, tone: "rose" },
-    { label: "Đã qua đời", value: stats.daQuaDoi, icon: <GiCoffin />, tone: "slate" }
-  ]
+    {
+      label: "Thường trú",
+      value: stats.thuongTru,
+      icon: <FaUserCheck />,
+      tone: "green",
+    },
+    {
+      label: "Tạm trú",
+      value: stats.tamTru,
+      icon: <HiOutlineLogin />,
+      tone: "amber",
+    },
+    {
+      label: "Đã chuyển đi",
+      value: stats.daChuyenDi,
+      icon: <HiOutlineLogout />,
+      tone: "rose",
+    },
+    {
+      label: "Đã qua đời",
+      value: stats.daQuaDoi,
+      icon: <GiCoffin />,
+      tone: "slate",
+    },
+  ];
 
   return (
     <div className="page-container residents-page">
       <div className="stats-strip">
-        {miniCards.map(c => (
+        {miniCards.map((c) => (
           <div key={c.label} className={`mini-card tone-${c.tone}`}>
             <div className="mini-ico">{c.icon}</div>
             <div className="mini-meta">
@@ -232,9 +260,9 @@ export default function ResidentManagement() {
               <div className="toolbar-select">
                 <select
                   value={statusFilter}
-                  onChange={e => {
-                    setCurrentPage(1)
-                    setStatusFilter(e.target.value)
+                  onChange={(e) => {
+                    setCurrentPage(1);
+                    setStatusFilter(e.target.value);
                   }}
                 >
                   <option value="ALL">Tất cả tình trạng</option>
@@ -249,9 +277,9 @@ export default function ResidentManagement() {
               <div className="toolbar-select">
                 <select
                   value={genderFilter}
-                  onChange={e => {
-                    setCurrentPage(1)
-                    setGenderFilter(e.target.value)
+                  onChange={(e) => {
+                    setCurrentPage(1);
+                    setGenderFilter(e.target.value);
                   }}
                 >
                   <option value="ALL">Giới tính</option>
@@ -278,9 +306,9 @@ export default function ResidentManagement() {
                   type="text"
                   placeholder="Tìm kiếm..."
                   value={search}
-                  onChange={e => {
-                    setCurrentPage(1)
-                    setSearch(e.target.value)
+                  onChange={(e) => {
+                    setCurrentPage(1);
+                    setSearch(e.target.value);
                   }}
                 />
               </div>
@@ -311,15 +339,17 @@ export default function ResidentManagement() {
                   </td>
                 </tr>
               ) : (
-                pageResidents.map(r => {
-                  const info = getResidencyStatusInfo(r.status)
-                  const age = calcAge(r.dob)
+                pageResidents.map((r) => {
+                  const info = getResidencyStatusInfo(r.status);
+                  const age = calcAge(r.dob);
 
                   return (
-                    <tr key={r.id} className="clickable-row" onClick={() => handleOpenDetail(r)}>
-                      <td>
-                        {r.fullname}
-                      </td>
+                    <tr
+                      key={r.id}
+                      className="clickable-row"
+                      onClick={() => handleOpenDetail(r)}
+                    >
+                      <td>{r.fullname}</td>
 
                       <td>{r.gender === "M" ? "Nam" : "Nữ"}</td>
 
@@ -333,14 +363,20 @@ export default function ResidentManagement() {
                       <td>{householdDisplay(r)}</td>
 
                       <td>
-                        <span className={`status-badge ${info.className}`}>{info.label}</span>
+                        <span className={`status-badge ${info.className}`}>
+                          {info.label}
+                        </span>
                       </td>
 
                       <td>{String(r.createdAt).slice(0, 10)}</td>
 
-                      <td onClick={e => e.stopPropagation()}>
+                      <td onClick={(e) => e.stopPropagation()}>
                         <div className="row-actions">
-                          <button type="button" title="Xem" onClick={() => handleOpenDetail(r)}>
+                          <button
+                            type="button"
+                            title="Xem"
+                            onClick={() => handleOpenDetail(r)}
+                          >
                             <FaEye />
                           </button>
                           <button
@@ -354,7 +390,7 @@ export default function ResidentManagement() {
                         </div>
                       </td>
                     </tr>
-                  )
+                  );
                 })
               )}
             </tbody>
@@ -366,9 +402,9 @@ export default function ResidentManagement() {
             <span className="footer-muted">Số bản ghi</span>
             <select
               value={rowsPerPage}
-              onChange={e => {
-                setCurrentPage(1)
-                setRowsPerPage(Number(e.target.value))
+              onChange={(e) => {
+                setCurrentPage(1);
+                setRowsPerPage(Number(e.target.value));
               }}
             >
               <option value={5}>5</option>
@@ -382,14 +418,14 @@ export default function ResidentManagement() {
               <button
                 type="button"
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
+                onClick={() => setCurrentPage((p) => p - 1)}
               >
                 <FaChevronLeft />
               </button>
               <button
                 type="button"
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
+                onClick={() => setCurrentPage((p) => p + 1)}
               >
                 <FaChevronRight />
               </button>
@@ -400,14 +436,18 @@ export default function ResidentManagement() {
 
       {selectedResident && (
         <div className="resident-modal-overlay" onClick={closeDetail}>
-          <div className="resident-modal" onClick={e => e.stopPropagation()}>
+          <div className="resident-modal" onClick={(e) => e.stopPropagation()}>
             <div className="resident-modal-header">
               <div>
                 <h3 className="resident-modal-title">Chi tiết nhân khẩu</h3>
                 <p className="resident-modal-sub">ID: #{selectedResident.id}</p>
               </div>
 
-              <button className="modal-close-btn" type="button" onClick={closeDetail}>
+              <button
+                className="modal-close-btn"
+                type="button"
+                onClick={closeDetail}
+              >
                 ✕
               </button>
             </div>
@@ -419,14 +459,18 @@ export default function ResidentManagement() {
                 <div className="detail-grid">
                   <div className="detail-item">
                     <div className="detail-label">Họ và tên</div>
-                    <div className="detail-value">{selectedResident.fullname}</div>
+                    <div className="detail-value">
+                      {selectedResident.fullname}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Ngày sinh / Tuổi</div>
                     <div className="detail-value">
                       {String(selectedResident.dob).slice(0, 10)}{" "}
-                      <span className="sub-text">({calcAge(selectedResident.dob)} tuổi)</span>
+                      <span className="sub-text">
+                        ({calcAge(selectedResident.dob)} tuổi)
+                      </span>
                     </div>
                   </div>
 
@@ -439,12 +483,16 @@ export default function ResidentManagement() {
 
                   <div className="detail-item">
                     <div className="detail-label">CCCD</div>
-                    <div className="detail-value">{selectedResident.residentCCCD || "—"}</div>
+                    <div className="detail-value">
+                      {selectedResident.residentCCCD || "—"}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Quan hệ chủ hộ</div>
-                    <div className="detail-value">{selectedResident.relationToOwner || "—"}</div>
+                    <div className="detail-value">
+                      {selectedResident.relationToOwner || "—"}
+                    </div>
                   </div>
 
                   <div className="detail-item">
@@ -453,10 +501,12 @@ export default function ResidentManagement() {
                       {selectedResident.householdCode
                         ? `${selectedResident.householdCode}`
                         : selectedResident.householdId != null
-                          ? `HK #${selectedResident.householdId}`
-                          : "—"}
+                        ? `HK #${selectedResident.householdId}`
+                        : "—"}
                       {!!selectedResident.address && (
-                        <div className="sub-text">{selectedResident.address}</div>
+                        <div className="sub-text">
+                          {selectedResident.address}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -465,8 +515,10 @@ export default function ResidentManagement() {
                     <div className="detail-label">Tình trạng cư trú</div>
                     <div className="detail-value">
                       <span
-                        className={`status-badge ${getResidencyStatusInfo(selectedResident.status).className
-                          }`}
+                        className={`status-badge ${
+                          getResidencyStatusInfo(selectedResident.status)
+                            .className
+                        }`}
                       >
                         {getResidencyStatusInfo(selectedResident.status).label}
                       </span>
@@ -476,27 +528,37 @@ export default function ResidentManagement() {
                   {/* ✅ Field mới từ backend (có thể null) */}
                   <div className="detail-item">
                     <div className="detail-label">Dân tộc</div>
-                    <div className="detail-value">{selectedResident.ethnicity || "—"}</div>
+                    <div className="detail-value">
+                      {selectedResident.ethnicity || "—"}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Tôn giáo</div>
-                    <div className="detail-value">{selectedResident.religion || "—"}</div>
+                    <div className="detail-value">
+                      {selectedResident.religion || "—"}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Quốc tịch</div>
-                    <div className="detail-value">{selectedResident.nationality || "—"}</div>
+                    <div className="detail-value">
+                      {selectedResident.nationality || "—"}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Quê quán</div>
-                    <div className="detail-value">{selectedResident.hometown || "—"}</div>
+                    <div className="detail-value">
+                      {selectedResident.hometown || "—"}
+                    </div>
                   </div>
 
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Nghề nghiệp</div>
-                    <div className="detail-value">{selectedResident.occupation || "—"}</div>
+                    <div className="detail-value">
+                      {selectedResident.occupation || "—"}
+                    </div>
                   </div>
 
                   {/* Nếu m muốn show lịch sử biến động (changes) */}
@@ -521,7 +583,11 @@ export default function ResidentManagement() {
             </div>
 
             <div className="resident-modal-footer">
-              <button className="btn-secondary" type="button" onClick={closeDetail}>
+              <button
+                className="btn-secondary"
+                type="button"
+                onClick={closeDetail}
+              >
                 Đóng
               </button>
               <button
@@ -536,5 +602,5 @@ export default function ResidentManagement() {
         </div>
       )}
     </div>
-  )
+  );
 }

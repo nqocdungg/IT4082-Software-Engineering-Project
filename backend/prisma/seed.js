@@ -1,18 +1,18 @@
-import { PrismaClient } from "@prisma/client"
-import bcrypt from "bcryptjs"
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 // ==================================================
 // Generate UNIQUE householdCode (9 digits)
 // ==================================================
 async function generateUniqueHouseholdCode() {
   while (true) {
-    const code = Math.floor(100000000 + Math.random() * 900000000).toString()
+    const code = Math.floor(100000000 + Math.random() * 900000000).toString();
     const existed = await prisma.household.findUnique({
-      where: { householdCode: code }
-    })
-    if (!existed) return code
+      where: { householdCode: code },
+    });
+    if (!existed) return code;
   }
 }
 
@@ -20,14 +20,16 @@ async function main() {
   // ==================================================
   // CLEAR DATA
   // ==================================================
-  await prisma.feeRecord.deleteMany().catch(() => {})
-  await prisma.feeType.deleteMany().catch(() => {})
-  await prisma.residentChange.deleteMany().catch(() => {})
+  await prisma.feeRecord.deleteMany().catch(() => {});
+  await prisma.feeType.deleteMany().catch(() => {});
+  await prisma.residentChange.deleteMany().catch(() => {});
 
-  await prisma.household.updateMany({ data: { ownerId: null } }).catch(() => {})
-  await prisma.resident.deleteMany().catch(() => {})
-  await prisma.household.deleteMany().catch(() => {})
-  await prisma.user.deleteMany().catch(() => {})
+  await prisma.household
+    .updateMany({ data: { ownerId: null } })
+    .catch(() => {});
+  await prisma.resident.deleteMany().catch(() => {});
+  await prisma.household.deleteMany().catch(() => {});
+  await prisma.user.deleteMany().catch(() => {});
 
   // ==================================================
   // USERS (GIỮ USERNAME + PASSWORD)
@@ -37,27 +39,27 @@ async function main() {
       username: "to_truong",
       password: await bcrypt.hash("totruong@123", 8),
       fullname: "TỔ TRƯỞNG",
-      role: "HEAD"
-    }
-  })
+      role: "HEAD",
+    },
+  });
 
   await prisma.user.create({
     data: {
       username: "to_pho",
       password: await bcrypt.hash("topho@123", 8),
       fullname: "TỔ PHÓ",
-      role: "DEPUTY"
-    }
-  })
+      role: "DEPUTY",
+    },
+  });
 
   await prisma.user.create({
     data: {
       username: "ke_toan",
       password: await bcrypt.hash("ketoan@123", 8),
       fullname: "KẾ TOÁN",
-      role: "ACCOUNTANT"
-    }
-  })
+      role: "ACCOUNTANT",
+    },
+  });
 
   // ==================================================
   // HOUSEHOLDS + RESIDENTS (5 HỘ)
@@ -77,7 +79,7 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Lao động tự do",
           relationToOwner: "Chủ hộ",
-          status: 0
+          status: 0,
         },
         {
           residentCCCD: "001203001002",
@@ -90,7 +92,7 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Nội trợ",
           relationToOwner: "Vợ",
-          status: 0
+          status: 0,
         },
         {
           residentCCCD: "001203001003",
@@ -103,9 +105,9 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Sinh viên",
           relationToOwner: "Con",
-          status: 0
-        }
-      ]
+          status: 0,
+        },
+      ],
     },
 
     {
@@ -122,7 +124,7 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Công nhân",
           relationToOwner: "Chủ hộ",
-          status: 0
+          status: 0,
         },
         {
           residentCCCD: "001203001011",
@@ -135,9 +137,9 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Buôn bán",
           relationToOwner: "Vợ",
-          status: 0
-        }
-      ]
+          status: 0,
+        },
+      ],
     },
 
     {
@@ -154,7 +156,7 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Lái xe",
           relationToOwner: "Chủ hộ",
-          status: 0
+          status: 0,
         },
         {
           residentCCCD: "001203001021",
@@ -167,9 +169,9 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Nội trợ",
           relationToOwner: "Vợ",
-          status: 0
-        }
-      ]
+          status: 0,
+        },
+      ],
     },
 
     {
@@ -186,9 +188,9 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Hưu trí",
           relationToOwner: "Chủ hộ",
-          status: 0
-        }
-      ]
+          status: 0,
+        },
+      ],
     },
 
     {
@@ -205,7 +207,7 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Thợ xây",
           relationToOwner: "Chủ hộ",
-          status: 0
+          status: 0,
         },
         {
           residentCCCD: "001203001041",
@@ -218,11 +220,11 @@ async function main() {
           hometown: "Hà Đông, Hà Nội",
           occupation: "Công nhân",
           relationToOwner: "Vợ",
-          status: 0
-        }
-      ]
-    }
-  ]
+          status: 0,
+        },
+      ],
+    },
+  ];
 
   // ==================================================
   // INSERT DATA
@@ -232,9 +234,9 @@ async function main() {
       data: {
         householdCode: await generateUniqueHouseholdCode(),
         address: h.address,
-        status: 0
-      }
-    })
+        status: 0,
+      },
+    });
 
     for (const r of h.members) {
       const resident = await prisma.resident.create({
@@ -250,15 +252,25 @@ async function main() {
           occupation: r.occupation,
           relationToOwner: r.relationToOwner,
           householdId: household.id,
-          status: r.status
-        }
-      })
+          status: r.status,
+        },
+      });
 
       if (r.relationToOwner === "Chủ hộ") {
         await prisma.household.update({
           where: { id: household.id },
-          data: { ownerId: resident.id }
-        })
+          data: { ownerId: resident.id },
+        });
+
+        await prisma.user.create({
+          data: {
+            username: `ho_dan_${resident.residentCCCD}`,
+            password: await bcrypt.hash("hodan@123", 8),
+            fullname: r.fullname,
+            role: "HOUSEHOLD",
+            household: { connect: { id: household.id } },
+          },
+        });
       }
     }
   }
@@ -267,8 +279,8 @@ async function main() {
   // BIẾN ĐỘNG: 1 CHUYỂN ĐI, 1 QUA ĐỜI
   // ==================================================
   const moveOut = await prisma.resident.findFirst({
-    where: { fullname: "Nguyễn Văn Đức" }
-  })
+    where: { fullname: "Nguyễn Văn Đức" },
+  });
 
   if (moveOut) {
     await prisma.residentChange.create({
@@ -279,19 +291,19 @@ async function main() {
         toAddress: "Phường Mộ Lao, Hà Đông",
         fromDate: new Date(2024, 8, 1),
         approvalStatus: 1,
-        managerId: headUser.id
-      }
-    })
+        managerId: headUser.id,
+      },
+    });
 
     await prisma.resident.update({
       where: { id: moveOut.id },
-      data: { status: 3, householdId: null }
-    })
+      data: { status: 3, householdId: null },
+    });
   }
 
   const deceased = await prisma.resident.findFirst({
-    where: { fullname: "Đặng Thị Thu" }
-  })
+    where: { fullname: "Đặng Thị Thu" },
+  });
 
   if (deceased) {
     await prisma.residentChange.create({
@@ -302,19 +314,19 @@ async function main() {
         toAddress: "TDP 7 La Khê",
         fromDate: new Date(2023, 6, 12),
         approvalStatus: 1,
-        managerId: headUser.id
-      }
-    })
+        managerId: headUser.id,
+      },
+    });
 
     await prisma.resident.update({
       where: { id: deceased.id },
-      data: { status: 4 }
-    })
+      data: { status: 4 },
+    });
   }
 
-  console.log("✅ Seed FULL 5 hộ – FINAL – thành công")
+  console.log("✅ Seed FULL 5 hộ – FINAL – thành công");
 }
 
 main()
   .catch(console.error)
-  .finally(async () => prisma.$disconnect())
+  .finally(async () => prisma.$disconnect());

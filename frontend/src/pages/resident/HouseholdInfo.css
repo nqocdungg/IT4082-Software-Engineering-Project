@@ -1,114 +1,331 @@
-.household-page {
-  margin: 0 auto;
-  padding: 90px 20px 50px 20px; /* header 80px + khoảng */
-
-  background-color: #f0f4f8;
+/* -------------------- KHUNG CHUNG -------------------- */
+.square-layout {
+  border: 1px solid #ddd;
+  padding: 28px;
+  margin: 45px auto 20px auto;
+  border-radius: 18px;
+  background-color: #fdfdfd;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  max-width: 1200px;
+  width: 95%;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.5s forwards;
 }
 
-.household-page h1 {
-  text-align: center;
-  margin-bottom: 40px;
-  font-size: 32px;
-  font-weight: 700;
-  color: #0d1b2a;
+.square-layout:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.15);
 }
 
-.household-container {
-  display: flex;
-  gap: 60px;
-  flex: 1;
-  padding: 0px 25px 25px 25px;
-  align-items: stretch;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Bên trái scroll */
-.left-panel {
-  flex: 1.3;
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-
-  overflow-y: auto;
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 26px;
+  font-size: 14px;
 }
 
-.right-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
+.info-grid div {
+  padding: 6px 0;
+}
 
+/* -------------------- BẢNG NHÂN KHẨU -------------------- */
+.square-layout h2 {
+  color: #1e3a8a;
+  font-weight: 600;
+  font-size: 20px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background-color: #e3e8f2;
+  margin-bottom: 20px;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.resident-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  font-size: 15px;
+  table-layout: auto;
+  background-color: #fff;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
 }
 
-.info-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+.resident-table th,
+.resident-table td {
+  padding: 14px 12px;
+  text-align: left;
+  vertical-align: middle;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.resident-table th {
+  color: #54575f;
+  font-weight: 600;
+  background-color: #f0f4fa;
+  border-bottom: 2px solid #d1d7e0;
+  position: sticky;
+  top: 0;
+}
+
+.resident-table tr:hover td {
+  background-color: #eef2f7;
+  transform: translateX(2px);
+}
+
+/* Badge trạng thái nhân khẩu */
+.status-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-block;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.status-thuong_tru {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.status-tam_tru {
+  background: #fffbeb;
+  color: #92400e;
+}
+.status-tam_vang {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.status-da_chuyen_di {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.status-da_qua_doi {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* -------------------- TRẠNG THÁI HỘ KHẨU -------------------- */
+.household-status-badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-block;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.status-hoat_dong {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.status-khong_hoat_dong {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* -------------------- MODAL/OVERLAY -------------------- */
+.resident-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.info-card.resident-details {
+  max-width: 800px;
+  width: 90%;
+  background: #fff;
+  border-radius: 10px;
+  padding: 26px;
+  position: relative;
+  height: 57vh;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.info-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+.info-card.resident-details:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.1);
 }
 
-.info-card h2 {
-  color: #1f3c88;
-  margin-bottom: 18px;
-  font-size: 20px;
-  border-bottom: 2px solid #e1e8f0;
-  padding-bottom: 6px;
+.overlay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  border-radius: 16px 16px 0 0;
 }
 
-.resident-table-household {
+.overlay-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  color: #555;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+/* -------------------- HỘP CHI TIẾT HỘ KHẨU -------------------- */
+.household-detail-wrapper {
+  margin: 45px auto 20px auto;
+  padding: 28px 30px;
+  border-radius: 18px;
+  background-color: #fafafa;
+  max-width: 1200px;
+  width: 95%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.5s forwards;
+  animation-delay: 0.4s;
+}
+
+.household-detail-wrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.15);
+}
+
+.household-detail-wrapper h2 {
+  color: #1e3a8a;
+  font-weight: 600;
+  font-size: 22px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background-color: #e3e8f2;
+  margin-bottom: 25px;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* -------------------- BẢNG THÔNG TIN HỘ KHẨU (NỀN TRẮNG, Ô XANH NHẠT) -------------------- */
+.household-info-table {
   width: 100%;
+  min-width: 1000px;
   border-collapse: separate;
-  border-spacing: 0;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  border-spacing: 0 6px; /* khoảng cách giữa các hàng */
+  font-size: 15px;
+  table-layout: auto;
+  background-color: #fcfcfc; /* nền bảng trắng nhạt */
+  transition: all 0.3s ease;
 }
 
-.resident-table-household th,
-.resident-table-household-household td {
-  padding: 14px 16px;
+.household-info-table th,
+.household-info-table td {
+  padding: 10px 12px; /* giảm padding để ô gọn hơn */
   text-align: left;
+  vertical-align: middle;
+  word-break: break-word;
+  line-height: 2.1; /* giảm khoảng cách dòng */
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  border-radius: 4px; /* bo góc cho từng ô */
 }
 
-.resident-table-household th {
-  background-color: #e6edf8;
+/* Header */
+.household-info-table th {
+  background-color: #e8edf5; /* xanh nhạt cho header */
+  color: #3b4a69;
   font-weight: 600;
-  color: #0d1b2a;
+  border-bottom: 1px solid #dbe2eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.resident-table-household tr:nth-child(even) td {
-  background-color: #f7f9fc;
+/* Hover cho hàng */
+.household-info-table tr:hover td {
+  background-color: #f3f6fa; /* hover nhạt, pastel */
+  transform: translateX(1px);
 }
 
-.resident-table-household tr:hover td {
-  background-color: #e2e8f0;
+/* -------------------- Ô thông tin hộ khẩu xanh nhạt -------------------- */
+.household-info-table td.info-cell {
+  background-color: #ecfdf5; /* xanh nhạt */
+  color: #065f46;
+  padding: 6px 10px; /* padding nhỏ gọn hơn */
+  border-radius: 8px; /* bo góc ô nhỏ */
 }
 
-.loading,
-.error {
+/* Badge trạng thái */
+.household-info-table td span.household-status-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  display: inline-block;
   text-align: center;
-  margin-top: 150px;
-  font-size: 20px;
+  transition: all 0.3s ease;
 }
 
-.error {
-  color: #b30000;
-  font-weight: 600;
+.household-info-table td span.household-status-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-@media screen and (max-width: 992px) {
-  .household-container {
-    flex-direction: column;
+.status-hoat_dong {
+  background-color: #dff6eb;
+  color: #065f46;
+}
+
+.status-khong_hoat_dong {
+  background-color: #fde2e2;
+  color: #b91c1c;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .household-info-table {
+    font-size: 13px;
+    min-width: 700px;
+  }
+  .household-info-table th,
+  .household-info-table td {
+    padding: 8px 10px;
+  }
+  .household-info-table td.info-cell {
+    padding: 4px 6px;
+    border-radius: 6px;
   }
 }
