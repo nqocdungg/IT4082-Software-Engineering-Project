@@ -59,7 +59,10 @@ async function main() {
       } else {
         await prisma.household.update({
           where: { id: household.id },
-          data: { householdCode: h.householdCode }
+          data: {
+            householdCode: h.householdCode,
+            status: 1
+          }
         })
         console.log(`✅ Update householdCode: ${h.address} -> ${h.householdCode}`)
       }
