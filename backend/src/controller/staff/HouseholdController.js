@@ -110,6 +110,20 @@ export const createHousehold = async (req, res) => {
     })
   }
 
+  const cccdSet = new Set()
+
+if (owner.residentCCCD) {
+  cccdSet.add(owner.residentCCCD)
+}
+
+for (const m of members) {
+  if (!m.residentCCCD) continue
+  if (cccdSet.has(m.residentCCCD)) {
+    throw new Error("CCCD bị trùng trong danh sách nhân khẩu")
+  }
+  cccdSet.add(m.residentCCCD)
+}
+
   try {
     const result = await prisma.$transaction(async tx => {
       /* ============================
