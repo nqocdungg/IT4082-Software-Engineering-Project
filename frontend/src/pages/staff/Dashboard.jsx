@@ -30,10 +30,18 @@ export default function Dashboard() {
             Authorization: `Bearer ${token}`
           }
         })
+
         const data = await res.json()
+
+        // ✅ nếu backend trả 500/401 thì throw để khỏi setDashboard bậy
+        if (!res.ok) {
+          throw new Error(data?.message || "Dashboard request failed")
+        }
+
         setDashboard(data)
       } catch (e) {
-        console.error(e)
+        console.error("Dashboard fetch error:", e)
+        setDashboard(null)
       } finally {
         setIsReady(true)
       }
@@ -42,17 +50,17 @@ export default function Dashboard() {
   }, [])
 
   const months = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
   ]
 
   const fixedFee = dashboard
     ? dashboard.feeByMonth.map(m => m.mandatoryTotal)
-    : [3.2,3.1,3.3,3.2,3.4,3.3,3.5,3.6,3.4,3.5,3.6,3.8]
+    : [3.2, 3.1, 3.3, 3.2, 3.4, 3.3, 3.5, 3.6, 3.4, 3.5, 3.6, 3.8]
 
   const contribution = dashboard
     ? dashboard.feeByMonth.map(m => m.contributionTotal)
-    : [0.6,1.1,0.9,1.4,1.0,1.3,1.2,1.8,1.1,1.6,1.0,2.2]
+    : [0.6, 1.1, 0.9, 1.4, 1.0, 1.3, 1.2, 1.8, 1.1, 1.6, 1.0, 2.2]
 
   const totalFixedFee = fixedFee[fixedFee.length - 1]
   const totalContribution = contribution[contribution.length - 1]
@@ -61,15 +69,14 @@ export default function Dashboard() {
   const fixedPct = totalRevenue > 0 ? (totalFixedFee / totalRevenue) * 100 : 0
   const contribPct = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : 0
 
-  const feeChartData = useMemo(
-    () =>
-      months.map((month, index) => ({
-        month,
-        fixedFee: fixedFee[index],
-        contribution: contribution[index]
-      })),
-    [dashboard]
-  )
+  const feeChartData = useMemo(() => {
+    return months.map((month, index) => ({
+      month,
+      fixedFee: fixedFee[index],
+      contribution: contribution[index]
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboard])
 
   const populationStructureData = dashboard
     ? [
@@ -236,14 +243,14 @@ export default function Dashboard() {
                     dataKey="fixedFee"
                     name="Thu cố định"
                     fill="#639beb"
-                    radius={[8,8,8,8]}
+                    radius={[8, 8, 8, 8]}
                     barSize={14}
                   />
                   <Bar
                     dataKey="contribution"
                     name="Đóng góp"
                     fill="#d8e7f7"
-                    radius={[8,8,8,8]}
+                    radius={[8, 8, 8, 8]}
                     barSize={14}
                   />
                 </BarChart>
@@ -357,7 +364,7 @@ export default function Dashboard() {
 
               <div className="mini-legend">
                 {populationStructureData.map(item => {
-                  const percent = Math.round((item.value / totalPopulation) * 100)
+                  const percent = totalPopulation > 0 ? Math.round((item.value / totalPopulation) * 100) : 0
                   return (
                     <div key={item.name} className="mini-legend-row">
                       <div className="mini-legend-left">
@@ -432,7 +439,7 @@ export default function Dashboard() {
 
               <div className="mini-legend">
                 {residencyPieData.map(item => {
-                  const percent = Math.round((item.value / totalResidency) * 100)
+                  const percent = totalResidency > 0 ? Math.round((item.value / totalResidency) * 100) : 0
                   return (
                     <div key={item.name} className="mini-legend-row">
                       <div className="mini-legend-left">
@@ -460,8 +467,13 @@ export default function Dashboard() {
                 ? dashboard.recentRequests.map(r => (
                     <div key={r.id} className="req-row">
                       <div className="req-main">
-                        <div className="req-title">{r.resident.fullname}</div>
-                        <div className="req-sub">{r.resident.residentCCCD}</div>
+                        {/* ✅ FIX CRASH: resident có thể null */}
+                        <div className="req-title">
+                          {r.resident?.fullname ?? "(Không có cư dân)"}
+                        </div>
+                        <div className="req-sub">
+                          {r.resident?.residentCCCD ?? ""}
+                        </div>
                       </div>
                       <span className="pill inprogress">Đang xử lý</span>
                     </div>
