@@ -59,8 +59,8 @@ export default function HouseholdInfo() {
   };
 
   const householdStatusMap = {
-    0: "Đang hoạt động",
-    1: "Không hoạt động",
+    1: "Đang hoạt động",
+    0: "Không hoạt động",
   };
 
   const filteredResidents = useMemo(() => {
@@ -256,7 +256,7 @@ export default function HouseholdInfo() {
                   <td>
                     <span
                       className={`household-status-badge ${
-                        household.status === 0
+                        household.status === 1
                           ? "status-hoat_dong"
                           : "status-khong_hoat_dong"
                       }`}
