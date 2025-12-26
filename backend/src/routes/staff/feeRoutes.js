@@ -6,6 +6,7 @@ import {
   deleteFee,
   createTransaction,
   getTransactions,
+  getFeeSummary,
 } from "../../controller/staff/FeeController.js";
 
 const router = express.Router();
@@ -17,5 +18,7 @@ router.delete("/delete/:id", deleteFee);
 
 router.post("/pay", createTransaction);
 router.get("/history", getTransactions);
+
+router.get("/summary", getFeeSummary);
 
 export default router;
