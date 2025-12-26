@@ -1,6 +1,3 @@
-/* styles/staff/fees.css */
-
-/* ===== page ===== */
 .revenues-page {
   flex: 1;
   min-height: 0;
@@ -9,7 +6,6 @@
   position: relative;
 }
 
-/* ===== stats-strip (reuse resident) ===== */
 .stats-strip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -83,7 +79,6 @@
   border-color: #e2e8f0;
 }
 
-/* ===== card/table shell (reuse resident) ===== */
 .table-card {
   background: #fff;
   border-radius: 16px;
@@ -128,7 +123,6 @@
   align-items: center;
 }
 
-/* ✅ search đã chuyển sang left => thu gọn width cho hợp lý */
 .toolbar-search {
   position: relative;
   min-width: 260px;
@@ -153,7 +147,6 @@
   color: #9ca3af;
 }
 
-/* ===== buttons ===== */
 .btn-primary {
   background: #111827;
   color: #fff;
@@ -203,7 +196,6 @@
   background: #000;
 }
 
-/* ===== table ===== */
 .table-wrapper {
   min-height: 355px;
   overflow: visible;
@@ -262,7 +254,6 @@
   color: #111827;
 }
 
-/* tags */
 .fee-tag {
   padding: 5px 10px;
   border-radius: 999px;
@@ -292,7 +283,6 @@
   font-weight: 800;
 }
 
-/* status badge */
 .fee-status-badge {
   padding: 5px 10px;
   border-radius: 999px;
@@ -313,7 +303,6 @@
   color: #4b5563;
 }
 
-/* row actions (reuse resident) */
 .row-actions {
   display: flex;
   gap: 10px;
@@ -340,7 +329,11 @@
   background: #fef2f2;
 }
 
-/* footer (reuse resident) */
+.row-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .table-footer {
   display: flex;
   align-items: center;
@@ -397,21 +390,22 @@
   color: #94a3b8;
 }
 
-/* ===== modal (reuse resident) ===== */
-.resident-modal-overlay {
-  position: absolute;
+.fee-modal-overlay {
+  position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 9999;
+  padding: 14px;
 }
 
-.resident-modal {
-  width: 720px;
-  max-width: 92%;
-  max-height: 82vh;
+.fee-modal {
+  width: min(1280px, calc(100vw - 28px));
+  max-width: 100%;
+  height: calc(100vh - 28px);
+  max-height: 100%;
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
@@ -420,26 +414,26 @@
   overflow: hidden;
 }
 
-.resident-modal-header {
-  padding: 14px 18px;
+.fee-modal-header {
+  padding: 14px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.resident-modal-title {
+.fee-modal-title {
   font-size: 18px;
   font-weight: 800;
   color: #111827;
 }
 
-.resident-modal-sub {
+.fee-modal-sub {
   font-size: 14px;
   color: #6b7280;
 }
 
-.modal-close-btn {
+.fee-modal-close-btn {
   width: 40px;
   height: 40px;
   border-radius: 14px;
@@ -450,13 +444,18 @@
   align-items: center;
   justify-content: center;
 }
-.modal-close-btn:hover {
+.fee-modal-close-btn:hover {
   background: #f9fafb;
 }
 
-.resident-modal-body {
-  padding: 16px 18px;
-  overflow-y: auto;
+.fee-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 .detail-grid {
@@ -489,7 +488,6 @@
   font-weight: 600;
 }
 
-/* input/textarea/select trong modal */
 .detail-value input,
 .detail-value select,
 .detail-value textarea {
@@ -512,15 +510,52 @@
   color: #6b7280;
 }
 
-.resident-modal-footer {
-  padding: 12px 18px;
+.fee-modal-footer {
+  margin-top: auto;
+  padding: 12px 16px;
   border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  background: #fff;
 }
 
-/* ===== responsive ===== */
+.fee-modal-body .table-toolbar {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.fee-modal-body .table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #eef0f6;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.fee-modal-body .fee-table {
+  min-width: 1100px;
+}
+
+.fee-modal-body .fee-table td input[type="number"],
+.fee-modal-body .fee-table td input[type="text"] {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 9px 10px;
+  font-size: 14px;
+  outline: none;
+  background: #fff;
+}
+
+.fee-modal-body .fee-table td input:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+}
+
 @media (max-width: 980px) {
   .stats-strip {
     grid-template-columns: 1fr 1fr;
@@ -557,8 +592,16 @@
   .detail-item.detail-wide {
     grid-column: span 1;
   }
+
+  .fee-modal-overlay {
+    padding: 10px;
+  }
+
+  .fee-modal {
+    height: calc(100vh - 20px);
+  }
 }
-/* ===== FeeRecords in detail modal ===== */
+
 .fee-records-section {
   margin-top: 14px;
   border-top: 1px solid #eef0f6;
@@ -634,8 +677,51 @@
   color: #475569;
 }
 
-/* optional: trạng thái partial */
 .fee-status-partial {
   background: #fffbeb;
   color: #92400e;
 }
+/* Chrome, Edge, Safari */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+.revenues-detail-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.revenues-detail-info {
+  margin-bottom: 12px;
+}
+
+.revenues-detail-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.revenues-detail-footer {
+  display: flex;
+}
+
+@media (max-width: 980px) {
+  .revenues-detail-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .revenues-detail-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
