@@ -101,6 +101,8 @@ export const getDashboard = async (req, res) => {
     }
 
     residentsForAge.forEach(r => {
+      if (!r.dob || !(r.dob instanceof Date) || Number.isNaN(r.dob.getTime())) return
+
       let age = currentYear - r.dob.getFullYear()
       const m = now.getMonth() - r.dob.getMonth()
       if (m < 0 || (m === 0 && now.getDate() < r.dob.getDate())) age--
@@ -149,7 +151,10 @@ export const getDashboard = async (req, res) => {
     // 8. Hồ sơ gần đây (chờ duyệt)
     // =========================
     const recentRequests = await prisma.residentChange.findMany({
-      where: { approvalStatus: 0 },
+      where: {
+        approvalStatus: 0,
+        residentId: { not: null }
+      },
       orderBy: [{ fromDate: "desc" }, { id: "desc" }],
       take: 8,
       include: {
@@ -178,6 +183,7 @@ export const getDashboard = async (req, res) => {
       recentRequests
     })
   } catch (error) {
+    console.error("Dashboard error:", error)
     return res.status(500).json({
       message: "Dashboard error",
       error: error.message
