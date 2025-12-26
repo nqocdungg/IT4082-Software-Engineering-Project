@@ -1,0 +1,31 @@
+/* src/styles/layout.css */
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #f5f7fb;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+}
+.content {
+  overflow-y: auto; 
+  overflow-x: hidden;
+
+}
+
+.content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+

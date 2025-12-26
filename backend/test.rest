@@ -1,0 +1,105 @@
+###############################################
+# LOGIN 4 ROLES
+###############################################
+
+### Login HEAD
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "to_truong",
+  "password": "totruong@123"
+}
+
+### Login DEPUTY
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "pho_chu",
+  "password": "phochu@123"
+}
+
+### Login ACCOUNTANT
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ke_toan",
+  "password": "ketoan@123"
+}
+
+### Login RESIDENT
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ho_dan",
+  "password": "hodan@123"
+}
+
+
+###############################################
+# GET RESIDENTS
+###############################################
+
+### Get all residents
+GET http://localhost:5000/api/residents
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6Ik5ndXnhu4VuIFbEg24gQSIsImlhdCI6MTc2NTE5MTg4NywiZXhwIjoxNzY1Mjc4Mjg3fQ.EvRzorLzpk_6TvmanzC0t8lVLxXtiO31tFbiev7xlg0
+
+
+###############################################
+# GET HOUSEHOLDS
+###############################################
+
+### Get all households
+GET http://localhost:5000/api/households
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6IlThu5QgVFLGr-G7nk5HIiwiaWF0IjoxNzY2NTUxNzM2LCJleHAiOjE3NjY2MzgxMzZ9.QwikuaKSwfXvnsj3PXm678xU9MGgcwomrbLH-52_LmA
+
+
+###############################################
+# GENERATE HOUSEHOLD CODE (PREVIEW)
+###############################################
+
+### Generate household code (9 digits)
+GET http://localhost:5000/api/households/generate-code
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6IlThu5QgVFLGr-G7nk5HIiwiaWF0IjoxNzY2NTUxNzM2LCJleHAiOjE3NjY2MzgxMzZ9.QwikuaKSwfXvnsj3PXm678xU9MGgcwomrbLH-52_LmA
+
+###############################################
+# CREATE HOUSEHOLD (NO householdCode)
+###############################################
+
+### Create household
+POST http://localhost:5000/api/households
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkhFQUQiLCJmdWxsbmFtZSI6IlThu5QgVFLGr-G7nk5HIiwiaWF0IjoxNzY2NTUxNzM2LCJleHAiOjE3NjY2MzgxMzZ9.QwikuaKSwfXvnsj3PXm678xU9MGgcwomrbLH-52_LmA
+
+{
+  "address": "Số 12 Nguyễn Trãi, Hà Đông",
+  "owner": {
+    "residentCCCD": "012345678999",
+    "fullname": "Nguyễn Văn Đông",
+    "dob": "1990-01-01",
+    "gender": "M",
+    "ethnicity": "Kinh",
+    "religion": "Không",
+    "nationality": "Việt Nam",
+    "hometown": "Hà Nội",
+    "occupation": "Kỹ sư"
+  },
+  "members": [
+    {
+      "residentCCCD": "012345678998",
+      "fullname": "Nguyễn Thị Tét",
+      "dob": "1992-05-05",
+      "gender": "F",
+      "ethnicity": "Kinh",
+      "religion": "Không",
+      "nationality": "Việt Nam",
+      "hometown": "Hà Nội",
+      "occupation": "Nhân viên",
+      "relationToOwner": "Vợ"
+    }
+  ]
+}
+

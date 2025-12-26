@@ -1,0 +1,85 @@
+.vhm-slider {
+  position: relative;
+  max-width: 1200px;
+  height: 460px;
+  margin: 60px auto;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+  background: #fff;
+  margin-bottom: 100px;
+}
+
+.vhm-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.vhm-slide.active {
+  opacity: 1;
+  z-index: 2;
+}
+
+.vhm-left {
+  width: 35%;
+  padding: 50px 45px;
+  background: #ffffff;
+}
+
+.vhm-left h5 {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.vhm-left h2 {
+  font-size: 32px;
+  color: #c9a14a;
+  font-weight: 800;
+  margin-bottom: 20px;
+}
+
+.vhm-left p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #555;
+}
+
+.vhm-left button {
+  margin-top: 30px;
+  padding: 12px 30px;
+  border: 2px solid #1f3c88;
+  background: transparent;
+  color: #1f3c88;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vhm-right {
+  width: 65%;
+  background-size: cover;
+  background-position: center;
+}
+
+.vhm-dots {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.vhm-dots span {
+  width: 10px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.vhm-dots span.active {
+  background: #c9a14a;
+}

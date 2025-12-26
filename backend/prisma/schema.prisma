@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////////
+// USER – CÁN BỘ QUẢN LÝ
+//////////////////////////////////////////////////////
+
+model User {
+  id             Int              @id @default(autoincrement())
+  username       String           @unique @db.VarChar(30)
+  password       String           @db.VarChar(255)
+  fullname       String?           @db.VarChar(50)
+  role           Role
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+
+  managedChanges ResidentChange[] @relation("UserManageChange")
+  managedFees    FeeRecord[]      @relation("UserManageFee")
+
+  householdId Int?   @unique
+  household   Household? @relation("HouseholdAccount", fields: [householdId], references: [id])
+}
+
+enum Role {
+  HEAD
+  DEPUTY
+  ACCOUNTANT
+  HOUSEHOLD
+}
+
+//////////////////////////////////////////////////////
+// HOUSEHOLD – HỘ KHẨU
+//////////////////////////////////////////////////////
+
+model Household {
+  id               Int       @id @default(autoincrement())
+  account          User?     @relation("HouseholdAccount")
+
+  householdCode    String    @unique @db.VarChar(9) // MÃ HỘ KHẨU (nghiệp vụ)
+  address          String    @db.VarChar(100)
+
+  registrationDate DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  status           Int       @default(1)
+  // 0: inactive / locked
+  // 1: active
+
+  ownerId          Int?      @unique
+  owner            Resident? @relation("HouseholdOwner", fields: [ownerId], references: [id])
+
+  residents        Resident[]
+  feeRecords       FeeRecord[]
+}
+
+//////////////////////////////////////////////////////
+// RESIDENT – NHÂN KHẨU
+//////////////////////////////////////////////////////
+
+model Resident {
+  id              Int      @id @default(autoincrement())
+
+  residentCCCD    String?  @unique
+  fullname        String   @db.VarChar(100)
+  dob             DateTime
+  gender          String?  @db.VarChar(1)
+
+  ethnicity       String?  @db.VarChar(50)   // dân tộc
+  religion        String?  @db.VarChar(50)   // tôn giáo
+  nationality     String   @db.VarChar(50)   // quốc tịch
+  hometown        String?  @db.VarChar(100)  // quê quán
+  occupation      String?  @db.VarChar(100)  // nghề nghiệp
+
+  relationToOwner String?  @db.VarChar(50)
+
+  status          Int      @default(0)
+  // 0: active
+  // 1: temporary
+  // 2: absent
+  // 3: moved_out
+  // 4: deceased
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  householdId     Int?
+  household       Household? @relation(fields: [householdId], references: [id])
+
+  ownerOf         Household? @relation("HouseholdOwner")
+  changes         ResidentChange[]
+}
+
+//////////////////////////////////////////////////////
+// RESIDENT CHANGE – BIẾN ĐỘNG NHÂN KHẨU
+//////////////////////////////////////////////////////
+
+model ResidentChange {
+  id Int @id @default(autoincrement())
+
+  changeType Int
+  // 0: birth
+  // 1: temp_residence
+  // 2: temp_absence
+  // 3: move_in
+  // 4: move_out
+  // 5: split_household
+  // 6: change_household_head
+  // 7: death
+
+  fromAddress    String?
+  toAddress      String?
+  fromDate       DateTime
+  toDate         DateTime?
+  reason         String?
+
+  approvalStatus Int
+  // 0: pending
+  // 1: approved
+  // 2: rejected
+
+  residentId Int
+  resident   Resident @relation(fields: [residentId], references: [id])
+
+  managerId Int?
+  manager   User? @relation("UserManageChange", fields: [managerId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////////////////////////////////
+// FEE – THU PHÍ
+//////////////////////////////////////////////////////
+
+model FeeType {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  description String?
+  isMandatory Boolean  @default(true)
+  unitPrice   Float?
+  isActive    Boolean  @default(true)
+  fromDate    DateTime?
+  toDate      DateTime?
+
+  feeRecords FeeRecord[]
+}
+
+model FeeRecord {
+  id          Int     @id @default(autoincrement())
+  amount      Float
+  status      Int
+  // 0: unpaid
+  // 1: partial
+  // 2: paid
+
+  description String?
+
+  householdId Int
+  household   Household @relation(fields: [householdId], references: [id])
+
+  feeTypeId   Int
+  feeType     FeeType @relation(fields: [feeTypeId], references: [id])
+
+  managerId   Int
+  manager     User @relation("UserManageFee", fields: [managerId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
