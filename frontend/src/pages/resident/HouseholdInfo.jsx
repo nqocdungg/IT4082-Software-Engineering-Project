@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import ResidentHeader from "../../components/resident/ResidentHeader";
 import "./HouseholdInfo.css";
 
-// debounce hook nhỏ để search mượt
 function useDebouncedValue(value, delay = 300) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -64,7 +63,6 @@ export default function HouseholdInfo() {
     1: "Không hoạt động",
   };
 
-  // danh sách nhân khẩu đã lọc theo search
   const filteredResidents = useMemo(() => {
     if (!household || !household.residents) return [];
     if (!debouncedSearch.trim()) return household.residents;
