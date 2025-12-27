@@ -27,7 +27,7 @@ export default function ResidentHeader() {
 
         <nav className="nav-menu">
           <div className="nav-item-resident" onClick={() => toggleDropdown("home")}>
-            <span><Link to="/resident-home">Trang chủ</Link></span>
+            <span><Link to="/resident-home" className="nav-link">Trang chủ</Link></span>
           </div>
 
           <div

@@ -29,6 +29,11 @@
   gap: 20px;
 }
 
+.nav-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .nav-item-resident {
   position: relative;
   cursor: pointer;
