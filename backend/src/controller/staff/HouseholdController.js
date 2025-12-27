@@ -22,13 +22,77 @@ async function generateUniqueHouseholdCode(tx) {
 
 /* =====================================================
  * GET /api/households
+ * Query:
+ *  - search: string
+ *  - status: ALL | 0 | 1
+ *  - page: number
+ *  - limit: number
  * ===================================================== */
 export const getAllHouseholds = async (req, res) => {
   try {
-    const households = await prisma.household.findMany({
-      include: { owner: true, residents: true }
+    const search = String(req.query.search ?? "").trim()
+    const statusRaw = String(req.query.status ?? req.query.statusFilter ?? "ALL").trim()
+
+    const page = toPositiveInt(req.query.page) || 1
+    const limit = toPositiveInt(req.query.limit ?? req.query.rowsPerPage) || 10
+
+    const where = {}
+
+    if (statusRaw !== "ALL" && statusRaw !== "") {
+      const s = Number(statusRaw)
+      if ([0, 1].includes(s)) where.status = s
+    }
+
+    if (search) {
+      where.OR = [
+        { householdCode: { contains: search, mode: "insensitive" } },
+        { address: { contains: search, mode: "insensitive" } },
+        { owner: { fullname: { contains: search, mode: "insensitive" } } },
+        { owner: { residentCCCD: { contains: search, mode: "insensitive" } } }
+      ]
+    }
+
+    const [total, rows, grouped] = await prisma.$transaction([
+      prisma.household.count({ where }),
+      prisma.household.findMany({
+        where,
+        include: { owner: true, residents: true },
+        orderBy: { id: "desc" },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.household.groupBy({
+        by: ["status"],
+        _count: { _all: true }
+      })
+    ])
+
+    const data = rows.map(h => ({
+      ...h,
+      membersCount: (h.residents || []).filter(r => [0, 1, 2].includes(Number(r.status))).length
+    }))
+
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+
+    const groupedMap = Object.fromEntries(grouped.map(g => [Number(g.status), g._count._all]))
+    const active = groupedMap[1] || 0
+    const inactive = groupedMap[0] || 0
+
+    return res.status(200).json({
+      success: true,
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        stats: { active, inactive, totalActive: active },
+        range: {
+          start: total === 0 ? 0 : (page - 1) * limit + 1,
+          end: total === 0 ? 0 : Math.min(page * limit, total)
+        }
+      }
     })
-    return res.status(200).json({ success: true, data: households })
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message })
   }
@@ -104,7 +168,14 @@ export const getHouseholdById = async (req, res) => {
 
     const household = await prisma.household.findUnique({
       where: { id },
-      include: { owner: true, residents: true, feeRecords: true }
+      include: {
+        owner: true,
+        residents: {
+          where: { status: { notIn: [3, 4] } },
+          orderBy: [{ relationToOwner: "asc" }, { id: "asc" }]
+        },
+        feeRecords: true
+      }
     })
 
     if (!household) {
