@@ -77,7 +77,7 @@ function findMemberName(list, id) {
 }
 
 /* =========================
- * ✅ ROLE: lấy trực tiếp từ JWT (vì localStorage.user = null)
+ * ✅ ROLE: lấy trực tiếp từ JWT
  * ========================= */
 function getJwtPayload() {
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
@@ -98,14 +98,9 @@ function getJwtPayload() {
 }
 
 export default function ResidentChange() {
-  // ✅ role đúng theo JWT payload m gửi: { id, role: "HEAD", fullname, ... }
   const jwtPayload = getJwtPayload()
   const role = jwtPayload?.role || null
   const canApprove = role === "HEAD" || role === "DEPUTY"
-
-  // debug nhanh (có thể xoá sau)
-  // eslint-disable-next-line no-console
-  console.log("JWT payload =", jwtPayload, "ROLE =", role, "canApprove =", canApprove)
 
   const [changes, setChanges] = useState([])
   const [search, setSearch] = useState("")
@@ -138,9 +133,8 @@ export default function ResidentChange() {
     extra_religion: "",
     extra_nationality: "",
     extra_hometown: "",
-    extra_householdId: "", 
-    extra_relationToOwner: "",
-
+    extra_householdId: "",
+    extra_relationToOwner: ""
   })
 
   const [residentSearch, setResidentSearch] = useState("")
@@ -174,19 +168,38 @@ export default function ResidentChange() {
   const [newOwnerId, setNewOwnerId] = useState(null)
   const [householdMembers, setHouseholdMembers] = useState([])
 
-  // members riêng cho modal detail (để xem changeType 5/6 không phụ thuộc modal create)
+  // members riêng cho modal detail
   const [detailMembers, setDetailMembers] = useState([])
 
+  // ✅ fallback extraData khi pending ct 0/1/3
   const residentDisplay = c => {
     const r = c?.resident
-    if (!r) return "—"
-    const cccd = r.residentCCCD ? ` • ${r.residentCCCD}` : ""
-    return `${r.fullname || "—"}${cccd}`
+    if (r) {
+      const cccd = r.residentCCCD ? ` • ${r.residentCCCD}` : ""
+      return `${r.fullname || "—"}${cccd}`
+    }
+    const ex = c?.extraData
+    if (ex?.fullname) {
+      const cccd = ex.residentCCCD ? ` • ${ex.residentCCCD}` : ""
+      return `${ex.fullname}${cccd}`
+    }
+    return "—"
   }
 
+  const residentSubInfo = c => {
+    const g = c?.resident?.gender ?? c?.extraData?.gender
+    const dob = c?.resident?.dob ?? c?.extraData?.dob
+    const genderLabel = g === "M" ? "Nam" : g === "F" ? "Nữ" : "—"
+    const dobText = dob ? String(dob).slice(0, 10) : "—"
+    return `${genderLabel} • ${dobText}`
+  }
+
+  // ✅ fallback householdId từ extraData
   const householdDisplay = c => {
     const hh = c?.resident?.household
     if (hh?.householdCode) return hh.householdCode
+    const exHid = c?.extraData?.householdId
+    if (exHid != null) return `HK #${exHid}`
     const hid = c?.resident?.householdId
     return hid != null ? `HK #${hid}` : "—"
   }
@@ -365,7 +378,8 @@ export default function ResidentChange() {
       extra_religion: "",
       extra_nationality: "",
       extra_hometown: "",
-      extra_householdId: ""
+      extra_householdId: "",
+      extra_relationToOwner: ""
     }))
   }
 
@@ -488,7 +502,12 @@ export default function ResidentChange() {
           religion: createForm.extra_religion || undefined,
           nationality: createForm.extra_nationality || undefined,
           hometown: createForm.extra_hometown || undefined,
-          householdId: selectedHousehold?.id || null
+
+          // ✅ gửi relationToOwner
+          relationToOwner: createForm.extra_relationToOwner || undefined,
+
+          // ✅ tạm trú: cho null
+          householdId: isTempStay ? null : (selectedHousehold?.id || null)
         }
       }
 
@@ -675,10 +694,7 @@ export default function ResidentChange() {
 
                       <td>
                         {residentDisplay(c)}
-                        <div className="rc-sub-text">
-                          {c?.resident?.gender === "M" ? "Nam" : c?.resident?.gender === "F" ? "Nữ" : "—"} •{" "}
-                          {String(c?.resident?.dob || "").slice(0, 10) || "—"}
-                        </div>
+                        <div className="rc-sub-text">{residentSubInfo(c)}</div>
                       </td>
 
                       <td>
@@ -704,7 +720,13 @@ export default function ResidentChange() {
 
                           <button
                             type="button"
-                            title={!canApprove ? "Bạn không có quyền duyệt" : isPending ? "Duyệt" : "Chỉ duyệt khi chờ duyệt"}
+                            title={
+                              !canApprove
+                                ? "Bạn không có quyền duyệt"
+                                : isPending
+                                  ? "Duyệt"
+                                  : "Chỉ duyệt khi chờ duyệt"
+                            }
                             className="ok"
                             disabled={!canApprove || !isPending}
                             onClick={() => handleApprove(c.id)}
@@ -714,7 +736,13 @@ export default function ResidentChange() {
 
                           <button
                             type="button"
-                            title={!canApprove ? "Bạn không có quyền từ chối" : isPending ? "Từ chối" : "Chỉ từ chối khi chờ duyệt"}
+                            title={
+                              !canApprove
+                                ? "Bạn không có quyền từ chối"
+                                : isPending
+                                  ? "Từ chối"
+                                  : "Chỉ từ chối khi chờ duyệt"
+                            }
                             className="danger"
                             disabled={!canApprove || !isPending}
                             onClick={() => handleReject(c.id)}
@@ -765,6 +793,9 @@ export default function ResidentChange() {
         </div>
       </div>
 
+      {/* =========================
+       *  ✅ MODAL CREATE (FULL)
+       * ========================= */}
       {openCreate && (
         <div className="rc-modal-overlay" onClick={closeCreateModal}>
           <div className="rc-modal" onClick={e => e.stopPropagation()}>
@@ -773,7 +804,7 @@ export default function ResidentChange() {
                 <h3 className="rc-modal-title">Tạo biến động</h3>
                 <p className="rc-modal-sub">Nhập thông tin và bấm Tạo</p>
               </div>
-              <button className="rc-modal-close" onClick={closeCreateModal}>
+              <button className="rc-modal-close" onClick={closeCreateModal} type="button">
                 ✕
               </button>
             </div>
@@ -881,16 +912,16 @@ export default function ResidentChange() {
                     </div>
 
                     <div className="rc-detail-item rc-wide">
-                    <div className="rc-detail-label">
-                      Quan hệ với chủ hộ <span className="rc-muted">(tuỳ chọn)</span>
+                      <div className="rc-detail-label">
+                        Quan hệ với chủ hộ <span className="rc-muted">(tuỳ chọn)</span>
+                      </div>
+                      <input
+                        className="rc-input"
+                        placeholder="Ví dụ: Con, Vợ, Cháu, Anh ruột, ..."
+                        value={createForm.extra_relationToOwner}
+                        onChange={e => onCreateField("extra_relationToOwner", e.target.value)}
+                      />
                     </div>
-                    <input
-                      className="rc-input"
-                      placeholder="Ví dụ: Con, Vợ, Cháu, Anh ruột, ..."
-                      value={createForm.extra_relationToOwner}
-                      onChange={e => onCreateField("extra_relationToOwner", e.target.value)}
-                    />
-                  </div>
                   </>
                 )}
 
@@ -931,15 +962,13 @@ export default function ResidentChange() {
                               </span>
 
                               {checked && (
-                                <label className="rc-owner-radio">
-                                  <input
-                                    type="radio"
-                                    name="newOwnerSplit"
-                                    checked={newOwnerId === m.id}
-                                    onChange={() => setNewOwnerId(m.id)}
-                                  />
-                                  Chủ hộ mới
-                                </label>
+                                <button
+                                  type="button"
+                                  className={`rc-chip ${newOwnerId === m.id ? "active" : ""}`}
+                                  onClick={() => setNewOwnerId(m.id)}
+                                >
+                                  {newOwnerId === m.id ? "✓ Chủ hộ mới" : "Đặt làm chủ hộ"}
+                                </button>
                               )}
                             </label>
                           )
@@ -966,21 +995,24 @@ export default function ResidentChange() {
                     ) : (
                       <div className="rc-split-box">
                         {householdMembers.map(m => (
-                          <label key={m.id} className="rc-split-row">
-                            <input
-                              type="radio"
-                              name="newOwnerChange"
-                              checked={newOwnerId === m.id}
-                              onChange={() => setNewOwnerId(m.id)}
-                            />
+                          <div
+                            key={m.id}
+                            className={`rc-split-row rc-click-row ${newOwnerId === m.id ? "selected" : ""}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setNewOwnerId(m.id)}
+                            onKeyDown={e => e.key === "Enter" && setNewOwnerId(m.id)}
+                          >
+                            <span className={`rc-dot ${newOwnerId === m.id ? "on" : ""}`} />
                             <span className="rc-split-info">
                               <b>{m.fullname}</b>
                               {m.residentCCCD && ` • ${m.residentCCCD}`}
-                              <span className="rc-sub-text">
-                                {m.relationToOwner ? `Quan hệ: ${m.relationToOwner}` : ""}
-                              </span>
+                              <span className="rc-sub-text">{m.relationToOwner ? `Quan hệ: ${m.relationToOwner}` : ""}</span>
                             </span>
-                          </label>
+
+                            {newOwnerId === m.id && <span className="rc-tag">Chủ hộ mới</span>}
+                          </div>
+
                         ))}
                       </div>
                     )}
@@ -1094,6 +1126,9 @@ export default function ResidentChange() {
         </div>
       )}
 
+      {/* =========================
+       *  ✅ MODAL DETAIL (FULL)
+       * ========================= */}
       {selectedChange && (
         <div className="rc-modal-overlay" onClick={closeDetail}>
           <div className="rc-modal" onClick={e => e.stopPropagation()}>
@@ -1129,7 +1164,12 @@ export default function ResidentChange() {
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Nhân khẩu</div>
-                    <div className="rc-detail-value">{residentDisplay(selectedChange)}</div>
+                    <div className="rc-detail-value">
+                      {residentDisplay(selectedChange)}
+                      <div className="rc-sub-text" style={{ marginTop: 4 }}>
+                        {residentSubInfo(selectedChange)}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="rc-detail-item">

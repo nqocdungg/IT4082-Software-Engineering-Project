@@ -492,7 +492,7 @@ export default function HouseholdsPage() {
   }, [filteredHouseholds.length, currentPage, rowsPerPage])
 
   const stats = useMemo(() => {
-    const total = households.length
+    const total = households.filter(h => Number(h.status) === 1).length
     const count = code => households.filter(h => Number(h.status) === Number(code)).length
     return {
       total,
