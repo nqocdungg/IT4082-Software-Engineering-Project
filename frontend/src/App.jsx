@@ -14,6 +14,8 @@ import StaffRevenuesDetail from "./pages/staff/RevenuesDetail"
 import ResidentHome from "./pages/resident/ResidentHome.jsx"
 import HouseholdInfo from "./pages/resident/HouseholdInfo.jsx"
 
+import FeePayment from "./pages/resident/FeePayment.jsx"; 
+import FeeHistory from "./pages/resident/FeeHistory.jsx";
 import Login from "./pages/Login"
 
 import "./index.css"
@@ -53,6 +55,8 @@ function App() {
         >
           <Route path="/resident-home" element={<ResidentHome />} />
           <Route path="/resident/household/info" element={<HouseholdInfo />} />
+          <Route path="/resident/payment" element={<FeePayment />} />
+          <Route path="/resident/history" element={<FeeHistory />} />
         </Route>
       </Routes>
     </BrowserRouter>
