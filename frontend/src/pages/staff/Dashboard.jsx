@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import { FaHome, FaUserFriends, FaFolderOpen } from "react-icons/fa"
 import { MdOutlineAttachMoney } from "react-icons/md"
+import { GrMoney } from "react-icons/gr";
 import CountUp from "react-countup"
 
 import "../../styles/staff/dashboard.css"
@@ -181,7 +182,7 @@ export default function Dashboard() {
 
             {/* Tổng tiền */}
             <div className="value-row revenue-total-row">
-              <span className="icon-container money"><MdOutlineAttachMoney /></span>
+              <span className="icon-container money"><GrMoney /></span>
               <span className="value revenue-value">
                 {formatMoney(totalRevenue)} VND
               </span>
