@@ -1,13 +1,21 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Logo from "../../assets/images/Logo.png";
 import "../../styles/resident/ResidentHeader.css";
 
 export default function ResidentHeader() {
   const [openDropdown, setOpenDropdown] = useState(null);
+  const navigate = useNavigate();
 
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
+    navigate("/login");
   };
 
   return (
@@ -19,7 +27,7 @@ export default function ResidentHeader() {
 
         <nav className="nav-menu">
           <div className="nav-item-resident" onClick={() => toggleDropdown("home")}>
-            <span>Trang chủ</span>
+            <span><Link to="/resident-home" className="nav-link">Trang chủ</Link></span>
           </div>
 
           <div
@@ -41,9 +49,9 @@ export default function ResidentHeader() {
           >
             <span>Hóa đơn</span>
             <div className="dropdown">
-              <div>Hóa đơn hàng tháng</div>
-              <div>Lịch sử thanh toán</div>
-              <div>Các khoản thu</div>
+              <Link to="/resident/payment">Hóa đơn cần nộp</Link>
+              <Link to="/resident/history">Lịch sử thanh toán</Link>
+              <Link to="/resident/payment">Các khoản thu</Link>
             </div>
           </div>
 
@@ -83,7 +91,7 @@ export default function ResidentHeader() {
             }`}
           >
             <div>Hồ sơ cá nhân</div>
-            <div>Đăng xuất</div>
+            <div onClick={handleLogout} style={{cursor: "pointer"}}>Đăng xuất</div>
           </div>
         </div>
       </div>

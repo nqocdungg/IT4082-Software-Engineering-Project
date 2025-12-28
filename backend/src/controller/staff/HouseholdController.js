@@ -1,8 +1,13 @@
 import prisma from "../../../prisma/prismaClient.js"
 
-/* =====================================================
- * UTIL: Generate random 9-digit household code (unique)
- * ===================================================== */
+/* =========================
+ * Helpers
+ * ========================= */
+function toPositiveInt(raw) {
+  const n = Number.parseInt(String(raw ?? ""), 10)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 function random9Digits() {
   return Math.floor(100000000 + Math.random() * 900000000).toString()
 }
@@ -10,36 +15,141 @@ function random9Digits() {
 async function generateUniqueHouseholdCode(tx) {
   while (true) {
     const code = random9Digits()
-
-    const existed = await tx.household.findUnique({
-      where: { householdCode: code }
-    })
-
+    const existed = await tx.household.findUnique({ where: { householdCode: code } })
     if (!existed) return code
   }
 }
 
 /* =====================================================
  * GET /api/households
+ * Query:
+ *  - search: string
+ *  - status: ALL | 0 | 1
+ *  - page: number
+ *  - limit: number
  * ===================================================== */
 export const getAllHouseholds = async (req, res) => {
   try {
-    const households = await prisma.household.findMany({
-      include: {
-        owner: true,
-        residents: true
-      }
-    })
+    const search = String(req.query.search ?? "").trim()
+    const statusRaw = String(req.query.status ?? req.query.statusFilter ?? "ALL").trim()
+
+    const page = toPositiveInt(req.query.page) || 1
+    const limit = toPositiveInt(req.query.limit ?? req.query.rowsPerPage) || 10
+
+    const where = {}
+
+    if (statusRaw !== "ALL" && statusRaw !== "") {
+      const s = Number(statusRaw)
+      if ([0, 1].includes(s)) where.status = s
+    }
+
+    if (search) {
+      where.OR = [
+        { householdCode: { contains: search, mode: "insensitive" } },
+        { address: { contains: search, mode: "insensitive" } },
+        { owner: { fullname: { contains: search, mode: "insensitive" } } },
+        { owner: { residentCCCD: { contains: search, mode: "insensitive" } } }
+      ]
+    }
+
+    const [total, rows, grouped] = await prisma.$transaction([
+      prisma.household.count({ where }),
+      prisma.household.findMany({
+        where,
+        include: { owner: true, residents: true },
+        orderBy: { id: "desc" },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.household.groupBy({
+        by: ["status"],
+        _count: { _all: true }
+      })
+    ])
+
+    const data = rows.map(h => ({
+      ...h,
+      membersCount: (h.residents || []).filter(r => [0, 1, 2].includes(Number(r.status))).length
+    }))
+
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+
+    const groupedMap = Object.fromEntries(grouped.map(g => [Number(g.status), g._count._all]))
+    const active = groupedMap[1] || 0
+    const inactive = groupedMap[0] || 0
 
     return res.status(200).json({
       success: true,
-      data: households
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        stats: { active, inactive, totalActive: active },
+        range: {
+          start: total === 0 ? 0 : (page - 1) * limit + 1,
+          end: total === 0 ? 0 : Math.min(page * limit, total)
+        }
+      }
     })
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
+    return res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+/* =====================================================
+ * GET /api/households/search?q=...
+ * ===================================================== */
+export const searchHouseholds = async (req, res) => {
+  try {
+    const q = String(req.query.q || "").trim()
+    if (!q) return res.json({ success: true, data: [] })
+
+    const list = await prisma.household.findMany({
+      where: {
+        OR: [
+          { householdCode: { startsWith: q, mode: "insensitive" } },
+          { address: { startsWith: q, mode: "insensitive" } }
+        ]
+      },
+      orderBy: { id: "desc" },
+      take: 20,
+      select: { id: true, householdCode: true, address: true, status: true, ownerId: true }
     })
+
+    return res.json({ success: true, data: list })
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+/* =====================================================
+ * GET /api/households/:id/members
+ * ===================================================== */
+export const getHouseholdMembers = async (req, res) => {
+  try {
+    const id = toPositiveInt(req.params.id)
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Invalid household id" })
+    }
+
+    const members = await prisma.resident.findMany({
+      where: { householdId: id },
+      orderBy: [{ relationToOwner: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        residentCCCD: true,
+        fullname: true,
+        dob: true,
+        gender: true,
+        relationToOwner: true
+      }
+    })
+
+    return res.json({ success: true, data: members })
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
 
@@ -48,131 +158,88 @@ export const getAllHouseholds = async (req, res) => {
  * ===================================================== */
 export const getHouseholdById = async (req, res) => {
   try {
+    const id = toPositiveInt(req.params.id)
+
+    console.log("[GET /households/:id] url=", req.originalUrl, "rawId=", req.params.id, "parsedId=", id)
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Invalid household id" })
+    }
+
     const household = await prisma.household.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id },
       include: {
         owner: true,
-        residents: true,
+        residents: {
+          where: { status: { notIn: [3, 4] } },
+          orderBy: [{ relationToOwner: "asc" }, { id: "asc" }]
+        },
         feeRecords: true
       }
     })
 
     if (!household) {
-      return res.status(404).json({
-        success: false,
-        message: "Household not found"
-      })
+      return res.status(404).json({ success: false, message: "Household not found" })
     }
 
-    return res.status(200).json({
-      success: true,
-      data: household
-    })
+    return res.status(200).json({ success: true, data: household })
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
 
 /* =====================================================
  * GET /api/households/generate-code
- * Sinh mã hộ khẩu 9 số (KHÔNG tạo household)
  * ===================================================== */
 export const generateHouseholdCode = async (req, res) => {
   try {
     const code = await prisma.$transaction(tx => generateUniqueHouseholdCode(tx))
-
-    return res.status(200).json({
-      success: true,
-      code
-    })
+    return res.status(200).json({ success: true, code })
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
 
 /* =====================================================
  * POST /api/households
- * Tạo hộ khẩu mới (có chủ hộ + nhân khẩu ban đầu)
  * ===================================================== */
 export const createHousehold = async (req, res) => {
   const { address, owner, members = [] } = req.body
 
   if (!address || !owner) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing required fields"
-    })
+    return res.status(400).json({ success: false, message: "Missing required fields" })
   }
-
-  const cccdSet = new Set()
-
-if (owner.residentCCCD) {
-  cccdSet.add(owner.residentCCCD)
-}
-
-for (const m of members) {
-  if (!m.residentCCCD) continue
-  if (cccdSet.has(m.residentCCCD)) {
-    throw new Error("CCCD bị trùng trong danh sách nhân khẩu")
-  }
-  cccdSet.add(m.residentCCCD)
-}
 
   try {
+    const cccdSet = new Set()
+    if (owner.residentCCCD) cccdSet.add(owner.residentCCCD)
+
+    for (const m of members) {
+      if (!m.residentCCCD) continue
+      if (cccdSet.has(m.residentCCCD)) {
+        return res.status(400).json({ success: false, message: "CCCD bị trùng trong danh sách nhân khẩu" })
+      }
+      cccdSet.add(m.residentCCCD)
+    }
+
     const result = await prisma.$transaction(async tx => {
-      /* ============================
-       * 1. Sinh mã hộ khẩu
-       * ============================ */
       const householdCode = await generateUniqueHouseholdCode(tx)
 
-      /* ============================
-       * 2. Kiểm tra CCCD chủ hộ
-       * ============================ */
       if (owner.residentCCCD) {
-        const existedOwner = await tx.resident.findUnique({
-          where: { residentCCCD: owner.residentCCCD }
-        })
-
-        if (existedOwner) {
-          throw new Error("Chủ hộ đã tồn tại trong hệ thống")
-        }
+        const existedOwner = await tx.resident.findUnique({ where: { residentCCCD: owner.residentCCCD } })
+        if (existedOwner) throw new Error("Chủ hộ đã tồn tại trong hệ thống")
       }
 
-      /* ============================
-       * 3. Kiểm tra CCCD các thành viên
-       * ============================ */
       for (const m of members) {
         if (!m.residentCCCD) continue
-
-        const existed = await tx.resident.findUnique({
-          where: { residentCCCD: m.residentCCCD }
-        })
-
-        if (existed) {
-          throw new Error(`Nhân khẩu ${m.fullname} đã tồn tại trong hệ thống`)
-        }
+        const existed = await tx.resident.findUnique({ where: { residentCCCD: m.residentCCCD } })
+        if (existed) throw new Error(`Nhân khẩu ${m.fullname} đã tồn tại trong hệ thống`)
       }
 
-      /* ============================
-       * 4. Tạo Household
-       * ============================ */
       const household = await tx.household.create({
-        data: {
-          householdCode,
-          address,
-          status: 1
-        }
+        data: { householdCode, address, status: 1 }
       })
 
-      /* ============================
-       * 5. Tạo Resident CHỦ HỘ
-       * ============================ */
       const ownerResident = await tx.resident.create({
         data: {
           residentCCCD: owner.residentCCCD,
@@ -190,17 +257,11 @@ for (const m of members) {
         }
       })
 
-      /* ============================
-       * 6. Gán ownerId cho Household
-       * ============================ */
       await tx.household.update({
         where: { id: household.id },
         data: { ownerId: ownerResident.id }
       })
 
-      /* ============================
-       * 7. Tạo các thành viên còn lại
-       * ============================ */
       for (const m of members) {
         await tx.resident.create({
           data: {
@@ -223,40 +284,24 @@ for (const m of members) {
       return household
     })
 
-    return res.status(201).json({
-      success: true,
-      data: result
-    })
+    return res.status(201).json({ success: true, data: result })
   } catch (err) {
-    return res.status(400).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(400).json({ success: false, message: err.message })
   }
 }
 
 /* =====================================================
- * PATCH /api/households/:id/status
- * - active (1): moved_out (3) -> active (0)
- * - inactive (0): active(0), temporary(1), absent(2) -> moved_out (3)
- * - deceased (4) không đổi
+ * PUT /api/households/:id/status
  * ===================================================== */
 export const changeHouseholdStatus = async (req, res) => {
-  const householdId = Number(req.params.id)
+  const householdId = toPositiveInt(req.params.id)
   const nextStatus = Number(req.body?.status)
 
-  if (!householdId || Number.isNaN(householdId)) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid household id"
-    })
+  if (!householdId) {
+    return res.status(400).json({ success: false, message: "Invalid household id" })
   }
-
   if (![0, 1].includes(nextStatus)) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid status (only 0 or 1)"
-    })
+    return res.status(400).json({ success: false, message: "Invalid status (only 0 or 1)" })
   }
 
   try {
@@ -268,37 +313,21 @@ export const changeHouseholdStatus = async (req, res) => {
 
       if (nextStatus === 1) {
         await tx.resident.updateMany({
-          where: {
-            householdId,
-            status: 3
-          },
-          data: {
-            status: 0
-          }
+          where: { householdId, status: 3 },
+          data: { status: 0 }
         })
       } else {
         await tx.resident.updateMany({
-          where: {
-            householdId,
-            status: { in: [0, 1, 2] }
-          },
-          data: {
-            status: 3
-          }
+          where: { householdId, status: { in: [0, 1, 2] } },
+          data: { status: 3 }
         })
       }
 
       return household
     })
 
-    return res.status(200).json({
-      success: true,
-      data: updated
-    })
+    return res.status(200).json({ success: true, data: updated })
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    })
+    return res.status(500).json({ success: false, message: err.message })
   }
 }

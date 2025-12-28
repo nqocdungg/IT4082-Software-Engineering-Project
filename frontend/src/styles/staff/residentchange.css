@@ -560,3 +560,266 @@
     grid-column: span 1;
   }
 }
+/* =========================
+   SUGGEST DROPDOWN (Resident / Household)
+   ========================= */
+
+.rc-suggest-wrap {
+  position: relative;
+}
+
+/* dropdown box */
+.rc-suggest-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 9999;
+
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 14px;
+
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.14),
+    0 2px 10px rgba(15, 23, 42, 0.06);
+
+  overflow: hidden;
+  max-height: 280px;
+}
+
+/* nice scrollbar */
+.rc-suggest-list {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.25) transparent;
+}
+.rc-suggest-list::-webkit-scrollbar {
+  width: 10px;
+}
+.rc-suggest-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rc-suggest-list::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.rc-suggest-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.28);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* each item as button */
+.rc-suggest-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  text-align: left;
+  transition: background 0.15s ease, transform 0.06s ease;
+}
+
+.rc-suggest-item:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.rc-suggest-item:active {
+  transform: scale(0.995);
+}
+
+/* left info column */
+.rc-suggest-item .rc-suggest-main {
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  display: block;
+}
+
+.rc-suggest-item .rc-suggest-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: rgba(15, 23, 42, 0.65);
+  line-height: 1.2;
+}
+
+/* optional right-side pill (if you want later) */
+.rc-suggest-pill {
+  flex: 0 0 auto;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #065f46;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* separator between items */
+.rc-suggest-item + .rc-suggest-item {
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+/* empty state (if you add later) */
+.rc-suggest-empty {
+  padding: 14px;
+  font-size: 13px;
+  color: rgba(15, 23, 42, 0.65);
+}
+/* =========================
+   MEMBER PICKER (CT=5/6) - GREEN LIGHT + NO OUTER BORDER
+   ========================= */
+
+.rc-split-box {
+  margin-top: 10px;
+  border: none;                 /* ❌ bỏ border quanh bảng */
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06); /* giữ shadow nhẹ cho "card" */
+}
+
+/* dùng chung cho cả label (ct=5) và div clickable (ct=6) */
+.rc-split-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+  background: #fff;
+  transition: background 0.15s ease, transform 0.08s ease;
+  border-bottom: 1px solid #eef2f6; /* chỉ giữ line giữa các dòng */
+}
+
+.rc-split-row:last-child {
+  border-bottom: none;
+}
+
+.rc-split-row:hover {
+  background: #f3fbf6; /* xanh nhạt hover */
+}
+
+.rc-split-row:active {
+  transform: scale(0.998);
+}
+
+/* CT=6 có thêm class clickable */
+.rc-click-row {
+  position: relative;
+}
+
+
+.rc-split-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #16a34a; /* xanh lá */
+  cursor: pointer;
+}
+
+.rc-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid #cbd5e1;
+  flex: 0 0 12px;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rc-dot.on {
+  border-color: #16a34a;
+  background: #16a34a;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+}
+
+/* info (name + sub) */
+.rc-split-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rc-split-info b {
+  font-size: 14px;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-split-info .rc-sub-text {
+  font-size: 12.5px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* chip button (ct=5) + dùng luôn cho ct=6 nếu m có button */
+.rc-chip {
+  margin-left: auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  background: #ecfdf5;   /* xanh mint */
+  color: #166534;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.rc-chip:hover {
+  background: #dcfce7;
+}
+
+.rc-chip:active {
+  transform: scale(0.98);
+}
+
+.rc-chip.active {
+  background: #16a34a;
+  border-color: #15803d;
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(34, 197, 94, 0.18);
+}
+
+/* tag "Chủ hộ mới" (ct=6) */
+.rc-tag {
+  margin-left: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 900;
+  font-size: 13px;
+  border: none; /* bỏ viền cho gọn */
+  white-space: nowrap;
+}
+
+/* responsive */
+@media (max-width: 520px) {
+  .rc-split-row {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .rc-chip,
+  .rc-tag {
+    font-size: 12px;
+    padding: 6px 9px;
+  }
+}

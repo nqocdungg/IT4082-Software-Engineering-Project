@@ -14,10 +14,21 @@ export const getResidents = async (req, res) => {
       where.gender = gender === "Nam" ? "M" : "F"
     }
 
-    if (search) {
+    if (search && String(search).trim()) {
+      const q = String(search).trim()
       where.OR = [
-        { fullname: { contains: search, mode: "insensitive" } },
-        { residentCCCD: { contains: search, mode: "insensitive" } }
+        {
+          fullname: {
+            startsWith: q,
+            mode: "insensitive"
+          }
+        },
+        {
+          residentCCCD: {
+            startsWith: q,
+            mode: "insensitive"
+          }
+        }
       ]
     }
 
@@ -45,7 +56,7 @@ export const getResidents = async (req, res) => {
       householdId: r.householdId,
       householdCode: r.household?.householdCode ?? null,
       address: r.household?.address ?? null,
-      status: r.status, // ✅ dùng trực tiếp status
+      status: r.status,
       createdAt: r.createdAt
     }))
 
@@ -109,7 +120,7 @@ export const getResidentById = async (req, res) => {
         householdId: resident.householdId,
         householdCode: resident.household?.householdCode ?? null,
         address: resident.household?.address ?? null,
-        status: resident.status, // ✅ dùng trực tiếp status
+        status: resident.status,
         changes: resident.changes,
         createdAt: resident.createdAt,
         updatedAt: resident.updatedAt
@@ -126,7 +137,6 @@ export const getResidentById = async (req, res) => {
 
 /**
  * PUT /api/residents/:id
- * Chỉ cập nhật thông tin hành chính
  */
 export const updateResident = async (req, res) => {
   try {
@@ -198,7 +208,6 @@ export const updateResident = async (req, res) => {
 
 /**
  * DELETE /api/residents/:id
- * Cho phép xóa dân cư (quản lý / DEV)
  */
 export const deleteResident = async (req, res) => {
   try {
@@ -215,7 +224,6 @@ export const deleteResident = async (req, res) => {
       })
     }
 
-    // xóa trước các biến động để tránh lỗi FK
     await prisma.residentChange.deleteMany({
       where: { residentId }
     })

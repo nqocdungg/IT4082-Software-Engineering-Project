@@ -1,4 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { 
+  Hash, MapPin, Calendar, Users, 
+  CreditCard, User, Globe, Flag, Heart, Briefcase, Home
+} from "lucide-react"; 
 import ResidentHeader from "../../components/resident/ResidentHeader";
 import "./HouseholdInfo.css";
 
@@ -16,292 +20,230 @@ export default function HouseholdInfo() {
   const [selectedResident, setSelectedResident] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState("");
-
-  const debouncedSearch = useDebouncedValue(search, 300);
 
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      setError("Bạn chưa đăng nhập");
-      return;
-    }
-
+    if (!token) return;
     const fetchHouseholdInfo = async () => {
       try {
-        const res = await fetch(
-          "http://localhost:5000/api/resident/household/info",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (!res.ok) throw new Error("Không thể tải thông tin hộ khẩu");
+        const res = await fetch("http://localhost:5000/api/resident/household/info", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Lỗi tải dữ liệu");
         const data = await res.json();
         setHousehold(data);
+        
+        if (data.residents && data.residents.length > 0) {
+          // Tìm chủ hộ để hiển thị mặc định, nếu không thì lấy người đầu tiên
+          const owner = data.residents.find(r => r.relationToOwner === "Chủ hộ") || data.residents[0];
+          setSelectedResident(owner);
+        }
       } catch (err) {
-        setError(err.message || "Lỗi không xác định");
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
     fetchHouseholdInfo();
   }, [token]);
 
   const residentStatusMap = {
-    0: "Thường trú",
-    1: "Tạm trú",
-    2: "Tạm vắng",
-    3: "Đã chuyển đi",
-    4: "Đã qua đời",
+    0: "Thường trú", 1: "Tạm trú", 2: "Tạm vắng", 3: "Đã chuyển đi", 4: "Đã qua đời",
   };
 
-  const householdStatusMap = {
-    1: "Đang hoạt động",
-    0: "Không hoạt động",
+  const formatDate = (dateStr) => {
+    return dateStr ? new Date(dateStr).toLocaleDateString("vi-VN") : "---";
   };
 
-  const filteredResidents = useMemo(() => {
-    if (!household || !household.residents) return [];
-    if (!debouncedSearch.trim()) return household.residents;
-    return household.residents.filter((r) =>
-      (r.fullname || "").toLowerCase().includes(debouncedSearch.toLowerCase())
-    );
-  }, [household, debouncedSearch]);
+  const calculateAge = (dob) => {
+    if (!dob) return "";
+    const year = new Date(dob).getFullYear();
+    const currentYear = new Date().getFullYear();
+    return `${currentYear - year} tuổi`;
+  };
+
+  // Hàm lấy chữ cái đầu để làm Avatar
+  const getInitials = (name) => {
+    if (!name) return "";
+    const parts = name.trim().split(" ");
+    return parts[parts.length - 1].charAt(0).toUpperCase();
+  };
+
+  const formatGender = (gender) => {
+    if (!gender) return "---";
+    const g = gender.toString().toLowerCase(); 
+    if (g === 'm' || g === 'male' || g === 'nam') return 'Nam';
+    if (g === 'f' || g === 'female' || g === 'nu' || g === 'nữ') return 'Nữ';
+    return gender;
+  };
 
   return (
     <>
       <ResidentHeader />
+      
+      {loading && <div className="loading-state">Đang tải dữ liệu...</div>}
+      {error && <div className="error-state">{error}</div>}
 
-      {loading && <p className="loading">Đang tải thông tin hộ khẩu...</p>}
-      {error && <p className="error">{error}</p>}
-
-      {!loading && !error && household && (
-        <div className="household-page">
-          {/* DANH SÁCH NHÂN KHẨU */}
-          <div className="square-layout resident-table-wrapper">
-            <h2>Danh sách nhân khẩu</h2>
-
-            {/* ô tìm kiếm */}
-            <div className="toolbar-search" style={{ marginBottom: "12px" }}>
-              <input
-                type="text"
-                placeholder="Tìm kiếm nhân khẩu..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  padding: "6px 10px",
-                  width: "300px",
-                  borderRadius: "6px",
-                  border: "1px solid #ccc",
-                }}
-              />
+      {!loading && household && (
+        <div className="main-container fade-in">
+          
+          {/* --- SECTION 1: HOUSEHOLD HEADER --- */}
+          <div className="household-header-wrapper">
+            {/* Banner Tiêu đề */}
+            <div className="header-banner">
+              <div className="banner-left">
+                <Home size={20} className="banner-icon" />
+                <h2>Thông tin Hộ khẩu</h2>
+              </div>
+              <div className="banner-right">
+                <span className="badge-member">
+                  <Users size={14} /> {household.residents.length} thành viên
+                </span>
+                <span className={`badge-status ${household.status === 1 ? 'active' : 'inactive'}`}>
+                  {household.status === 1 ? "✓ Đang hoạt động" : "Ngừng hoạt động"}
+                </span>
+              </div>
             </div>
 
-            <table className="resident-table">
-              <thead>
-                <tr>
-                  <th>STT</th>
-                  <th>Họ tên</th>
-                  <th>CCCD</th>
-                  <th>Ngày sinh</th>
-                  <th>Giới tính</th>
-                  <th>Trạng thái cư trú</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredResidents.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="empty-row">
-                      Không có dữ liệu nào để hiển thị
-                    </td>
-                  </tr>
-                ) : (
-                  filteredResidents.map((r, idx) => (
-                    <tr
-                      key={r.resident_id || idx}
-                      className={
-                        selectedResident?.resident_id === r.resident_id
-                          ? "selected"
-                          : ""
-                      }
-                      onClick={() => setSelectedResident(r)}
-                    >
-                      <td>{idx + 1}</td>
-                      <td>{r.fullname || "Chưa cập nhật"}</td>
-                      <td>{r.residentCCCD || "Chưa cập nhật"}</td>
-                      <td>
-                        {r.dob
-                          ? new Date(r.dob).toLocaleDateString()
-                          : "Chưa cập nhật"}
-                      </td>
-                      <td>{r.gender || "Chưa cập nhật"}</td>
-                      <td>
-                        <span
-                          className={`status-badge ${
-                            r.status === 0
-                              ? "status-thuong_tru"
-                              : r.status === 1
-                              ? "status-tam_tru"
-                              : r.status === 2
-                              ? "status-tam_vang"
-                              : r.status === 3
-                              ? "status-da_chuyen_di"
-                              : r.status === 4
-                              ? "status-da_qua_doi"
-                              : ""
-                          }`}
-                        >
-                          {r.status !== undefined
-                            ? residentStatusMap[r.status]
-                            : "Chưa cập nhật"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {selectedResident && (
-            <div className="resident-overlay">
-              <div className="info-card resident-details square-layout">
-                <div className="overlay-header">
-                  <h2>Chi tiết nhân khẩu</h2>
-                  <button
-                    className="close-btn"
-                    onClick={() => setSelectedResident(null)}
-                  >
-                    ×
-                  </button>
+            {/* 3 Cards thông tin chung */}
+            <div className="header-info-cards">
+              <div className="info-card-item">
+                <div className="icon-box purple-bg">
+                  <Hash size={24} color="#8b5cf6" />
                 </div>
-                <div className="info-grid">
-                  <div>
-                    <b>Họ tên:</b> {selectedResident.fullname}
-                  </div>
-                  <div>
-                    <b>CCCD:</b>{" "}
-                    {selectedResident.residentCCCD || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Ngày sinh:</b>{" "}
-                    {selectedResident.dob
-                      ? new Date(selectedResident.dob).toLocaleDateString()
-                      : "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Giới tính:</b>{" "}
-                    {selectedResident.gender || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Dân tộc:</b>{" "}
-                    {selectedResident.ethnicity || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Tôn giáo:</b>{" "}
-                    {selectedResident.religion || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Quốc tịch:</b>{" "}
-                    {selectedResident.nationality || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Quê quán:</b>{" "}
-                    {selectedResident.hometown || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Nghề nghiệp:</b>{" "}
-                    {selectedResident.occupation || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Quan hệ với chủ hộ:</b>{" "}
-                    {selectedResident.relationToOwner || "Chưa cập nhật"}
-                  </div>
-                  <div>
-                    <b>Trạng thái cư trú:</b>{" "}
-                    <span
-                      className={`status-badge ${
-                        selectedResident.status === 0
-                          ? "status-thuong_tru"
-                          : selectedResident.status === 1
-                          ? "status-tam_tru"
-                          : selectedResident.status === 2
-                          ? "status-tam_vang"
-                          : selectedResident.status === 3
-                          ? "status-da_chuyen_di"
-                          : selectedResident.status === 4
-                          ? "status-da_qua_doi"
-                          : ""
-                      }`}
-                    >
-                      {residentStatusMap[selectedResident.status]}
-                    </span>
-                  </div>
+                <div>
+                  <div className="label">Mã hộ khẩu</div>
+                  <div className="value">{household.householdCode}</div>
+                </div>
+              </div>
+
+              <div className="info-card-item">
+                <div className="icon-box green-bg">
+                  <MapPin size={24} color="#10b981" />
+                </div>
+                <div>
+                  <div className="label">Địa chỉ thường trú</div>
+                  <div className="value address-truncate" title={household.address}>{household.address}</div>
+                </div>
+              </div>
+
+              <div className="info-card-item">
+                <div className="icon-box pink-bg">
+                  <Calendar size={24} color="#ec4899" />
+                </div>
+                <div>
+                  <div className="label">Ngày đăng ký</div>
+                  <div className="value">{formatDate(household.registrationDate)}</div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
-          <div className="household-detail-wrapper">
-            <h2>Chi tiết hộ khẩu</h2>
-            <table className="household-info-table">
-              <tbody>
-                <tr>
-                  <th>Mã hộ khẩu</th>
-                  <td>{household.householdCode}</td>
-                  <th>Trạng thái</th>
-                  <td>
-                    <span
-                      className={`household-status-badge ${
-                        household.status === 1
-                          ? "status-hoat_dong"
-                          : "status-khong_hoat_dong"
-                      }`}
-                    >
-                      {householdStatusMap[household.status]}
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <th>Địa chỉ</th>
-                  <td>{household.address}</td>
-                  <th>Ngày lập hộ khẩu</th>
-                  <td>
-                    {household.registrationDate
-                      ? new Date(
-                          household.registrationDate
-                        ).toLocaleDateString()
-                      : "Chưa cập nhật"}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Chủ hộ</th>
-                  <td>{household.owner?.fullname}</td>
-                  <th>CCCD chủ hộ</th>
-                  <td>{household.owner?.residentCCCD}</td>
-                </tr>
-                <tr>
-                  <th>Số nhân khẩu</th>
-                  <td>{household.residents.length}</td>
-                  <th>Ngày cập nhật</th>
-                  <td>
-                    {household.updatedAt
-                      ? new Date(household.updatedAt).toLocaleDateString()
-                      : "Chưa cập nhật"}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Ghi chú</th>
-                  <td colSpan={3}>{household.note || "-"}</td>
-                </tr>
-              </tbody>
-            </table>
+          {/* --- SECTION 2: SPLIT LAYOUT --- */}
+          <div className="content-grid">
+            
+            {/* CỘT TRÁI: DANH SÁCH NHÂN KHẨU */}
+            <div className="panel-container">
+              <div className="panel-header blue-header">
+                <Users size={18} />
+                <h3>Danh sách nhân khẩu</h3>
+                <span className="count-badge">{household.residents.length} người</span>
+              </div>
+              
+              <div className="resident-list-scroll">
+                {household.residents.map((r) => (
+                  <div 
+                    key={r.id}
+                    className={`resident-card ${selectedResident?.id === r.id ? 'active' : ''}`}
+                    onClick={() => setSelectedResident(r)}
+                  >
+                    <div className="resident-avatar-small">
+                      {getInitials(r.fullname)}
+                    </div>
+                    <div className="resident-info-brief">
+                      <div className="brief-top">
+                        <span className="brief-name">{r.fullname}</span>
+                        {r.relationToOwner === "Chủ hộ" && (
+                          <span className="owner-badge">Chủ hộ</span>
+                        )}
+                      </div>
+                      <div className="brief-meta">
+                         {r.residentCCCD || "---"} • {calculateAge(r.dob)}
+                      </div>
+                      <div className="brief-role">{r.relationToOwner}</div>
+                    </div>
+                    <div className="resident-status-dot">
+                       <span className="dot active"></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CỘT PHẢI: CHI TIẾT NHÂN KHẨU */}
+            <div className="panel-container">
+              <div className="panel-header purple-header">
+                <User size={18} />
+                <h3>Thông tin chi tiết nhân khẩu</h3>
+              </div>
+
+              {selectedResident ? (
+                <div className="detail-content">
+                  {/* Profile Header */}
+                  <div className="profile-header">
+                    <div className="profile-avatar-large">
+                      {getInitials(selectedResident.fullname)}
+                    </div>
+                    <div className="profile-main-info">
+                      <h2>{selectedResident.fullname}</h2>
+                      <div className="profile-tags">
+                        {selectedResident.relationToOwner === "Chủ hộ" && <span className="tag-owner">Chủ hộ</span>}
+                        <span className="tag-status">Đang cư trú</span>
+                      </div>
+                      <div className="profile-sub">
+                        <span><Calendar size={14}/> {calculateAge(selectedResident.dob)} ({formatDate(selectedResident.dob)})</span>
+                        <span><Briefcase size={14}/> {selectedResident.occupation || "Tự do"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section: Thông tin cá nhân */}
+                  <div className="detail-section-title">
+                    <span>|</span> Thông tin cá nhân
+                  </div>
+
+                  <div className="info-grid-cards">
+                    <InfoBox icon={<CreditCard size={20} color="#6366f1"/>} label="CCCD" value={selectedResident.residentCCCD} />
+                    <InfoBox icon={<Calendar size={20} color="#f59e0b"/>} label="Ngày sinh" value={formatDate(selectedResident.dob)} />
+                    <InfoBox icon={<User size={20} color="#3b82f6"/>} label="Giới tính" value={formatGender(selectedResident.gender)} />
+                    <InfoBox icon={<Globe size={20} color="#10b981"/>} label="Quốc tịch" value={selectedResident.nationality} />
+                    <InfoBox icon={<Home size={20} color="#ec4899"/>} label="Dân tộc" value={selectedResident.ethnicity} />
+                    <InfoBox icon={<Heart size={20} color="#ef4444"/>} label="Tôn giáo" value={selectedResident.religion} />
+                    <InfoBox icon={<MapPin size={20} color="#8b5cf6"/>} label="Quê quán" value={selectedResident.hometown} />
+                    <InfoBox icon={<Briefcase size={20} color="#64748b"/>} label="Nghề nghiệp" value={selectedResident.occupation} />
+                  </div>
+
+                </div>
+              ) : (
+                <div className="empty-state">Chọn một nhân khẩu để xem chi tiết</div>
+              )}
+            </div>
+
           </div>
         </div>
       )}
     </>
   );
 }
+
+// Component nhỏ để hiển thị từng ô thông tin
+const InfoBox = ({ icon, label, value }) => (
+  <div className="info-box-card">
+    <div className="info-box-icon">{icon}</div>
+    <div className="info-box-text">
+      <span className="ib-label">{label}</span>
+      <span className="ib-value">{value || "---"}</span>
+    </div>
+  </div>
+);

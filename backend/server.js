@@ -14,6 +14,7 @@ import staffDashboardRoutes from "./src/routes/staff/dashboardRoutes.js"
 import staffResidentChangeRoutes from "./src/routes/staff/residentChangeRoutes.js"
 /* RESIDENT */
 import householdInfoRoutes from "./src/routes/resident/householdInfoRoutes.js"
+import feeViewRoutes from "./src/routes/resident/feeViewRoutes.js"
 
 dotenv.config()
 
@@ -38,7 +39,9 @@ app.use("/api/households", staffHouseholdRoutes)
 app.use("/api/residents", staffResidentRoutes)
 app.use("/api/fees", staffFeeRoutes)
 app.use("/api/resident-changes", staffResidentChangeRoutes)
+// RESIDENT
 app.use("/api/resident", householdInfoRoutes)
+app.use("/api", feeViewRoutes)
 
 const distPath = path.join(__dirname, "../frontend/dist")
 app.use(express.static(distPath))

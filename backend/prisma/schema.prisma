@@ -57,6 +57,8 @@ model Household {
 
   residents        Resident[]
   feeRecords       FeeRecord[]
+
+  @@index([status])
 }
 
 //////////////////////////////////////////////////////
@@ -94,6 +96,9 @@ model Resident {
 
   ownerOf         Household? @relation("HouseholdOwner")
   changes         ResidentChange[]
+
+  @@index([householdId])
+  @@index([createdAt])
 }
 
 //////////////////////////////////////////////////////
@@ -119,18 +124,24 @@ model ResidentChange {
   toDate         DateTime?
   reason         String?
 
+  extraData      Json?
+
   approvalStatus Int
   // 0: pending
   // 1: approved
   // 2: rejected
 
-  residentId Int
-  resident   Resident @relation(fields: [residentId], references: [id])
+  residentId Int?
+  resident   Resident? @relation(fields: [residentId], references: [id])
 
   managerId Int?
   manager   User? @relation("UserManageChange", fields: [managerId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([residentId])
+  @@index([managerId])
+  @@index([createdAt])
 }
 
 //////////////////////////////////////////////////////
@@ -171,4 +182,9 @@ model FeeRecord {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([householdId])
+  @@index([feeTypeId])
+  @@index([managerId])
+  @@index([createdAt])
 }

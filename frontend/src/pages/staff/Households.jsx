@@ -383,7 +383,13 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
                       <li key={idx} className="member-item">
                         <div className="member-name">{m.fullname}</div>
                         <div className="member-meta">
-                          {(m.gender === "M" ? "Nam" : "Nữ") + " • " + (m.relationToOwner || "Thành viên") + " • " + (m.residentCCCD || "—") + " • " + String(m.dob).slice(0, 10)}
+                          {(m.gender === "M" ? "Nam" : "Nữ") +
+                            " • " +
+                            (m.relationToOwner || "Thành viên") +
+                            " • " +
+                            (m.residentCCCD || "—") +
+                            " • " +
+                            String(m.dob).slice(0, 10)}
                         </div>
                         <button type="button" className="member-remove" onClick={() => removeMember(idx)} title="Xóa khỏi danh sách">
                           <FaTrash />
@@ -435,14 +441,42 @@ export default function HouseholdsPage() {
   const [editHousehold, setEditHousehold] = useState(null)
   const [editStatus, setEditStatus] = useState("1")
 
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: 5,
+    total: 0,
+    totalPages: 1,
+    stats: { active: 0, inactive: 0, totalActive: 0 },
+    range: { start: 0, end: 0 }
+  })
+
   useEffect(() => {
     fetchHouseholds()
-  }, [])
+  }, [search, statusFilter, currentPage, rowsPerPage])
 
   async function fetchHouseholds() {
     try {
-      const res = await axios.get(`${API_BASE}/households`, { headers: authHeaders() })
+      setLoading(true)
+      const res = await axios.get(`${API_BASE}/households`, {
+        headers: authHeaders(),
+        params: {
+          search: search.trim(),
+          status: statusFilter,
+          page: currentPage,
+          limit: rowsPerPage
+        }
+      })
       setHouseholds(res.data.data || [])
+      setMeta(
+        res.data.meta || {
+          page: currentPage,
+          limit: rowsPerPage,
+          total: 0,
+          totalPages: 1,
+          stats: { active: 0, inactive: 0, totalActive: 0 },
+          range: { start: 0, end: 0 }
+        }
+      )
     } catch (err) {
       console.error(err)
       alert("Không tải được danh sách hộ khẩu")
@@ -451,55 +485,26 @@ export default function HouseholdsPage() {
     }
   }
 
-  const filteredHouseholds = useMemo(() => {
-    let data = [...households]
-
-    if (search.trim()) {
-      const s = search.toLowerCase()
-      data = data.filter(h => {
-        const ownerName = (h.owner?.fullname || "").toLowerCase()
-        const ownerCCCD = (h.owner?.residentCCCD || "").toLowerCase()
-        const addr = (h.address || "").toLowerCase()
-        const code = (h.householdCode || "").toLowerCase()
-        return ownerName.includes(s) || ownerCCCD.includes(s) || addr.includes(s) || code.includes(s)
-      })
-    }
-
-    if (statusFilter !== "ALL") {
-      data = data.filter(h => String(h.status) === String(statusFilter))
-    }
-
-    return data
-  }, [households, search, statusFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filteredHouseholds.length / rowsPerPage))
+  const totalPages = Math.max(1, Number(meta.totalPages || 1))
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1)
   }, [totalPages, currentPage])
 
-  const pageHouseholds = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage
-    return filteredHouseholds.slice(start, start + rowsPerPage)
-  }, [filteredHouseholds, currentPage, rowsPerPage])
-
   const rangeText = useMemo(() => {
-    const total = filteredHouseholds.length
+    const total = Number(meta.total || 0)
+    const start = Number(meta.range?.start || 0)
+    const end = Number(meta.range?.end || 0)
     if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`
-    const start = (currentPage - 1) * rowsPerPage + 1
-    const end = Math.min(currentPage * rowsPerPage, total)
     return `${start} - ${end} trên tổng số ${total} bản ghi`
-  }, [filteredHouseholds.length, currentPage, rowsPerPage])
+  }, [meta])
 
   const stats = useMemo(() => {
-    const total = households.length
-    const count = code => households.filter(h => Number(h.status) === Number(code)).length
-    return {
-      total,
-      active: count(1),
-      inactive: count(0)
-    }
-  }, [households])
+    const active = Number(meta.stats?.active || 0)
+    const inactive = Number(meta.stats?.inactive || 0)
+    const total = active
+    return { total, active, inactive }
+  }, [meta])
 
   const miniCards = [
     { label: "Tất cả", value: stats.total, icon: <FaUsers />, tone: "blue" },
@@ -560,6 +565,7 @@ export default function HouseholdsPage() {
       setHouseholds(prev => prev.map(h => (h.id === updated.id ? { ...h, status: updated.status } : h)))
       setViewHousehold(prev => (prev?.id === updated.id ? { ...prev, status: updated.status } : prev))
       setEditHousehold(null)
+      await fetchHouseholds()
     } catch (err) {
       console.error(err)
       alert("Không thể cập nhật trạng thái hộ khẩu")
@@ -636,17 +642,17 @@ export default function HouseholdsPage() {
             </thead>
 
             <tbody>
-              {pageHouseholds.length === 0 ? (
+              {households.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="empty-row">
                     Không có hộ khẩu phù hợp.
                   </td>
                 </tr>
               ) : (
-                pageHouseholds.map(h => {
+                households.map(h => {
                   const statusInfo = getHouseholdStatusInfo(h.status)
                   const ownerName = h.owner?.fullname || "Không rõ"
-                  const membersCount = h.residents?.filter(r => [0, 1, 2].includes(r.status)).length ?? 0
+                  const membersCount = Number(h.membersCount ?? 0)
 
                   return (
                     <tr key={h.id} className="clickable-row" onClick={() => handleOpenDetail(h)}>
@@ -759,16 +765,14 @@ export default function HouseholdsPage() {
                     <div className="detail-value">
                       {viewHousehold.residents?.length ? (
                         <ul className="member-list">
-                          {viewHousehold.residents
-                            .filter(r => r.status !== 3 && r.status !== 4)
-                            .map(r => (
-                              <li className="member-item" key={r.id}>
-                                <div className="member-name">{r.fullname}</div>
-                                <div className="member-meta">
-                                  {r.gender === "M" ? "Nam" : "Nữ"} • {r.relationToOwner || "Thành viên"} • {r.residentCCCD || "—"}
-                                </div>
-                              </li>
-                            ))}
+                          {viewHousehold.residents.map(r => (
+                            <li className="member-item" key={r.id}>
+                              <div className="member-name">{r.fullname}</div>
+                              <div className="member-meta">
+                                {r.gender === "M" ? "Nam" : "Nữ"} • {r.relationToOwner || "Thành viên"} • {r.residentCCCD || "—"}
+                              </div>
+                            </li>
+                          ))}
                         </ul>
                       ) : (
                         <div className="sub-text">Chưa có nhân khẩu trong hộ.</div>
