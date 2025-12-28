@@ -15,6 +15,7 @@ import {
 
 import "../../styles/staff/layout.css"
 import "../../styles/staff/residentchange.css"
+import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
 
@@ -149,7 +150,7 @@ export default function ResidentChange() {
     const g = c?.resident?.gender ?? c?.extraData?.gender
     const dob = c?.resident?.dob ?? c?.extraData?.dob
     const genderLabel = g === "M" ? "Nam" : g === "F" ? "Nữ" : "—"
-    const dobText = dob ? String(dob).slice(0, 10) : "—"
+    const dobText = dob ? formatDateDMY(dob) : "—"
     return `${genderLabel} • ${dobText}`
   }
 
@@ -451,7 +452,7 @@ export default function ResidentChange() {
 
                       <td>{managerDisplay(c)}</td>
 
-                      <td>{String(c.createdAt).slice(0, 10)}</td>
+                      <td>{formatDateDMY(c.createdAt)}</td>
 
                       <td onClick={e => e.stopPropagation()}>
                         <div className="rc-row-actions">
@@ -590,12 +591,12 @@ export default function ResidentChange() {
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Từ ngày</div>
-                    <div className="rc-detail-value">{String(selectedChange.fromDate).slice(0, 10)}</div>
+                    <div className="rc-detail-value">{formatDateDMY(selectedChange.fromDate)}</div>
                   </div>
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Đến ngày</div>
-                    <div className="rc-detail-value">{selectedChange.toDate ? String(selectedChange.toDate).slice(0, 10) : "—"}</div>
+                    <div className="rc-detail-value">{selectedChange.toDate ? formatDateDMY(selectedChange.toDate) : "—"}</div>
                   </div>
 
                   <div className="rc-detail-item rc-wide">
@@ -643,7 +644,7 @@ export default function ResidentChange() {
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Ngày tạo</div>
-                    <div className="rc-detail-value">{String(selectedChange.createdAt).slice(0, 10)}</div>
+                    <div className="rc-detail-value">{formatDateDMY(selectedChange.createdAt)}</div>
                   </div>
                 </div>
               )}

@@ -17,6 +17,7 @@ import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
 
 import "../../styles/staff/residents.css"
 import "../../styles/staff/layout.css"
+import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
 
@@ -364,7 +365,7 @@ export default function ResidentManagement() {
                       <td>{r.gender === "M" ? "Nam" : "Nữ"}</td>
 
                       <td>
-                        {String(r.dob).slice(0, 10)}
+                        {formatDateDMY(r.dob)}
                         <div className="sub-text">{age} tuổi</div>
                       </td>
 
@@ -376,7 +377,7 @@ export default function ResidentManagement() {
                         <span className={`status-badge ${info.className}`}>{info.label}</span>
                       </td>
 
-                      <td>{String(r.createdAt).slice(0, 10)}</td>
+                      <td>{formatDateDMY(r.createdAt)}</td>
 
                       <td onClick={e => e.stopPropagation()}>
                         <div className="row-actions">
@@ -465,7 +466,7 @@ export default function ResidentManagement() {
                   <div className="detail-item">
                     <div className="detail-label">Ngày sinh / Tuổi</div>
                     <div className="detail-value">
-                      {String(selectedResident.dob).slice(0, 10)}{" "}
+                      {formatDateDMY(selectedResident.dob)}{" "}
                       <span className="sub-text">({calcAge(selectedResident.dob)} tuổi)</span>
                     </div>
                   </div>

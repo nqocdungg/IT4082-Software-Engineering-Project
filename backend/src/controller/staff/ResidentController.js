@@ -294,11 +294,14 @@ export const exportResidentsExcel = async (req, res) => {
       { header: "Tình trạng", key: "status", width: 15 }
     ]
 
+    ws.getColumn("dob").numFmt = "dd-mm-yyyy"
+
+
     residents.forEach(r => {
       ws.addRow({
         fullname: r.fullname,
         gender: r.gender === "M" ? "Nam" : "Nữ",
-        dob: r.dob ? new Date(r.dob).toISOString().slice(0, 10) : "",
+        dob: r.dob ? new Date(r.dob) : null,
         cccd: r.residentCCCD || "",
         household: r.household?.householdCode || "",
         status: STATUS_LABEL[r.status] ?? "Không rõ"
