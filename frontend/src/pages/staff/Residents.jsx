@@ -260,15 +260,7 @@ export default function ResidentManagement() {
                 </select>
               </div>
 
-              {/* Nếu m không cần lọc householdId thì xoá block này */}
-              {/* <div className="toolbar-search" style={{ maxWidth: 220 }}>
-                <input
-                  type="text"
-                  placeholder="Household ID..."
-                  value={householdIdFilter}
-                  onChange={e => setHouseholdIdFilter(e.target.value)}
-                />
-              </div> */}
+             
             </div>
 
             <div className="toolbar-right">
@@ -317,7 +309,7 @@ export default function ResidentManagement() {
 
                   return (
                     <tr key={r.id} className="clickable-row" onClick={() => handleOpenDetail(r)}>
-                      <td>
+                      <td className="full_name">
                         {r.fullname}
                       </td>
 

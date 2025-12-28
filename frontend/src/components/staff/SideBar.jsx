@@ -28,7 +28,7 @@ const menuGroups = [
     items: [
       { icon: FiHome, label: "Hộ khẩu", path: "/households" },
       { icon: FiUsers, label: "Cư dân", path: "/residents" },
-      { icon: FiRepeat, label: "Biến đổi nhân khẩu", path: "/resident-change" },
+      { icon: FiRepeat, label: "Biến đổi nhân khẩu", path: "/resident-changes" },
       { icon: FiClock, label: "Lịch sử biến động", disabled: true }
     ]
   },

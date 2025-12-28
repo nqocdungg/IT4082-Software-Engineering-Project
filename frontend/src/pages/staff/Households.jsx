@@ -629,12 +629,12 @@ export default function HouseholdsPage() {
         </div>
 
         <div className="table-wrapper">
-          <table className="household-table">
+          <table className="resident-table">
             <thead>
               <tr>
-                <th>Mã hộ khẩu</th>
-                <th>Chủ hộ</th>
-                <th>Địa chỉ</th>
+                <th >Mã hộ khẩu</th>
+                <th className="full_name">Chủ hộ</th>
+                <th className="address">Địa chỉ</th>
                 <th>Số nhân khẩu</th>
                 <th>Trạng thái</th>
                 <th style={{ width: 110 }}>Thao tác</th>
@@ -657,8 +657,8 @@ export default function HouseholdsPage() {
                   return (
                     <tr key={h.id} className="clickable-row" onClick={() => handleOpenDetail(h)}>
                       <td>{h.householdCode || `HK #${h.id}`}</td>
-                      <td>{ownerName}</td>
-                      <td>{h.address}</td>
+                      <td className="full_name">{ownerName}</td>
+                      <td className="address">{h.address}</td>
                       <td>{membersCount}</td>
                       <td>
                         <span className={`status-badge ${statusInfo.className}`}>{statusInfo.label}</span>
