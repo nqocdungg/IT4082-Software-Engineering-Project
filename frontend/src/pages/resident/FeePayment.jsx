@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from "react";
 import ResidentHeader from "../../components/resident/ResidentHeader";
 import axios from "axios";
+import { QRCodeCanvas } from "qrcode.react";
+import { Wallet, CheckCircle, Loader2, Heart, ShieldAlert } from "lucide-react";
 import "../../styles/resident/ResidentFees.css";
 
-const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
 
 export default function FeePayment() {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState({ mandatoryFees: [], contributionFees: [], totalAmount: 0 });
+  const [mandatoryFees, setMandatoryFees] = useState([]);
+  const [contributionFees, setContributionFees] = useState([]);
+  const [donationInputs, setDonationInputs] = useState({});
+
+  const [paymentModal, setPaymentModal] = useState({
+    isOpen: false,
+    type: null,
+    amount: 0,
+    step: 0,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -15,9 +27,10 @@ export default function FeePayment() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get("http://localhost:5000/api/household/fees/pending", {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        setData(res.data);
+        setMandatoryFees(res.data.mandatoryFees || []);
+        setContributionFees(res.data.contributionFees || []);
       } catch (error) {
         console.error(error);
       } finally {
@@ -27,48 +40,137 @@ export default function FeePayment() {
     fetchData();
   }, []);
 
+  const handleDonationChange = (id, value) => {
+    const numValue = parseInt(value.replace(/[^0-9]/g, ''), 10) || 0;
+    setDonationInputs((prev) => ({
+      ...prev,
+      [id]: numValue,
+    }));
+  };
+
+  const totalDonationInput = Object.values(donationInputs).reduce((a, b) => a + b, 0);
+  const totalMandatory = mandatoryFees.reduce((sum, item) => sum + item.amount, 0);
+
+  const startPayment = (type) => {
+    const amount = type === 'MANDATORY' ? totalMandatory : totalDonationInput;
+    
+    if (amount <= 0) {
+      alert("Vui lòng nhập số tiền cần thanh toán!");
+      return;
+    }
+
+    setPaymentModal({
+      isOpen: true,
+      type,
+      amount,
+      step: 0,
+    });
+  };
+
+  useEffect(() => {
+    let timer;
+
+    if (paymentModal.isOpen && paymentModal.step === 0) {
+      timer = setTimeout(() => {
+        setPaymentModal((prev) => ({ ...prev, step: 1 }));
+      }, 2000);
+    }
+
+    if (paymentModal.isOpen && paymentModal.step === 1) {
+      const executePayment = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          
+          let payload = { type: paymentModal.type };
+          
+          if (paymentModal.type === 'MANDATORY') {
+            payload.feeRecordIds = mandatoryFees.map(f => f.id);
+          } else {
+            const donations = [];
+            for (const [id, amount] of Object.entries(donationInputs)) {
+              if (amount > 0) donations.push({ feeTypeId: parseInt(id), amount });
+            }
+            payload.donations = donations;
+          }
+
+          await axios.post("http://localhost:5000/api/household/pay", payload, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          timer = setTimeout(() => {
+            setPaymentModal((prev) => ({ ...prev, step: 2 }));
+            handleUpdateAfterPayment();
+          }, 1000);
+
+        } catch (error) {
+          console.error("Lỗi thanh toán:", error);
+          alert("Giao dịch thất bại! Vui lòng thử lại sau.");
+          setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 });
+        }
+      };
+
+      executePayment();
+    }
+
+    return () => clearTimeout(timer);
+  }, [paymentModal.step, paymentModal.isOpen]);
+
+  const handleUpdateAfterPayment = () => {
+    if (paymentModal.type === 'MANDATORY') {
+      setMandatoryFees([]);
+    } else {
+      const updatedContributions = contributionFees.map(fee => {
+        const donated = donationInputs[fee.id] || 0;
+        if (donated > 0) {
+            return { 
+                ...fee, 
+                totalCommunityDonated: (fee.totalCommunityDonated || 0) + donated 
+            };
+        }
+        return fee;
+      });
+      setContributionFees(updatedContributions);
+      setDonationInputs({});
+    }
+  };
+
+  const closePaymentModal = () => {
+    setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 });
+  };
+
   return (
     <div>
       <ResidentHeader />
       <div className="square-layout">
-        <h2 style={{ color: '#1f3c88', borderBottom: '2px solid #eee', paddingBottom: '15px' }}>
-          Thanh toán hóa đơn
-        </h2>
+        <h2 className="page-title">Thanh toán hóa đơn</h2>
 
         {loading ? <p>Đang tải...</p> : (
-          <>
-            {/* --- LAYOUT 2 CỘT --- */}
-            <div className="payment-grid-layout">
+          <div className="payment-grid-layout">
+            <div className="payment-column">
+              <div className="column-header">
+                <h3><ShieldAlert size={20} className="icon-mandatory"/> Phí Dịch Vụ</h3>
+                <span className="status-badge badge-mandatory">Bắt buộc</span>
+              </div>
               
-              {/* === CỘT TRÁI: PHÍ BẮT BUỘC === */}
-              <div className="payment-column">
-                <div className="column-header">
-                  <h3>
-                    <span style={{fontSize:'20px'}}>📋</span> Phí Dịch Vụ
-                  </h3>
-                  <span className="status-badge" style={{background:'#e0f2fe', color:'#1f3c88'}}>Bắt buộc</span>
-                </div>
-                
-                {data.mandatoryFees.length > 0 ? (
+              <div className="table-container">
+                {mandatoryFees.length > 0 ? (
                   <table className="mini-table">
                     <thead>
                       <tr>
                         <th>Khoản phí</th>
                         <th>Hạn nộp</th>
-                        <th style={{textAlign:'right'}}>Số tiền</th>
+                        <th className="text-right">Số tiền</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {data.mandatoryFees.map((fee) => (
+                      {mandatoryFees.map((fee) => (
                         <tr key={fee.id}>
                           <td>
-                            <div style={{fontWeight:'600', color:'#1f3c88'}}>{fee.feeType.name}</div>
-                            <div style={{fontSize:'12px', color:'#94a3b8'}}>{fee.feeType.description || "Thu định kỳ"}</div>
+                            <div className="fee-name">{fee.feeType.name}</div>
+                            <div className="fee-desc">{fee.feeType.description || "Thu định kỳ"}</div>
                           </td>
-                          <td style={{fontSize:'13px'}}>
-                            {fee.feeType.toDate ? new Date(fee.feeType.toDate).toLocaleDateString('vi-VN') : '—'}
-                          </td>
-                          <td style={{textAlign:'right', fontWeight:'700', color:'#dc2626', fontSize:'15px'}}>
+                          <td>{fee.feeType.toDate ? new Date(fee.feeType.toDate).toLocaleDateString('vi-VN') : '—'}</td>
+                          <td className="text-right fee-amount">
                             {formatCurrency(fee.amount)}
                           </td>
                         </tr>
@@ -76,98 +178,129 @@ export default function FeePayment() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="empty-state" style={{padding:'20px 0'}}>Không có khoản phí nào.</div>
+                  <div className="empty-state">Bạn đã hoàn thành tất cả khoản phí bắt buộc!</div>
                 )}
               </div>
 
-              {/* === CỘT PHẢI: ĐÓNG GÓP === */}
-              <div className="payment-column">
-                <div className="column-header">
-                  <h3><span style={{fontSize:'20px'}}>🤝</span> Đóng Góp</h3>
-                  <span className="status-badge" style={{background:'#f1f5f9', color:'#64748b'}}>Tự nguyện</span>
+              <div className="column-footer">
+                <div className="total-row">
+                  <span>Tổng cần nộp:</span>
+                  <span className="total-amount mandatory">{formatCurrency(totalMandatory)}</span>
                 </div>
-
-                {data.contributionFees.length > 0 ? (
-                  <table className="mini-table">
-                    <thead>
-                      <tr>
-                        {/* CỘT 1: TÊN QUỸ */}
-                        <th>Quỹ vận động</th>
-                        
-                        {/* CỘT 2: THỜI GIAN */}
-                        <th>Thời gian</th>
-                        
-                        {/* CỘT 3: TỔNG TOÀN DÂN ĐÃ ĐÓNG */}
-                        <th style={{textAlign:'right'}}>Đã ủng hộ</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.contributionFees.map((fee) => (
-                        <tr key={fee.id}>
-                          {/* 1. Tên Quỹ */}
-                          <td>
-                            <div style={{fontWeight:'600', color:'#334155'}}>{fee.name}</div>
-                            <div style={{fontSize:'12px', color:'#64748b'}}>
-                               {fee.description}
-                            </div>
-                          </td>
-
-                          {/* 2. Thời gian */}
-                          <td style={{fontSize:'13px'}}>
-                            {fee.toDate ? new Date(fee.toDate).toLocaleDateString('vi-VN') : 'Không hạn'}
-                          </td>
-                          
-                          {/* 3. Tổng tiền cả tổ dân phố */}
-                          <td style={{textAlign:'right'}}>
-                             <div style={{
-                               fontWeight:'700', 
-                               color:'#059669', 
-                               fontSize:'15px'
-                             }}>
-                               {formatCurrency(fee.totalCommunityDonated || 0)}
-                             </div>
-                             <div style={{fontSize:'11px', color:'#94a3b8'}}>Toàn tổ dân phố</div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="empty-state" style={{padding:'20px 0'}}>Không có đợt vận động nào.</div>
-                )}
+                <button 
+                  className="pay-btn btn-mandatory"
+                  disabled={totalMandatory === 0}
+                  onClick={() => startPayment('MANDATORY')}
+                >
+                  Thanh toán ngay
+                </button>
               </div>
             </div>
 
-            {/* --- FOOTER: HƯỚNG DẪN NỘP TIỀN --- */}
-            {data.totalAmount > 0 && (
-               <div className="total-payment-section" style={{
-                 flexDirection: 'column', 
-                 alignItems: 'flex-end', 
-                 gap: '10px'
-               }}>
-                  <div style={{display:'flex', alignItems:'center', gap:'20px'}}>
-                    <div style={{textAlign:'right'}}>
-                        <div className="total-label" style={{color:'#334155'}}>Tổng phí bắt buộc cần nộp</div>
-                    </div>
-                    <span className="total-value" style={{color:'#dc2626'}}>{formatCurrency(data.totalAmount)}</span>
-                  </div>
-                  
-                  <div style={{
-                    fontSize: '14px', 
-                    color: '#1f3c88', 
-                    background: '#eff6ff', 
-                    padding: '10px 15px', 
-                    borderRadius: '8px',
-                    border: '1px dashed #1f3c88',
-                    marginTop: '5px'
-                  }}>
-                    ℹ️ Vui lòng đến <strong>Nhà văn hóa TDP 7</strong> để hoàn thành đóng phí.
-                  </div>
-               </div>
-            )}
-          </>
+            <div className="payment-column">
+              <div className="column-header">
+                <h3><Heart size={20} className="icon-voluntary"/> Quỹ Đóng Góp</h3>
+                <span className="status-badge badge-voluntary">Tự nguyện</span>
+              </div>
+
+              <div className="table-container">
+                <table className="mini-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '35%'}}>Quỹ vận động</th>
+                      <th style={{width: '25%'}}>Thời gian</th>
+                      <th style={{width: '40%', textAlign: 'right'}}>Ủng hộ (VNĐ)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contributionFees.map((fee) => (
+                      <tr key={fee.id}>
+                        <td>
+                          <div className="fee-name">{fee.name}</div>
+                          <div className="fee-community">
+                             Toàn dân đã góp: <span style={{color:'#059669', fontWeight:700}}>{formatCurrency(fee.totalCommunityDonated || 0)}</span>
+                          </div>
+                        </td>
+                        <td>{fee.toDate ? new Date(fee.toDate).toLocaleDateString('vi-VN') : 'Không hạn'}</td>
+                        <td className="text-right">
+                          <input 
+                            type="text" 
+                            className="donation-input"
+                            placeholder="Nhập số tiền..."
+                            value={donationInputs[fee.id] ? donationInputs[fee.id].toLocaleString('vi-VN') : ''}
+                            onChange={(e) => handleDonationChange(fee.id, e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="column-footer">
+                <div className="total-row">
+                  <span>Tổng tiền ủng hộ:</span>
+                  <span className="total-amount voluntary">{formatCurrency(totalDonationInput)}</span>
+                </div>
+                <button 
+                    className="pay-btn btn-voluntary"
+                    disabled={totalDonationInput === 0}
+                    onClick={() => startPayment('CONTRIBUTION')}
+                >
+                  <Wallet size={18}/> Gửi ủng hộ
+                </button>
+              </div>
+            </div>
+
+          </div>
         )}
       </div>
+
+      {paymentModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            
+            {paymentModal.step === 0 && (
+              <div className="modal-step fade-in">
+                <h3>Quét mã để thanh toán</h3>
+                <div className="qr-box">
+                  <QRCodeCanvas 
+                    value={`PAYMENT:${paymentModal.type}:${paymentModal.amount}`} 
+                    size={200}
+                    level={"H"}
+                  />
+                </div>
+                <p className="modal-amount">{formatCurrency(paymentModal.amount)}</p>
+                <p className="modal-note">Hệ thống đang chờ xác nhận...</p>
+              </div>
+            )}
+
+            {paymentModal.step === 1 && (
+              <div className="modal-step fade-in">
+                <div className="loader-box">
+                  <Loader2 size={48} className="spinner" />
+                </div>
+                <h3>Đang xử lý giao dịch...</h3>
+                <p>Vui lòng không tắt trình duyệt</p>
+              </div>
+            )}
+
+            {paymentModal.step === 2 && (
+              <div className="modal-step fade-in">
+                <div className="success-box">
+                   <CheckCircle size={64} color="#16a34a" />
+                </div>
+                <h3 className="text-success">Thanh toán thành công!</h3>
+                <p>Cảm ơn bạn đã đóng góp cho tổ dân phố.</p>
+                <button className="close-modal-btn" onClick={closePaymentModal}>
+                  Hoàn tất
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
