@@ -1,3 +1,5 @@
+/* src/styles/staff/fees.css */
+
 .revenues-page {
   flex: 1;
   min-height: 0;
@@ -121,6 +123,7 @@
 .toolbar-right {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .toolbar-search {
@@ -681,17 +684,17 @@
   background: #fffbeb;
   color: #92400e;
 }
-/* Chrome, Edge, Safari */
+
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
 .revenues-detail-stats {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
@@ -725,3 +728,66 @@ input[type="number"] {
   }
 }
 
+/* =========================================================
+   ONLY REVENUES DETAIL — trả UI về như cũ (KHÔNG ảnh hưởng Revenues list)
+   ========================================================= */
+
+.revenues-page .stats-strip.revenues-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.revenues-page .revenues-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.revenues-page .revenues-detail-table thead {
+  background: #f9fafb;
+}
+
+.revenues-page .revenues-detail-table th,
+.revenues-page .revenues-detail-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  text-align: left;
+  font-size: 14px;
+}
+
+.revenues-page .revenues-detail-table thead th {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b7280;
+}
+
+.revenues-page .revenues-detail-table tbody tr:hover {
+  background: #f5f7ff;
+}
+
+.revenues-page .revenues-detail-table td input[type="text"] {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 9px 10px;
+  font-size: 14px;
+}
+
+.revenues-page .revenues-detail-table td input:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.revenues-page .revenues-detail-table .row-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 980px) {
+  .revenues-page .stats-strip.revenues-detail-stats {
+    grid-template-columns: 1fr;
+  }
+}

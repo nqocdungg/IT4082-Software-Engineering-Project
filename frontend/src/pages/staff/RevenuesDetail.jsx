@@ -173,7 +173,6 @@ export default function RevenuesDetail() {
 
     if (Number.isNaN(amountNum) || amountNum <= 0) return alert("Số tiền thu phải > 0");
 
-    // ✅ chỉ check remaining với BẮT BUỘC
     if (!isContribution) {
       const remainingBefore = Number(row?.remaining) || 0;
       if (remainingBefore <= 0) return alert("Hộ này đã thu đủ");
@@ -185,7 +184,6 @@ export default function RevenuesDetail() {
       [hhId]: { ...((prev || {})[hhId] || {}), saving: true },
     }));
 
-    // optimistic UI
     setSummaryRows((prev) =>
       (Array.isArray(prev) ? prev : []).map((r) => {
         if (Number(r?.household?.id) !== Number(hhId)) return r;
@@ -235,7 +233,9 @@ export default function RevenuesDetail() {
   const miniCards = [
     {
       label: isContributionFee ? "Tổng đóng góp" : "Tổng cần thu",
-      value: `${new Intl.NumberFormat("vi-VN").format(isContributionFee ? summaryTotals.paid : summaryTotals.expected)} đ`,
+      value: `${new Intl.NumberFormat("vi-VN").format(
+        isContributionFee ? summaryTotals.paid : summaryTotals.expected
+      )} đ`,
       icon: <GrMoney />,
       tone: "blue",
     },
@@ -311,7 +311,7 @@ export default function RevenuesDetail() {
           <div className="fee-records-empty">Không có hộ phù hợp.</div>
         ) : (
           <div className="table-wrapper">
-            <table className="fee-table">
+            <table className="fee-table revenues-detail-table">
               <thead>
                 <tr>
                   <th style={{ width: 110 }}>Hộ</th>
@@ -331,18 +331,14 @@ export default function RevenuesDetail() {
                   const hh = row.household || {};
                   const isContribution = row?.fee?.isMandatory === false || fee?.isMandatory === false;
 
-                  const unitPrice = isContribution
-                    ? 0
-                    : (row.fee?.unitPrice ?? fee?.unitPrice ?? 0);
+                  const unitPrice = isContribution ? 0 : (row.fee?.unitPrice ?? fee?.unitPrice ?? 0);
 
                   const remaining = Number(row.remaining) || 0;
 
                   const edit = rowEdits[hh.id] || { amount: "", saving: false };
 
-                  // ✅ đóng góp: không disable
-                  // ✅ bắt buộc: disable nếu remaining <= 0
                   const disableInput = !isContribution && remaining <= 0;
-                  const disableSave = (!!edit.saving) || (!isContribution && remaining <= 0);
+                  const disableSave = !!edit.saving || (!isContribution && remaining <= 0);
 
                   return (
                     <tr key={`${hh.id}-${row.status}-${row.paid}-${row.remaining}`}>
@@ -425,7 +421,11 @@ export default function RevenuesDetail() {
               <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
                 <FaChevronLeft />
               </button>
-              <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
                 <FaChevronRight />
               </button>
             </div>

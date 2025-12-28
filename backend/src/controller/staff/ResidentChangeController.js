@@ -1,8 +1,5 @@
 import prisma from "../../../prisma/prismaClient.js"
 
-//////////////////////////////////////////////////////
-// HELPERS
-//////////////////////////////////////////////////////
 async function assertHouseholdActive(txOrPrisma, householdId) {
   const hid = Number(householdId)
   if (!hid || Number.isNaN(hid)) throw new Error("householdId is invalid")
@@ -31,9 +28,6 @@ async function assertResidentInHousehold(txOrPrisma, residentId, householdId) {
   return r
 }
 
-//////////////////////////////////////////////////////
-// GET LIST
-//////////////////////////////////////////////////////
 export const getResidentChanges = async (req, res) => {
   try {
     const { search, approvalStatus, changeType } = req.query
@@ -47,7 +41,6 @@ export const getResidentChanges = async (req, res) => {
       where.changeType = Number(changeType)
     }
 
-    // NOTE: pending ct 0/1/3 chưa có resident => search theo resident sẽ không match.
     if (search && String(search).trim()) {
       const q = String(search).trim()
       where.OR = [
@@ -76,16 +69,10 @@ export const getResidentChanges = async (req, res) => {
   }
 }
 
-//////////////////////////////////////////////////////
-// GET BY ID
-//////////////////////////////////////////////////////
 export const getResidentChangeById = async (req, res) => {
   try {
-    if (!req.params.id) {
-      return res.status(400).json({ success: false, message: "Missing residentChange id" })
-    }
     const id = Number(req.params.id)
-    if (Number.isNaN(id)) {
+    if (!id || Number.isNaN(id)) {
       return res.status(400).json({ success: false, message: "ResidentChange id is invalid" })
     }
 
@@ -111,15 +98,14 @@ export const getResidentChangeById = async (req, res) => {
   }
 }
 
-//////////////////////////////////////////////////////
-// CREATE  ✅ CHỈ TẠO CHANGE, KHÔNG TẠO RESIDENT
-//////////////////////////////////////////////////////
 export const createResidentChange = async (req, res) => {
   try {
     const { residentId, changeType, fromAddress, toAddress, fromDate, toDate, reason, extraData } = req.body
 
     const ct = Number(changeType)
-    if (Number.isNaN(ct)) return res.status(400).json({ success: false, message: "changeType is invalid" })
+    if (Number.isNaN(ct)) {
+      return res.status(400).json({ success: false, message: "changeType is invalid" })
+    }
 
     let finalResidentId = residentId != null && residentId !== "" ? Number(residentId) : null
     if (finalResidentId != null && Number.isNaN(finalResidentId)) {
@@ -127,8 +113,8 @@ export const createResidentChange = async (req, res) => {
     }
 
     let extraDataToSave = null
+    let finalFromAddress = fromAddress ?? null
 
-    // ===== NHÓM TẠO CƯ DÂN MỚI (0/1/3) =====
     if (ct === 0 || ct === 1 || ct === 3) {
       const extra = extraData || {}
 
@@ -145,26 +131,33 @@ export const createResidentChange = async (req, res) => {
         const existed = await prisma.resident.findUnique({
           where: { residentCCCD: String(extra.residentCCCD) }
         })
-        if (existed) return res.status(400).json({ success: false, message: "CCCD đã tồn tại trong hệ thống" })
+        if (existed) {
+          return res.status(400).json({ success: false, message: "CCCD đã tồn tại trong hệ thống" })
+        }
       }
 
-      // ct 0/3 bắt buộc có householdId + household phải active
       let hid = null
+      let hhCode = null
+
       if (ct === 0 || ct === 3) {
         if (extra.householdId == null || extra.householdId === "") {
           return res.status(400).json({ success: false, message: "householdId is required" })
         }
         hid = Number(extra.householdId)
-        if (Number.isNaN(hid)) return res.status(400).json({ success: false, message: "householdId is invalid" })
+        if (Number.isNaN(hid)) {
+          return res.status(400).json({ success: false, message: "householdId is invalid" })
+        }
 
-        // ✅ check household active
-        await assertHouseholdActive(prisma, hid)
+        const hh = await assertHouseholdActive(prisma, hid)
+        hhCode = hh.householdCode || null
       }
 
-      // ct 1: tạm trú cho phép không có hộ (householdId null)
       if (ct === 1 && extra.householdId) {
         const tmpHid = Number(extra.householdId)
-        if (!Number.isNaN(tmpHid)) await assertHouseholdActive(prisma, tmpHid)
+        if (!Number.isNaN(tmpHid)) {
+          const hh = await assertHouseholdActive(prisma, tmpHid)
+          hhCode = hh.householdCode || null
+        }
       }
 
       finalResidentId = null
@@ -180,86 +173,101 @@ export const createResidentChange = async (req, res) => {
         occupation: extra.occupation ?? null,
         relationToOwner: extra.relationToOwner ?? "Thành viên",
         householdId: ct === 1 ? null : hid,
+        householdCode: hhCode,
         status: ct === 1 ? 1 : 0
       }
     } else {
-      // ===== NHÓM DÙNG CƯ DÂN CŨ (2/4/7) =====
       if (![5, 6].includes(ct)) {
         if (finalResidentId == null) {
           return res.status(400).json({ success: false, message: "residentId is required" })
         }
 
-        // ✅ check resident tồn tại (tránh tạo change rác)
-        const existedR = await prisma.resident.findUnique({ where: { id: finalResidentId }, select: { id: true } })
-        if (!existedR) return res.status(400).json({ success: false, message: "residentId không tồn tại" })
+        const existedR = await prisma.resident.findUnique({
+          where: { id: finalResidentId },
+          select: {
+            id: true,
+            status: true,
+            household: { select: { address: true } }
+          }
+        })
+
+        if (!existedR) {
+          return res.status(400).json({ success: false, message: "residentId không tồn tại" })
+        }
+
+        if (Number(existedR.status) === 3 || Number(existedR.status) === 4) {
+          return res.status(400).json({
+            success: false,
+            message: "Nhân khẩu đã chuyển đi hoặc đã khai tử, không thể tạo biến động"
+          })
+        }
+
+        if (ct === 2 || ct === 4) {
+          finalFromAddress = existedR?.household?.address || null
+        }
       }
 
-      // ===== NHÓM HỘ KHẨU (5/6) =====
       if (ct === 5) {
         const ex = extraData || {}
-        const oldHouseholdId = ex.oldHouseholdId != null ? Number(ex.oldHouseholdId) : NaN
-        const newOwnerId = ex.newOwnerId != null ? Number(ex.newOwnerId) : NaN
+        const oldHouseholdId = Number(ex.oldHouseholdId)
+        const newOwnerId = Number(ex.newOwnerId)
         const memberIds = Array.isArray(ex.memberIds) ? ex.memberIds.map(Number) : []
 
-        if (Number.isNaN(oldHouseholdId)) {
-          return res.status(400).json({ success: false, message: "oldHouseholdId is required/invalid" })
-        }
-        if (!Array.isArray(ex.memberIds) || memberIds.length < 1 || memberIds.some(n => Number.isNaN(n))) {
-          return res.status(400).json({ success: false, message: "memberIds is required/invalid" })
-        }
-        if (Number.isNaN(newOwnerId)) {
-          return res.status(400).json({ success: false, message: "newOwnerId is required/invalid" })
+        if (Number.isNaN(oldHouseholdId) || Number.isNaN(newOwnerId) || memberIds.length < 1) {
+          return res.status(400).json({ success: false, message: "Invalid split household data" })
         }
 
-        // ✅ check household active ngay lúc create
-        await assertHouseholdActive(prisma, oldHouseholdId)
+        const oldHh = await assertHouseholdActive(prisma, oldHouseholdId)
 
-        // ✅ check member thuộc hộ (nhanh, trước khi approve)
         for (const mid of memberIds) {
           await assertResidentInHousehold(prisma, mid, oldHouseholdId)
         }
         await assertResidentInHousehold(prisma, newOwnerId, oldHouseholdId)
 
-        extraDataToSave = { oldHouseholdId, memberIds, newOwnerId }
+        extraDataToSave = {
+          oldHouseholdId,
+          oldHouseholdCode: oldHh.householdCode || null,
+          memberIds,
+          newOwnerId
+        }
         finalResidentId = null
       }
 
       if (ct === 6) {
         const ex = extraData || {}
-        const householdId = ex.householdId != null ? Number(ex.householdId) : NaN
-        const oldOwnerId = ex.oldOwnerId != null ? Number(ex.oldOwnerId) : NaN
-        const newOwnerId = ex.newOwnerId != null ? Number(ex.newOwnerId) : NaN
+        const householdId = Number(ex.householdId)
+        const oldOwnerId = Number(ex.oldOwnerId)
+        const newOwnerId = Number(ex.newOwnerId)
 
-        if (Number.isNaN(householdId)) {
-          return res.status(400).json({ success: false, message: "householdId is required/invalid" })
-        }
-        if (Number.isNaN(oldOwnerId)) {
-          return res.status(400).json({ success: false, message: "oldOwnerId is required/invalid" })
-        }
-        if (Number.isNaN(newOwnerId)) {
-          return res.status(400).json({ success: false, message: "newOwnerId is required/invalid" })
-        }
-        if (oldOwnerId === newOwnerId) {
-          return res.status(400).json({ success: false, message: "New owner must be different from old owner" })
+        if (
+          Number.isNaN(householdId) ||
+          Number.isNaN(oldOwnerId) ||
+          Number.isNaN(newOwnerId) ||
+          oldOwnerId === newOwnerId
+        ) {
+          return res.status(400).json({ success: false, message: "Invalid change owner data" })
         }
 
-        // ✅ check household active
-        await assertHouseholdActive(prisma, householdId)
+        const hh = await assertHouseholdActive(prisma, householdId)
 
-        // ✅ check 2 người đều thuộc household
         await assertResidentInHousehold(prisma, oldOwnerId, householdId)
         await assertResidentInHousehold(prisma, newOwnerId, householdId)
 
-        extraDataToSave = { householdId, oldOwnerId, newOwnerId }
+        extraDataToSave = {
+          householdId,
+          householdCode: hh.householdCode || null,
+          oldOwnerId,
+          newOwnerId
+        }
         finalResidentId = null
       }
     }
 
     const change = await prisma.residentChange.create({
       data: {
-        residentId: finalResidentId, // schema đã Int?
+        residentId: finalResidentId,
         changeType: ct,
-        fromAddress: fromAddress ?? null,
+        fromAddress: finalFromAddress,
         toAddress: toAddress ?? null,
         fromDate: fromDate ? new Date(fromDate) : new Date(),
         toDate: toDate ? new Date(toDate) : null,
@@ -272,30 +280,26 @@ export const createResidentChange = async (req, res) => {
 
     return res.status(201).json({ success: true, data: change })
   } catch (err) {
-    console.error("createResidentChange ERROR:", err)
     return res.status(500).json({ success: false, message: err.message })
   }
 }
 
-//////////////////////////////////////////////////////
-// APPROVE
-//////////////////////////////////////////////////////
 export const approveResidentChange = async (req, res) => {
   const changeId = Number(req.params.id)
-  if (!req.params.id || Number.isNaN(changeId)) {
+  if (!changeId || Number.isNaN(changeId)) {
     return res.status(400).json({ success: false, message: "ResidentChange id is invalid" })
   }
 
   const managerId = req.user?.id
   if (!managerId) {
-    return res.status(401).json({ success: false, message: "Unauthorized (missing req.user). Check auth middleware." })
+    return res.status(401).json({ success: false, message: "Unauthorized" })
   }
 
   try {
-    const approved = await prisma.$transaction(async tx => {
+    await prisma.$transaction(async tx => {
       const change = await tx.residentChange.findUnique({ where: { id: changeId } })
       if (!change || Number(change.approvalStatus) !== 0) {
-        throw new Error("Invalid change (not found or not pending)")
+        throw new Error("Invalid change")
       }
 
       await tx.residentChange.update({
@@ -304,42 +308,39 @@ export const approveResidentChange = async (req, res) => {
       })
 
       await handleApprovedChange(tx, change)
-      return changeId
     })
 
     const final = await prisma.residentChange.findUnique({
-      where: { id: approved },
+      where: { id: changeId },
       include: {
-        resident: { include: { household: { select: { id: true, householdCode: true, address: true, status: true } } } },
+        resident: {
+          include: { household: { select: { id: true, householdCode: true, address: true, status: true } } }
+        },
         manager: { select: { id: true, username: true, fullname: true, role: true } }
       }
     })
 
-    return res.json({ success: true, message: "Approved successfully", data: final })
+    return res.json({ success: true, data: final })
   } catch (err) {
-    console.error("approveResidentChange ERROR:", err)
     return res.status(500).json({ success: false, message: err.message })
   }
 }
 
-//////////////////////////////////////////////////////
-// REJECT
-//////////////////////////////////////////////////////
 export const rejectResidentChange = async (req, res) => {
   const changeId = Number(req.params.id)
-  if (!req.params.id || Number.isNaN(changeId)) {
+  if (!changeId || Number.isNaN(changeId)) {
     return res.status(400).json({ success: false, message: "ResidentChange id is invalid" })
   }
 
   const managerId = req.user?.id
   if (!managerId) {
-    return res.status(401).json({ success: false, message: "Unauthorized (missing req.user). Check auth middleware." })
+    return res.status(401).json({ success: false, message: "Unauthorized" })
   }
 
   try {
     const change = await prisma.residentChange.findUnique({ where: { id: changeId } })
     if (!change || Number(change.approvalStatus) !== 0) {
-      return res.status(400).json({ success: false, message: "Invalid change (not found or not pending)" })
+      return res.status(400).json({ success: false, message: "Invalid change" })
     }
 
     const updated = await prisma.residentChange.update({
@@ -347,44 +348,24 @@ export const rejectResidentChange = async (req, res) => {
       data: { approvalStatus: 2, managerId }
     })
 
-    return res.json({ success: true, message: "Rejected successfully", data: updated })
+    return res.json({ success: true, data: updated })
   } catch (err) {
-    console.error("rejectResidentChange ERROR:", err)
     return res.status(500).json({ success: false, message: err.message })
   }
 }
 
-//////////////////////////////////////////////////////
-// HANDLE APPROVED CHANGE
-//////////////////////////////////////////////////////
 async function handleApprovedChange(tx, change) {
   switch (change.changeType) {
     case 0:
     case 1:
     case 3: {
       const ex = change.extraData || {}
-      if (!ex.fullname || !ex.dob) throw new Error("Missing extraData to create resident")
-
-      const dobDate = new Date(ex.dob)
-      if (Number.isNaN(dobDate.getTime())) throw new Error("dob is invalid")
-
-      // ✅ nếu có householdId thì check active lần nữa cho chắc
-      if (ex.householdId != null) {
-        await assertHouseholdActive(tx, ex.householdId)
-      }
-
-      if (ex.residentCCCD) {
-        const existed = await tx.resident.findUnique({
-          where: { residentCCCD: String(ex.residentCCCD) }
-        })
-        if (existed) throw new Error("CCCD đã tồn tại trong hệ thống")
-      }
 
       const resident = await tx.resident.create({
         data: {
           residentCCCD: ex.residentCCCD ?? null,
           fullname: ex.fullname,
-          dob: dobDate,
+          dob: new Date(ex.dob),
           gender: ex.gender ?? null,
           ethnicity: ex.ethnicity ?? null,
           religion: ex.religion ?? null,
@@ -406,30 +387,10 @@ async function handleApprovedChange(tx, change) {
 
     case 5: {
       const { oldHouseholdId, memberIds, newOwnerId } = change.extraData || {}
-      const oldHid = Number(oldHouseholdId)
-      const newOid = Number(newOwnerId)
-      const memIds = Array.isArray(memberIds) ? memberIds.map(Number) : []
-
-      if (Number.isNaN(oldHid) || Number.isNaN(newOid) || memIds.length < 1 || memIds.some(Number.isNaN)) {
-        throw new Error("Invalid split household data")
-      }
-
-      // ✅ household phải active tại thời điểm duyệt
-      await assertHouseholdActive(tx, oldHid)
-
-      const oldHousehold = await tx.household.findUnique({
-        where: { id: oldHid },
-        include: { residents: true }
-      })
-      if (!oldHousehold) throw new Error("Old household not found")
-
-      const validMemberIds = oldHousehold.residents.map(r => r.id)
-      if (!memIds.every(id => validMemberIds.includes(id))) throw new Error("Member does not belong to old household")
-      if (!memIds.includes(newOid)) throw new Error("New owner must be in split members")
 
       const newHousehold = await tx.household.create({
         data: {
-          ownerId: newOid,
+          ownerId: Number(newOwnerId),
           householdCode: await generateHouseholdCode(tx),
           address: "Chưa cập nhật",
           status: 1
@@ -437,72 +398,54 @@ async function handleApprovedChange(tx, change) {
       })
 
       await tx.resident.updateMany({
-        where: { id: { in: memIds } },
+        where: { id: { in: memberIds.map(Number) } },
         data: { householdId: newHousehold.id, relationToOwner: "Thành viên" }
       })
 
       await tx.resident.update({
-        where: { id: newOid },
+        where: { id: Number(newOwnerId) },
         data: { relationToOwner: "Chủ hộ" }
+      })
+
+      await tx.residentChange.update({
+        where: { id: change.id },
+        data: { extraData: { ...change.extraData, newHouseholdCode: newHousehold.householdCode } }
       })
       break
     }
 
     case 6: {
       const { householdId, oldOwnerId, newOwnerId } = change.extraData || {}
-      const hid = Number(householdId)
-      const oldOid = Number(oldOwnerId)
-      const newOid = Number(newOwnerId)
 
-      if (Number.isNaN(hid) || Number.isNaN(oldOid) || Number.isNaN(newOid)) {
-        throw new Error("Invalid change owner data")
-      }
-      if (oldOid === newOid) throw new Error("New owner must be different from old owner")
-
-      // ✅ household phải active
-      await assertHouseholdActive(tx, hid)
-
-      const household = await tx.household.findUnique({
-        where: { id: hid },
-        include: { residents: true }
+      await tx.household.update({
+        where: { id: Number(householdId) },
+        data: { ownerId: Number(newOwnerId) }
       })
-      if (!household) throw new Error("Household not found")
 
-      const currentOwner = household.residents.find(r => r.relationToOwner === "Chủ hộ")
-      if (!currentOwner || currentOwner.id !== oldOid) throw new Error("Old owner is not current household owner")
+      await tx.resident.update({
+        where: { id: Number(oldOwnerId) },
+        data: { relationToOwner: "Thành viên" }
+      })
 
-      const memberIds = household.residents.map(r => r.id)
-      if (!memberIds.includes(newOid)) throw new Error("New owner must be household member")
-
-      await tx.household.update({ where: { id: hid }, data: { ownerId: newOid } })
-      await tx.resident.update({ where: { id: oldOid }, data: { relationToOwner: "Thành viên" } })
-      await tx.resident.update({ where: { id: newOid }, data: { relationToOwner: "Chủ hộ" } })
+      await tx.resident.update({
+        where: { id: Number(newOwnerId) },
+        data: { relationToOwner: "Chủ hộ" }
+      })
       break
     }
 
     case 2:
-    case 4:
-    case 7: {
-      if (!change.residentId) throw new Error("residentId missing for changeType 2/4/7")
-
-      if (change.changeType === 2) {
-        await tx.resident.update({ where: { id: change.residentId }, data: { status: 2 } })
-      } else if (change.changeType === 4) {
-        await tx.resident.update({ where: { id: change.residentId }, data: { status: 3, householdId: null } })
-      } else if (change.changeType === 7) {
-        await tx.resident.update({ where: { id: change.residentId }, data: { status: 4 } })
-      }
+      await tx.resident.update({ where: { id: change.residentId }, data: { status: 2 } })
       break
-    }
-
-    default:
+    case 4:
+      await tx.resident.update({ where: { id: change.residentId }, data: { status: 3, householdId: null } })
+      break
+    case 7:
+      await tx.resident.update({ where: { id: change.residentId }, data: { status: 4 } })
       break
   }
 }
 
-//////////////////////////////////////////////////////
-// UTILS
-//////////////////////////////////////////////////////
 async function generateHouseholdCode(tx) {
   while (true) {
     const code = Math.floor(100000000 + Math.random() * 900000000).toString()

@@ -10,6 +10,8 @@ import StaffResidents from "./pages/staff/Residents"
 import StaffRevenues from "./pages/staff/Revenues"
 import StaffResidentChange from "./pages/staff/ResidentChange"
 import StaffRevenuesDetail from "./pages/staff/RevenuesDetail"
+import StaffCreateResidentChange from "./pages/staff/CreateResidentChange.jsx"
+
 
 import ResidentHome from "./pages/resident/ResidentHome.jsx"
 import HouseholdInfo from "./pages/resident/HouseholdInfo.jsx"
@@ -43,8 +45,9 @@ function App() {
           <Route path="/households/create" element={<StaffCreateHousehold />} />
           <Route path="/residents" element={<StaffResidents />} />
           <Route path="/revenues" element={<StaffRevenues />} />
-          <Route path="/resident-change" element={<StaffResidentChange />} />
+          <Route path="/resident-changes" element={<StaffResidentChange />} />
           <Route path="/revenues/:id" element={<StaffRevenuesDetail />} />
+          <Route path="/staff/resident-changes/create" element={<StaffCreateResidentChange />} />
         </Route>
 
         {/* HOUSEHOLD / RESIDENT */}
