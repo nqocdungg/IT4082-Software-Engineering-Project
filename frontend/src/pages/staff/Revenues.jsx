@@ -14,6 +14,7 @@ import {
 
 import "../../styles/staff/fees.css"
 import "../../styles/staff/layout.css"
+import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
 
@@ -128,13 +129,14 @@ export default function RevenuesManagement() {
 
     if (!hasFrom && !hasTo) return "Không thời hạn"
 
-    const fromStr = hasFrom ? new Date(fee.fromDate).toLocaleDateString("vi-VN") : ""
-    const toStr = hasTo ? new Date(fee.toDate).toLocaleDateString("vi-VN") : ""
+    const fromStr = hasFrom ? formatDateDMY(fee.fromDate) : ""
+    const toStr = hasTo ? formatDateDMY(fee.toDate) : ""
 
     if (hasFrom && hasTo) return `${fromStr} – ${toStr}`
     if (hasFrom && !hasTo) return `Từ ${fromStr}`
     return `Đến ${toStr}`
   }
+
 
   function openAddFee() {
     setFeeForm({ ...emptyFeeForm, status: "1" })

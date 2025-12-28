@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom"
 import "../../styles/staff/households.css"
 import "../../styles/staff/residents.css"
 import "../../styles/staff/layout.css"
+import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
 
@@ -389,7 +390,7 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
                             " • " +
                             (m.residentCCCD || "—") +
                             " • " +
-                            String(m.dob).slice(0, 10)}
+                            formatDateDMY(m.dob)}
                         </div>
                         <button type="button" className="member-remove" onClick={() => removeMember(idx)} title="Xóa khỏi danh sách">
                           <FaTrash />
