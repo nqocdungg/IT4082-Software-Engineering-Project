@@ -1,0 +1,295 @@
+.fee-page {
+  width: 100vw;
+  min-height: 100vh;
+  background: #f6f8fb;
+  box-sizing: border-box;
+}
+
+.page-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 25px 0 15px;
+  color: #111827;
+}
+
+.fee-container {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
+.fee-toolbar {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.fee-toggle {
+  display: flex;
+  margin-top: 15px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.fee-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.fee-toggle-btn:hover {
+  background: #f9fafb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.fee-toggle-btn.active-all {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.25);
+}
+
+.fee-toggle-btn.active-mandatory {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #93c5fd;
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+}
+
+.fee-toggle-btn.active-contribution {
+  background: #fff7ed;
+  color: #b45309;
+  border-color: #fde68a;
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.25);
+}
+
+.fee-filter-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fee-filter-right input[type="date"] {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+  outline: none;
+  background: #ffffff;
+}
+
+.fee-filter-right input[type="date"]:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.fee-date-sep {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.fee-search {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 14px;
+  min-width: 240px;
+  font-size: 14px;
+  outline: none;
+}
+
+.fee-search:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.fee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fee-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px 22px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fee-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+}
+
+.fee-left {
+  display: flex;
+  gap: 16px;
+}
+
+.fee-icon {
+  width: 46px;
+  height: 46px;
+  background: #e0f2fe;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.fee-info h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fee-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fee-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fee-badge.mandatory {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.fee-badge.optional {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.fee-description {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #374151;
+  background: #f9fafb;
+  padding: 6px 10px;
+  border-radius: 6px;
+  max-width: 520px;
+}
+
+.fee-meta {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.fee-meta span {
+  background: #eef2ff;
+  padding: 4px 8px;
+  border-radius: 999px; /* giữ */
+}
+
+.fee-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.fee-amount {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 15px;
+  color: #111827;
+}
+
+.fee-status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-chua_dong {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-dong_phan {
+  background: #fef9c3;
+  color: #78350f;
+}
+
+.status-hoan_thanh {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 1024px) {
+  .fee-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fee-filter-right {
+    flex-wrap: wrap;
+  }
+
+  .fee-search {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .fee-page {
+    padding: 16px;
+  }
+
+  .fee-toggle {
+    flex-wrap: wrap;
+  }
+
+  .fee-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .fee-right {
+    width: 100%;
+    text-align: left;
+  }
+}
