@@ -29,7 +29,7 @@ const RESIDENCY_STATUS = {
 }
 
 function getResidencyStatusInfo(code) {
-  return RESIDENCY_STATUS[code] || { label: "Không rõ", className: "" }
+  return RESIDENCY_STATUS[Number(code)] || { label: "Không rõ", className: "" }
 }
 
 function authHeaders() {
@@ -186,6 +186,45 @@ export default function ResidentManagement() {
     }
   }
 
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExportExcel() {
+    if (exporting) return
+    setExporting(true)
+    try {
+      const params = {
+        search: debouncedSearch.trim() || undefined,
+        gender: genderFilter !== "ALL" ? genderFilter : undefined,
+        status: statusFilter !== "ALL" ? statusFilter : undefined,
+        householdId: String(householdIdFilter).trim() || undefined
+      }
+
+      const res = await axios.get(`${API_BASE}/residents/export-excel`, {
+        headers: authHeaders(),
+        responseType: "blob",
+        params
+      })
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      })
+
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `residents_${new Date().toISOString().slice(0, 10)}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error(e)
+      alert("Xuất Excel thất bại")
+    } finally {
+      setExporting(false)
+    }
+  }
+
   async function handleDelete(id) {
     if (!window.confirm("Bạn có chắc muốn xóa nhân khẩu ID " + id + " ?")) return
     try {
@@ -260,10 +299,19 @@ export default function ResidentManagement() {
                 </select>
               </div>
 
-             
+
             </div>
 
             <div className="toolbar-right">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleExportExcel}
+                disabled={exporting}
+                style={{ marginRight: 10 }}
+              >
+                {exporting ? "Đang xuất..." : "Tải Excel"}
+              </button>
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
@@ -491,23 +539,7 @@ export default function ResidentManagement() {
                     <div className="detail-value">{selectedResident.occupation || "—"}</div>
                   </div>
 
-                  {/* Nếu m muốn show lịch sử biến động (changes) */}
-                  {/* <div className="detail-item detail-wide">
-                    <div className="detail-label">Lịch sử biến động</div>
-                    <div className="detail-value">
-                      {Array.isArray(selectedResident.changes) && selectedResident.changes.length > 0 ? (
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                          {selectedResident.changes.slice(0, 5).map(ch => (
-                            <li key={ch.id}>
-                              {String(ch.createdAt).slice(0, 10)} — {ch.type || ch.action || "Biến động"}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        "—"
-                      )}
-                    </div>
-                  </div> */}
+                 
                 </div>
               )}
             </div>
