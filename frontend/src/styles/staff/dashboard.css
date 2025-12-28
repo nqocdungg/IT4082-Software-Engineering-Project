@@ -3,7 +3,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #ffffff;
+  background: #f8fafc;
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -18,9 +18,9 @@ body {
 
 .top-cards {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 16px;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 
@@ -47,6 +47,13 @@ body {
   gap: 8px;
 }
 
+.revenue-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
 .revenue-head h4 {
   margin: 0;
   font-size: 12px;
@@ -69,40 +76,23 @@ body {
 
 .card-content h4 {
   margin-top:0px;
-  font-size: 10px;
-  font-weight: 500;
-  color: #212122;
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.2px;
+  margin-bottom: 4px;
 }
 
 .value-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 6px;
+}
+.card.card-revenue .value-row {
   margin-top: 4px;
 }
 
-.value-row .value {
-  font-size: 18px;
-  font-weight: 800;
-  color: #111827;
-}
-
-.card-content .value {
-  margin: 2px 0 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.icon-container {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
 
 .icon-container.blue {
   background: rgba(37, 99, 235, 0.12);
@@ -123,63 +113,6 @@ body {
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
 }
 
-.revenue-lines {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.revenue-line {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.revenue-line-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 11.5px;
-  color: #231b1b;
-}
-
-.revenue-line-top strong {
-  color: #111827;
-  font-weight: 700;
-}
-
-.revenue-bar {
-  width: 100%;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.revenue-bar > div {
-  height: 100%;
-  border-radius: 999px;
-  transition: width 0.35s ease;
-}
-
-.revenue-bar .fixed {
-  background: linear-gradient(
-    90deg,
-    rgb(13, 148, 136), 
-    rgb(94, 234, 212)
-  );
-}
-
-.revenue-bar .contrib {
-  background: linear-gradient(
-    90deg,
-    rgb(20, 184, 166), 
-    rgb(153, 246, 228) 
-  );
-}
-
-
 .dash-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -199,7 +132,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .panel-head h3 {
@@ -275,7 +208,6 @@ body {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  border: 1px solid transparent;
   white-space: nowrap;
 }
 
@@ -350,17 +282,32 @@ body {
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
 }
 
+.mini-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 90px;
+  align-items: center;
+  column-gap: 12px;
+}
+
 .mini-label {
   margin: 0 0 4px;
   font-size: 12px;
   color: #6b7280;
 }
 
+
+.mini-label-col {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+
 .mini-value {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
+  display: flex;
+  align-items: baseline;      /* căn chân chữ cho đẹp */
+  gap: 6px;           /* size CHUNG */          /* weight CHUNG */
   color: #111827;
+  line-height: 1;
 }
 
 .mini-sub {
@@ -370,6 +317,29 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.mini-trend {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.mini-trend .up {
+  color: #16a34a;
+}
+
+.mini-trend .down {
+  color: #dc2626;
+}
+
+.trend-sub {
+  margin-left: 4px;
+  color: #6b7280;
+}
+
+.progress-fill {
+  transition: width 0.8s ease;
 }
 
 .row-head {
@@ -446,13 +416,7 @@ button:focus-visible,
     grid-template-columns: 1fr;
   }
 }
-.card.card-revenue {
-  justify-content: flex-start;
-}
 
-.card.card-revenue .card-content {
-  width: 100%;
-}
 .dashboard {
   overflow-y: auto;
   overflow-x: hidden;
@@ -462,4 +426,323 @@ button:focus-visible,
 .dashboard::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+.card-sub {
+  margin-top: 9px;
+  font-size: 12px;
+  color: #94a3b8; 
+  line-height: 1.2;
+}
+
+
+
+/* ===== CARD NHẸ THEO KIỂU SAAS ===== */
+.top-cards .card,
+.panel,
+.mini-card {
+  background: #ffffff;
+  border-radius: 16px;
+
+  /* BỎ VIỀN CỨNG */
+  border: none;
+
+  /* SHADOW RẤT MỀM */
+  box-shadow:
+    0 1px 2px rgba(15,23,42,0.04),
+    0 8px 24px rgba(15,23,42,0.06);
+}
+
+.revenue-total {
+  color: #0f172a;   /* slate-900 */
+  font-weight: 800;
+}
+
+.icon-container {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;              /* ✅ tạo hình tròn */
+  display: flex;                   /* ✅ căn icon */
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  box-shadow: none;
+}
+
+
+/* Xanh dương */
+.icon-container.blue {
+  background: #eef2ff;  /* indigo-50 */
+  color: #4f46e5;       /* indigo-600 */
+}
+
+/* Xanh lá */
+.icon-container.green {
+  background: #ecfdf5;  /* emerald-50 */
+  color: #059669;       /* emerald-600 */
+}
+
+/* Tím */
+.icon-container.purple {
+  background: #f5f3ff;  /* violet-50 */
+  color: #7c3aed;       /* violet-600 */
+}
+
+
+
+
+.top-cards .card:hover,
+.panel:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 12px rgba(15,23,42,0.06),
+    0 16px 32px rgba(15,23,42,0.08);
+}
+
+
+/* Icon tiền – pastel, sạch */
+.icon-container.money {
+  background: #ecfdf5;      /* emerald-50 */
+  color: #059669;           /* emerald-600 */
+  font-weight: 900;
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+}
+/* =========================
+   Revenue bar – FINAL (correct)
+   ========================= */
+
+.revenue-bar {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: #e5e7eb;      /* slate-200 */
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+/* Thanh fill theo % */
+.revenue-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+}
+
+/* Thu cố định – pastel xanh giống mẫu */
+.revenue-bar-fill.fixed {
+  background: #6ee7b7;      /* emerald-300 */
+}
+
+/* Đóng góp – pastel xám */
+.revenue-bar-fill.contrib {
+  background: #e2e8f0;      /* slate-200 (nhẹ hơn nền chút) */
+}
+
+/* Lớp text phủ toàn thanh */
+.revenue-bar-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Text trái */
+.revenue-bar-content .bar-label {
+  color: #334155;           /* slate-700 */
+}
+
+/* Text phải */
+.revenue-bar-content .bar-value {
+  color: #0f172a;           /* slate-900 */
+  font-weight: 800;
+}
+
+/* ===== Compact vertical spacing for Revenue card ===== */
+
+.card.card-revenue {
+  padding-top: 5px;
+  padding-bottom: 10px;
+}
+
+.card.card-revenue h4 {
+  margin-top: 0;
+  margin-bottom: 2px;
+}
+
+.card.card-revenue .value-row {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.card.card-revenue .revenue-bar {
+  margin-top: 4px;
+}
+
+/* ===== Panel head ===== */
+
+.panel-head-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* Title + sub căn trái */
+.panel-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel-title-group h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.panel-title-group .panel-sub {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ===== Legend pills ===== */
+
+.legend-center {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* pill nền xám */
+
+.legend-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 4px 10px;
+  border-radius: 999px;
+
+  background: rgba(241, 245, 249, 0.6); /* NHẠT HƠN */
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+/* màu text theo loại */
+.legend-pill.fixed {
+  color: #639beb;           /* MÀU CỘT Thu cố định */
+}
+
+.legend-pill.contrib {
+  color: #9db7e7;           /* MÀU CỘT Đóng góp */
+}
+
+/* chấm tròn */
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.legend-dot.fixed {
+  background: #639beb;
+}
+
+.legend-dot.contrib {
+  background: #d8e7f7;
+}
+
+/* trạng thái active (giữ nhẹ giống mẫu) */
+.legend-pill.active {
+  background: #e9eefb;
+}
+
+/* ===== Compact chart header ===== */
+
+.panel.panel-bars .panel-head-custom {
+  gap: 4px;                /* giảm khoảng cách */
+  margin-bottom: 6px;      /* giảm đẩy chart xuống */
+}
+
+/* ===== Metric value: number + unit ===== */
+
+.value-row-metric {
+  display: flex;
+  align-items: center;
+  gap: 14px;          /* icon ↔ số thoáng hơn */
+}
+
+.value-with-unit {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;           /* số ↔ đơn vị */
+}
+
+.value-number {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.value-unit {
+  font-size: 16px;
+  font-weight: 650;
+  color: #6b7280;     /* xám đậm */
+}
+
+/* ===== Mini side (x / x hộ ...) ===== */
+
+.mini-side {
+  text-align: right;
+}
+
+.mini-side-value {
+  font-size: 14px;        /* nhỏ hơn số chính */
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.mini-side-label {
+  margin-top: 2px;
+  font-size: 14px;        /* nhỏ hơn */
+  font-weight: 500;
+  color: #6b7280;         /* xám */
+  word-break: break-word;
+}
+
+/* ===== Mini value: number + unit (FIXED) ===== */
+
+.mini-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1;
+}
+
+.mini-value .mini-unit {
+  font-size: 26px;        /* ÉP = số */
+  font-weight: 800;       /* ÉP = số */
+  color: #111827;
 }
