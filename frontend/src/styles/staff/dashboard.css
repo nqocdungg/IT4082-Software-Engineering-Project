@@ -728,7 +728,6 @@ button:focus-visible,
   word-break: break-word;
 }
 
-/* ===== Mini value: number + unit (FIXED) ===== */
 
 .mini-value {
   display: flex;
@@ -742,7 +741,7 @@ button:focus-visible,
 }
 
 .mini-value .mini-unit {
-  font-size: 26px;        /* ÉP = số */
+  font-size: 18px;        /* ÉP = số */
   font-weight: 800;       /* ÉP = số */
   color: #111827;
 }

@@ -1,5 +1,5 @@
 import prisma from "../../../prisma/prismaClient.js"
-
+import ExcelJS from "exceljs"
 /**
  * GET /api/residents
  */
@@ -242,5 +242,82 @@ export const deleteResident = async (req, res) => {
       success: false,
       message: err.message
     })
+  }
+}
+
+export const exportResidentsExcel = async (req, res) => {
+  try {
+    const { search, gender, status, householdId } = req.query
+    const where = {}
+
+    if (householdId) where.householdId = Number(householdId)
+
+    if (gender && gender !== "ALL") {
+      where.gender = gender === "Nam" ? "M" : "F"
+    }
+
+    if (status !== undefined && status !== "ALL" && status !== "") {
+      where.status = Number(status)
+    }
+
+    if (search && String(search).trim()) {
+      const q = String(search).trim()
+      where.OR = [
+        { fullname: { contains: q, mode: "insensitive" } },
+        { residentCCCD: { contains: q } }
+      ]
+    }
+
+    const residents = await prisma.resident.findMany({
+      where,
+      include: { household: { select: { householdCode: true } } },
+      orderBy: { createdAt: "desc" }
+    })
+
+    const STATUS_LABEL = {
+      0: "Thường trú",
+      1: "Tạm trú",
+      2: "Tạm vắng",
+      3: "Đã chuyển đi",
+      4: "Đã qua đời"
+    }
+
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet("Nhân khẩu")
+
+    ws.columns = [
+      { header: "Họ tên", key: "fullname", width: 25 },
+      { header: "Giới tính", key: "gender", width: 10 },
+      { header: "Ngày sinh", key: "dob", width: 15 },
+      { header: "CCCD", key: "cccd", width: 20 },
+      { header: "Hộ khẩu", key: "household", width: 15 },
+      { header: "Tình trạng", key: "status", width: 15 }
+    ]
+
+    residents.forEach(r => {
+      ws.addRow({
+        fullname: r.fullname,
+        gender: r.gender === "M" ? "Nam" : "Nữ",
+        dob: r.dob ? new Date(r.dob).toISOString().slice(0, 10) : "",
+        cccd: r.residentCCCD || "",
+        household: r.household?.householdCode || "",
+        status: STATUS_LABEL[r.status] ?? "Không rõ"
+      })
+    })
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=residents.xlsx"
+    )
+
+    await wb.xlsx.write(res)
+    res.end()
+  } catch (err) {
+    console.error("exportResidentsExcel error:", err)
+    return res.status(500).json({ success: false, message: err.message })
   }
 }
