@@ -183,9 +183,10 @@ export default function FeePayment() {
                         <tr key={fee.id}>
                           <td>
                             <div className="fee-name">{fee.feeType.name}</div>
-                            <div className="fee-desc">
-                              {fee.feeType.description || "Thu định kỳ"}
-                            </div>
+                              <div className="fee-desc">
+                                {fee.feeType?.shortDescription || "Thu định kỳ"}
+                              </div>
+
                           </td>
                           <td>
                             {fee.feeType.toDate

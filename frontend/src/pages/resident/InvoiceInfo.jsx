@@ -166,9 +166,10 @@ export default function FeePayment() {
                       </div>
                       <div className="fee-desc">
                         {fee.type === "mandatory"
-                          ? fee.feeType?.description
-                          : fee.description || "Không có mô tả"}
+                          ? fee.feeType?.shortDescription || "—"
+                          : fee.shortDescription || "—"}
                       </div>
+
                       <div className="fee-date">
                         <div className="date-row">
                           <span className="date-item">
@@ -257,13 +258,14 @@ export default function FeePayment() {
                 </span>
               </div>
               <div className="popup-info-item full">
-                <span className="label">Mô tả</span>
+                <span className="label">Mô tả chi tiết</span>
                 <span className="value">
                   {popupFee.type === "mandatory"
-                    ? popupFee.feeType?.description
-                    : popupFee.description || "Không có mô tả"}
+                    ? popupFee.feeType?.longDescription || "Không có mô tả chi tiết"
+                    : popupFee.longDescription || "Không có mô tả chi tiết"}
                 </span>
               </div>
+
               <div className="popup-info-item">
                 <span className="label">Từ ngày</span>
                 <span className="value">

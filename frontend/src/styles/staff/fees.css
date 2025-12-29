@@ -864,3 +864,21 @@
 .btn-ghost.compact:hover {
   background: #f6f7fb;
 }
+
+.fee-description {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  resize: vertical;
+  background: #fff;
+  line-height: 1.5;
+}
+
+.fee-description:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
