@@ -1,4 +1,5 @@
 import prisma from "../../../prisma/prismaClient.js"
+import ExcelJS from "exceljs"
 
 /* =========================
  * Helpers
@@ -48,7 +49,7 @@ export const getAllHouseholds = async (req, res) => {
         { householdCode: { contains: search, mode: "insensitive" } },
         { address: { contains: search, mode: "insensitive" } },
         { owner: { fullname: { contains: search, mode: "insensitive" } } },
-        { owner: { residentCCCD: { contains: search, mode: "insensitive" } } }
+        { owner: { residentCCCD: { contains: search } } }
       ]
     }
 
@@ -328,6 +329,85 @@ export const changeHouseholdStatus = async (req, res) => {
 
     return res.status(200).json({ success: true, data: updated })
   } catch (err) {
+    return res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+export const exportHouseholdsExcel = async (req, res) => {
+  try {
+    const search = String(req.query.search ?? "").trim()
+    const statusRaw = String(req.query.status ?? "ALL").trim()
+
+    const where = {}
+
+    if (statusRaw !== "ALL" && statusRaw !== "") {
+      const s = Number(statusRaw)
+      if ([0, 1].includes(s)) where.status = s
+    }
+
+    if (search) {
+      where.OR = [
+        { householdCode: { contains: search, mode: "insensitive" } },
+        { address: { contains: search, mode: "insensitive" } },
+        { owner: { fullname: { contains: search, mode: "insensitive" } } },
+        { owner: { residentCCCD: { contains: search } } }
+      ]
+    }
+
+    const households = await prisma.household.findMany({
+      where,
+      include: {
+        owner: true,
+        residents: true
+      },
+      orderBy: { id: "desc" }
+    })
+
+    const STATUS_LABEL = {
+      1: "Đang hoạt động",
+      0: "Ngừng hoạt động"
+    }
+
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet("Hộ khẩu")
+
+    ws.columns = [
+      { header: "Mã hộ khẩu", key: "householdCode", width: 20 },
+      { header: "Địa chỉ", key: "address", width: 35 },
+      { header: "Chủ hộ", key: "ownerName", width: 25 },
+      { header: "CCCD chủ hộ", key: "ownerCCCD", width: 20 },
+      { header: "Số nhân khẩu", key: "membersCount", width: 15 },
+      { header: "Trạng thái", key: "status", width: 18 }
+    ]
+
+    households.forEach(h => {
+      const membersCount = (h.residents || []).filter(r =>
+        [0, 1, 2].includes(Number(r.status))
+      ).length
+
+      ws.addRow({
+        householdCode: h.householdCode,
+        address: h.address || "",
+        ownerName: h.owner?.fullname || "",
+        ownerCCCD: h.owner?.residentCCCD || "",
+        membersCount,
+        status: STATUS_LABEL[h.status] ?? "Không rõ"
+      })
+    })
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=households.xlsx"
+    )
+
+    await wb.xlsx.write(res)
+    res.end()
+  } catch (err) {
+    console.error("exportHouseholdsExcel error:", err)
     return res.status(500).json({ success: false, message: err.message })
   }
 }

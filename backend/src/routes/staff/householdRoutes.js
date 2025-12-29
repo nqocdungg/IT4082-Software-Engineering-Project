@@ -6,7 +6,8 @@ import {
   changeHouseholdStatus,
   generateHouseholdCode,
   searchHouseholds,
-  getHouseholdMembers
+  getHouseholdMembers,
+  exportHouseholdsExcel
 } from "../../controller/staff/HouseholdController.js"
 
 const router = express.Router()
@@ -24,19 +25,23 @@ function validateHouseholdId(req, res, next) {
   next()
 }
 
-// LOG toàn bộ request vào households để bắt chính xác đường nào gây lỗi
+// LOG để debug
 router.use((req, _res, next) => {
-  console.log("[/api/households] ", req.method, req.originalUrl)
+  console.log("[/api/households]", req.method, req.originalUrl)
   next()
 })
 
+/* ===== ROUTE KHÔNG CÓ :id ===== */
 router.get("/", getAllHouseholds)
+router.get("/export-excel", exportHouseholdsExcel)   
 router.get("/generate-code", generateHouseholdCode)
 router.get("/search", searchHouseholds)
-router.get("/:id/members", validateHouseholdId, getHouseholdMembers)
 
-router.post("/", createHousehold)
+/* ===== ROUTE CÓ :id ===== */
+router.get("/:id/members", validateHouseholdId, getHouseholdMembers)
 router.put("/:id/status", validateHouseholdId, changeHouseholdStatus)
 router.get("/:id", validateHouseholdId, getHouseholdById)
+
+router.post("/", createHousehold)
 
 export default router
