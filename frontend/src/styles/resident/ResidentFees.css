@@ -1,217 +1,434 @@
-.square-layout {
-  padding: 24px;
-  margin: 30px auto;
-  border-radius: 16px;
-  background-color: #f8fafc;
+/* ================= CONTAINER ================= */
+.fee-container {
   max-width: 1200px;
-  width: 95%;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin: 20px auto;
+  padding: 0 16px;
 }
 
+/* ================= PAGE TITLE ================= */
 .page-title {
-  color: #1e3a8a;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 15px;
-  margin-bottom: 20px;
-  font-size: 24px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #0f172a;
+  line-height: 1.3;
+  text-align: center;
 }
 
-.payment-grid-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
+/* ================= FILTER BAR ================= */
+.filter-bar {
+  display: flex;
+  justify-content: space-between;
+
+  align-items: center;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-.payment-column {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+/* ================= FILTER TABS ================= */
+.filter-tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-tabs button {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.filter-tabs button:hover {
+  background: #f3f4f6;
+}
+
+.filter-tabs .active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.filter-tabs .contribution.active {
+  background: #f59e0b;
+}
+
+/* ================= FILTER ACTION ================= */
+.filter-actions input {
+  padding: 8px 12px;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+}
+
+/* ================= LIST ================= */
+.fee-list {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 20px;
 }
 
-.column-header {
-  padding: 20px;
-  border-bottom: 1px solid #f1f5f9;
+/* ================= CARD ================= */
+.fee-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 160px;
+  gap: 20px;
+  padding: 22px 24px;
+  min-height: 140px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.fee-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.12);
+}
+
+/* ================= CARD LINE ================= */
+.fee-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2563eb, #60a5fa);
+}
+
+.fee-card.contribution::before {
+  background: linear-gradient(180deg, #f59e0b, #fbbf24);
+}
+
+/* ================= LEFT ================= */
+.fee-main {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-.column-header h3 {
-  margin: 0;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #334155;
-}
-
-.status-badge {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.badge-mandatory { background: #fee2e2; color: #dc2626; }
-.badge-voluntary { background: #dcfce7; color: #166534; }
-
-.icon-mandatory { color: #dc2626; }
-.icon-voluntary { color: #16a34a; }
-
-.table-container {
-  padding: 0 20px;
-  flex-grow: 1;
-}
-
-.mini-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 10px;
-}
-
-.mini-table th {
-  text-align: left;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 600;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.mini-table td {
-  padding: 10px 0;
-  border-bottom: 1px dashed #f1f5f9;
-  vertical-align: middle;
-}
-
-.fee-name { font-weight: 600; color: #1e293b; font-size: 14px; }
-.fee-desc, .fee-community { font-size: 11px; color: #64748b; margin-top: 2px; }
-.fee-amount { font-weight: 700; color: #dc2626; font-size: 15px; }
-
-.donation-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  text-align: right;
-  font-weight: 600;
-  color: #059669;
-  transition: border 0.2s;
-}
-.donation-input:focus {
-  border-color: #10b981;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
-}
-
-.empty-state {
-  padding: 30px;
-  text-align: center;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.column-footer {
-  padding: 20px;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  border-radius: 0 0 12px 12px;
-  margin-top: auto;
-}
-
-.total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  font-weight: 600;
-  color: #475569;
-}
-
-.total-amount { font-size: 20px; font-weight: 800; }
-.total-amount.mandatory { color: #dc2626; }
-.total-amount.voluntary { color: #16a34a; }
-
-.pay-btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
+/* ================= ICON ================= */
+.fee-icon {
+  width: 50px;
+  height: 50px;
+  margin-top: 2px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 22px;
+  color: #ffffff;
+}
+
+.fee-icon.mandatory {
+  background: linear-gradient(135deg, #4476e3, #4a8df9);
+}
+
+.fee-icon.contribution {
+  background: linear-gradient(135deg, #f2ca64, #f6ba52);
+}
+
+/* ================= INFO ================= */
+.fee-name {
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
   gap: 8px;
-  transition: transform 0.2s, opacity 0.2s;
+}
+
+.fee-desc {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+/* ================= TAG ================= */
+.fee-tag {
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.fee-tag.mandatory {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.fee-tag.voluntary {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* ================= DATE ================= */
+/* ================= DATE ================= */
+.fee-date {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.date-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.date-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.date-item .icon {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* ================= RIGHT ================= */
+.fee-right {
+  text-align: right;
+  padding-top: 4px;
+}
+
+.fee-amount {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  line-height: 1.3;
 }
 .pay-btn:active { transform: scale(0.98); }
 .pay-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #cbd5e1 !important; color: #fff !important;}
 
-.btn-mandatory { background: #dc2626; color: white; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.2); }
-.btn-mandatory:hover { background: #b91c1c; }
-
-.btn-voluntary { background: #16a34a; color: white; box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2); }
-.btn-voluntary:hover { background: #15803d; }
-
-.modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex; justify-content: center; align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.modal-content {
-  background: white;
-  padding: 40px;
-  border-radius: 20px;
-  text-align: center;
-  width: 400px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes modalPop {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.modal-step h3 { color: #1e293b; margin: 10px 0; }
-.qr-box { margin: 20px auto; padding: 10px; border: 1px solid #e2e8f0; border-radius: 10px; display: inline-block; }
-.modal-amount { font-size: 24px; font-weight: 800; color: #1f3c88; margin: 10px 0; }
-.modal-note { font-size: 13px; color: #64748b; animation: pulse 2s infinite; }
-
-.spinner { color: #3b82f6; animation: spin 1s linear infinite; margin-bottom: 10px; }
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-.text-success { color: #16a34a; }
-.close-modal-btn {
-  margin-top: 20px;
-  padding: 10px 30px;
-  background: #1e293b;
-  color: white;
+/* ================= STATUS ================= */
+.fee-status {
+  padding: 6px 14px;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 700px;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  display: inline-block;
+  min-width: 70px;
+  text-align: center;
+  cursor: default;
+  transition: background 0.2s ease;
+}
+
+.status-0 {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.status-1 {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-2,
+.status-paid {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+/* ================= ACTIONS ================= */
+.fee-actions {
+  display: flex;
+  gap: 17px;
+  margin-top: 12px;
+}
+
+.fee-actions button {
+  padding: 6px 14px;
+  font-weight: 700;
+  border-radius: 14px;
+  border: none;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.fee-actions .pay {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.fee-actions .pay:hover {
+  background: #16a34a;
+}
+
+.fee-actions .detail {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.fee-actions .detail:hover {
+  background: #1e40af;
+}
+
+/* ================= EMPTY ================= */
+.empty-text {
+  margin-top: 32px;
+  text-align: center;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+/* ================= POPUP ================= */
+.fee-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* ================= POPUP BOX ================= */
+.popup-content {
+  background: #ffffff;
+  width: 640px;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+}
+
+/* ================= POPUP TITLE ================= */
+.popup-content h2 {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 16px;
+}
+
+/* ================= POPUP INFO ================= */
+.popup-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.popup-info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
 }
 .close-modal-btn:hover { background: #0f172a; }
 
-@keyframes pulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
+.popup-info-item .label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  min-width: 120px;
 }
 
-@media (max-width: 900px) {
-  .payment-grid-layout { grid-template-columns: 1fr; }
+.popup-info-item .value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+  max-width: 70%;
+  line-height: 1.4;
 }
 
+.popup-info-item.full {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.popup-info-item.full .value {
+  max-width: 100%;
+  text-align: left;
+  background: #f8fafc;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+/* ================= PRICE ================= */
+.popup-info-item .value.highlight {
+  background: #ecfdf5;
+  color: #047857;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+/* ================= STATUS ================= */
+.popup-info-item .value.status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ================= POPUP FOOTER ================= */
+.popup-footer {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.popup-footer button {
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #0f172a;
+  color: #ffffff;
+}
+/* ================= POPUP STATUS ================= */
+.popup-info-item .value.status {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 700px;
+  min-width: 70px;
+  text-align: center;
+  cursor: default;
+}
+
+/* Màu trạng thái */
+.popup-info-item .value.status.status-0 {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.popup-info-item .value.status.status-1 {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.popup-info-item .value.status.status-2,
+.popup-info-item .value.status.status-paid {
+  background: #22c55e;
+  color: #ffffff;
+}
