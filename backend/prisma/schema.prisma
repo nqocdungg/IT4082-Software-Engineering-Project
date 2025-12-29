@@ -151,7 +151,10 @@ model ResidentChange {
 model FeeType {
   id          Int      @id @default(autoincrement())
   name        String   @db.VarChar(100)
-  description String?
+
+  shortDescription String?  @db.VarChar(255)
+  longDescription  String?
+
   isMandatory Boolean  @default(true)
   unitPrice   Float?
   isActive    Boolean  @default(true)
@@ -159,6 +162,11 @@ model FeeType {
   toDate      DateTime?
 
   feeRecords FeeRecord[]
+}
+
+enum PaymentMethod {
+  OFFLINE
+  ONLINE
 }
 
 model FeeRecord {
@@ -169,6 +177,10 @@ model FeeRecord {
   // 1: partial
   // 2: paid
 
+  method      PaymentMethod   @default(OFFLINE)
+  /// OFFLINE: kế toán thu trực tiếp
+  /// ONLINE: cư dân thanh toán QR
+  
   description String?
 
   householdId Int
@@ -187,4 +199,6 @@ model FeeRecord {
   @@index([feeTypeId])
   @@index([managerId])
   @@index([createdAt])
+  @@index([method])
+
 }
