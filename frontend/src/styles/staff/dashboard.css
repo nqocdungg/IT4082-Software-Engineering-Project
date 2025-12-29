@@ -23,7 +23,6 @@ body {
   margin-bottom: 10px;
 }
 
-
 .top-cards .card {
   background: #ffffff;
   border-radius: 14px;
@@ -75,7 +74,7 @@ body {
 }
 
 .card-content h4 {
-  margin-top:0px;
+  margin-top: 0px;
   font-size: 14px;
   font-weight: 700;
   color: #475569;
@@ -93,10 +92,9 @@ body {
   margin-top: 4px;
 }
 
-
 .icon-container.blue {
   background: rgba(37, 99, 235, 0.12);
-  color: rgb(37, 99, 235);               
+  color: rgb(37, 99, 235);
 }
 
 .icon-container.green {
@@ -110,7 +108,7 @@ body {
 }
 
 .icon-container {
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
 .dash-grid {
@@ -151,8 +149,12 @@ body {
   width: 100%;
 }
 
-.panel-bars { grid-column: 1 / 2; }
-.panel-two-rows { grid-column: 2 / 3; }
+.panel-bars {
+  grid-column: 1 / 2;
+}
+.panel-two-rows {
+  grid-column: 2 / 3;
+}
 
 .bottom-row {
   grid-column: 1 / -1;
@@ -235,6 +237,12 @@ body {
   gap: 10px;
 }
 
+.mini-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .mini-legend {
   display: flex;
   flex-direction: column;
@@ -282,9 +290,10 @@ body {
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
 }
 
+/* gốc vẫn giữ (nếu chỗ khác còn dùng mini-row grid) */
 .mini-row {
   display: grid;
-  grid-template-columns: 110px 1fr 90px;
+  grid-template-columns: 90px 1fr 70px;
   align-items: center;
   column-gap: 12px;
 }
@@ -295,17 +304,16 @@ body {
   color: #6b7280;
 }
 
-
 .mini-label-col {
   font-weight: 600;
   color: #6b7280;
+  margin-bottom: 6px;
 }
-
 
 .mini-value {
   display: flex;
-  align-items: baseline;      /* căn chân chữ cho đẹp */
-  gap: 6px;           /* size CHUNG */          /* weight CHUNG */
+  align-items: baseline;
+  gap: 6px;
   color: #111827;
   line-height: 1;
 }
@@ -354,8 +362,12 @@ body {
   font-weight: 700;
 }
 
-.row-change.up { color: #16a34a; }
-.row-change.down { color: #dc2626; }
+.row-change.up {
+  color: #16a34a;
+}
+.row-change.down {
+  color: #dc2626;
+}
 
 .progress-bar {
   width: 100%;
@@ -364,6 +376,7 @@ body {
   border-radius: 999px;
   overflow: hidden;
   margin: 6px 0 6px;
+  margin-top: 4px;
 }
 
 .progress-fill {
@@ -420,7 +433,6 @@ button:focus-visible,
 .dashboard {
   overflow-y: auto;
   overflow-x: hidden;
-
 }
 
 .dashboard::-webkit-scrollbar {
@@ -431,11 +443,9 @@ button:focus-visible,
 .card-sub {
   margin-top: 9px;
   font-size: 12px;
-  color: #94a3b8; 
+  color: #94a3b8;
   line-height: 1.2;
 }
-
-
 
 /* ===== CARD NHẸ THEO KIỂU SAAS ===== */
 .top-cards .card,
@@ -443,72 +453,60 @@ button:focus-visible,
 .mini-card {
   background: #ffffff;
   border-radius: 16px;
-
-  /* BỎ VIỀN CỨNG */
   border: none;
-
-  /* SHADOW RẤT MỀM */
-  box-shadow:
-    0 1px 2px rgba(15,23,42,0.04),
-    0 8px 24px rgba(15,23,42,0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .revenue-total {
-  color: #0f172a;   /* slate-900 */
+  color: #0f172a;
   font-weight: 800;
 }
 
 .icon-container {
   width: 42px;
   height: 42px;
-  border-radius: 50%;              
-  display: flex;                   
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-
   font-size: 18px;
   box-shadow: none;
 }
 
-
+/* Xanh dương */
 .icon-container.blue {
-  background: #eef2ff;  /* indigo-50 */
-  color: #4f46e5;       /* indigo-600 */
+  background: #eef2ff;
+  color: #4f46e5;
 }
 
 /* Xanh lá */
 .icon-container.green {
-  background: #ecfdf5;  /* emerald-50 */
-  color: #059669;       /* emerald-600 */
+  background: #ecfdf5;
+  color: #059669;
 }
 
 /* Tím */
 .icon-container.purple {
-  background: #f5f3ff;  /* violet-50 */
-  color: #7c3aed;       /* violet-600 */
+  background: #f5f3ff;
+  color: #7c3aed;
 }
-
-
-
 
 .top-cards .card:hover,
 .panel:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 4px 12px rgba(15,23,42,0.06),
-    0 16px 32px rgba(15,23,42,0.08);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 16px 32px rgba(15, 23, 42, 0.08);
 }
-
 
 /* Icon tiền – pastel, sạch */
 .icon-container.money {
-  background: #ecfdf5;      /* emerald-50 */
-  color: #059669;           /* emerald-600 */
+  background: #ecfdf5;
+  color: #059669;
   font-weight: 900;
   font-size: 18px;
   width: 36px;
   height: 36px;
 }
+
 /* =========================
    Revenue bar – FINAL (correct)
    ========================= */
@@ -517,13 +515,12 @@ button:focus-visible,
   position: relative;
   width: 100%;
   height: 24px;
-  background: #e5e7eb;      /* slate-200 */
+  background: #e5e7eb;
   border-radius: 999px;
   overflow: hidden;
   margin-top: 5px;
 }
 
-/* Thanh fill theo % */
 .revenue-bar-fill {
   position: absolute;
   left: 0;
@@ -532,18 +529,6 @@ button:focus-visible,
   border-radius: 999px;
 }
 
-/* Thu cố định – pastel xanh giống mẫu */
-.revenue-bar-fill.fixed {
-  /*background: #6ee7b7;*/
-  background: #06e9a1;     
-}
-
-/* Đóng góp – pastel xám */
-.revenue-bar-fill.contrib {
-  background: #6ee7b7;      /* slate-200 (nhẹ hơn nền chút) */
-}
-
-/* Lớp text phủ toàn thanh */
 .revenue-bar-content {
   position: relative;
   z-index: 1;
@@ -557,14 +542,12 @@ button:focus-visible,
   white-space: nowrap;
 }
 
-/* Text trái */
 .revenue-bar-content .bar-label {
-  color: #334155;           /* slate-700 */
+  color: #334155;
 }
 
-/* Text phải */
 .revenue-bar-content .bar-value {
-  color: #0f172a;           /* slate-900 */
+  color: #0f172a;
   font-weight: 800;
 }
 
@@ -598,7 +581,6 @@ button:focus-visible,
   margin-bottom: 12px;
 }
 
-/* Title + sub căn trái */
 .panel-title-group {
   display: flex;
   flex-direction: column;
@@ -625,36 +607,28 @@ button:focus-visible,
   gap: 10px;
 }
 
-/* pill nền xám */
-
 .legend-pill {
   display: flex;
   align-items: center;
   gap: 6px;
-
   padding: 4px 10px;
   border-radius: 999px;
-
-  background: rgba(241, 245, 249, 0.6); /* NHẠT HƠN */
+  background: rgba(241, 245, 249, 0.6);
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
-
   font-size: 12px;
   font-weight: 600;
 }
 
-
-/* màu text theo loại */
 .legend-pill.fixed {
-  color: #639beb;           /* MÀU CỘT Thu cố định */
+  color: #639beb;
 }
 
 .legend-pill.contrib {
-  color: #9db7e7;           /* MÀU CỘT Đóng góp */
+  color: #9db7e7;
 }
 
-/* chấm tròn */
 .legend-dot {
   width: 8px;
   height: 8px;
@@ -669,16 +643,13 @@ button:focus-visible,
   background: #d8e7f7;
 }
 
-/* trạng thái active (giữ nhẹ giống mẫu) */
 .legend-pill.active {
   background: #e9eefb;
 }
 
-/* ===== Compact chart header ===== */
-
 .panel.panel-bars .panel-head-custom {
-  gap: 4px;                /* giảm khoảng cách */
-  margin-bottom: 6px;      /* giảm đẩy chart xuống */
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
 /* ===== Metric value: number + unit ===== */
@@ -686,13 +657,13 @@ button:focus-visible,
 .value-row-metric {
   display: flex;
   align-items: center;
-  gap: 14px;          /* icon ↔ số thoáng hơn */
+  gap: 14px;
 }
 
 .value-with-unit {
   display: flex;
   align-items: baseline;
-  gap: 6px;           /* số ↔ đơn vị */
+  gap: 6px;
 }
 
 .value-number {
@@ -705,7 +676,7 @@ button:focus-visible,
 .value-unit {
   font-size: 16px;
   font-weight: 650;
-  color: #6b7280;     /* xám đậm */
+  color: #6b7280;
 }
 
 /* ===== Mini side (x / x hộ ...) ===== */
@@ -715,25 +686,23 @@ button:focus-visible,
 }
 
 .mini-side-value {
-  font-size: 14px;        /* nhỏ hơn số chính */
+  font-size: 14px;
   font-weight: 600;
   color: #6b7280;
 }
 
 .mini-side-label {
   margin-top: 2px;
-  font-size: 14px;        /* nhỏ hơn */
+  font-size: 14px;
   font-weight: 500;
-  color: #6b7280;         /* xám */
+  color: #6b7280;
   word-break: break-word;
 }
-
 
 .mini-value {
   display: flex;
   align-items: baseline;
   gap: 6px;
-
   font-size: 26px;
   font-weight: 800;
   color: #111827;
@@ -741,7 +710,67 @@ button:focus-visible,
 }
 
 .mini-value .mini-unit {
-  font-size: 18px;        /* ÉP = số */
-  font-weight: 800;       /* ÉP = số */
+  font-size: 18px;
+  font-weight: 800;
   color: #111827;
+}
+
+.revenue-bar-fill.fixed {
+  background: #00e19a;
+}
+
+.revenue-bar-fill.contrib {
+  background: #71e0b3;
+}
+
+/* =========================
+   PATCH: Mini cards "Thu phí / Nợ phí"
+   ========================= */
+
+.mini-row.mini-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mini-row.mini-row-inline .mini-main-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mini-head-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.mini-head-row .mini-label {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mini-head-row .mini-value {
+  margin: 0;
+}
+
+.mini-row.mini-row-inline .progress-bar {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.mini-row.mini-row-inline .mini-side {
+  flex: 0 0 92px;
+  text-align: right;
+}
+
+.mini-side-label-one {
+  white-space: nowrap;
+  word-break: normal;
 }

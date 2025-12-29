@@ -41,18 +41,17 @@ export const getDashboard = async (req, res) => {
     // 4. Thống kê thu phí theo năm
     // =========================
     const feeRows = await prisma.$queryRaw`
-    SELECT
-    EXTRACT(MONTH FROM fr."updatedAt")::int AS month,
-    SUM(CASE WHEN ft."isMandatory" = true THEN fr."amount" ELSE 0 END)::float AS mandatory,
-    SUM(CASE WHEN ft."isMandatory" = false THEN fr."amount" ELSE 0 END)::float AS contribution
-    FROM "FeeRecord" fr
-    JOIN "FeeType" ft ON ft."id" = fr."feeTypeId"
-    WHERE fr."status" IN (1, 2)
-    AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
-    GROUP BY month
-    ORDER BY month
+      SELECT
+        EXTRACT(MONTH FROM fr."updatedAt")::int AS month,
+        SUM(CASE WHEN ft."isMandatory" = true THEN fr."amount" ELSE 0 END)::float AS mandatory,
+        SUM(CASE WHEN ft."isMandatory" = false THEN fr."amount" ELSE 0 END)::float AS contribution
+      FROM "FeeRecord" fr
+      JOIN "FeeType" ft ON ft."id" = fr."feeTypeId"
+      WHERE fr."status" = 2
+        AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
+      GROUP BY month
+      ORDER BY month
     `
-
 
     const feeByMonth = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1
@@ -67,16 +66,34 @@ export const getDashboard = async (req, res) => {
     // =========================
     // 5. Tỷ lệ đóng phí tháng hiện tại
     // =========================
-    const paidHouseholds = await prisma.feeRecord.findMany({
-      where: {
-        status: 2,
-        updatedAt: { gte: startOfMonth, lt: startOfNextMonth },
-        feeType: { isMandatory: true },
-        household: { status: 1 }
-      },
-      distinct: ["householdId"],
-      select: { householdId: true }
+
+    // số loại phí cố định (mandatory) cần phải đóng
+    const mandatoryTypeCount = await prisma.feeType.count({
+      where: { isMandatory: true }
     })
+
+    const paidHouseholds =
+      mandatoryTypeCount === 0
+        ? await prisma.household.findMany({
+          where: { status: 1 },
+          select: { id: true }
+        })
+        : await prisma.feeRecord
+          .groupBy({
+            by: ["householdId"],
+            where: {
+              status: 2,
+              updatedAt: { gte: startOfMonth, lt: startOfNextMonth },
+              feeType: { isMandatory: true },
+              household: { status: 1 }
+            },
+            _count: { feeTypeId: true }
+          })
+          .then(rows =>
+            rows
+              .filter(r => r._count.feeTypeId === mandatoryTypeCount)
+              .map(r => ({ householdId: r.householdId }))
+          )
 
     const paidCount = paidHouseholds.length
     const paymentRate =
@@ -86,16 +103,28 @@ export const getDashboard = async (req, res) => {
 
     const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
 
-    const paidHouseholdsPrev = await prisma.feeRecord.findMany({
-      where: {
-        status: 2,
-        updatedAt: { gte: startOfPrevMonth, lt: startOfCurrentMonth },
-        feeType: { isMandatory: true },
-        household: { status: 1 }
-      },
-      distinct: ["householdId"],
-      select: { householdId: true }
-    })
+    const paidHouseholdsPrev =
+      mandatoryTypeCount === 0
+        ? await prisma.household.findMany({
+          where: { status: 1 },
+          select: { id: true }
+        })
+        : await prisma.feeRecord
+          .groupBy({
+            by: ["householdId"],
+            where: {
+              status: 2,
+              updatedAt: { gte: startOfPrevMonth, lt: startOfCurrentMonth },
+              feeType: { isMandatory: true },
+              household: { status: 1 }
+            },
+            _count: { feeTypeId: true }
+          })
+          .then(rows =>
+            rows
+              .filter(r => r._count.feeTypeId === mandatoryTypeCount)
+              .map(r => ({ householdId: r.householdId }))
+          )
 
     const paidPrevCount = paidHouseholdsPrev.length
 

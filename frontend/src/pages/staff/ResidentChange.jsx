@@ -400,6 +400,7 @@ export default function ResidentChange() {
           <table className="rc-table">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Loại biến động</th>
                 <th>Nhân khẩu</th>
                 <th>Hộ khẩu</th>
@@ -424,6 +425,8 @@ export default function ResidentChange() {
 
                   return (
                     <tr key={c.id} className="rc-clickable" onClick={() => handleOpenDetail(c)}>
+                      <td>#{c.id}</td>
+
                       <td>
                         <div className="rc-strong">{getTypeLabel(c.changeType)}</div>
                         <div className="rc-sub-text">

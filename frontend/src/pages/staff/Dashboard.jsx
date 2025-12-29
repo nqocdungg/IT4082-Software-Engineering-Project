@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react"
 import { FaHome, FaUserFriends, FaFolderOpen } from "react-icons/fa"
-import { MdOutlineAttachMoney } from "react-icons/md"
-import { GrMoney } from "react-icons/gr";
+import { GrMoney } from "react-icons/gr"
 import CountUp from "react-countup"
 
 import "../../styles/staff/dashboard.css"
@@ -9,7 +8,6 @@ import "../../styles/staff/dashboard.css"
 import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  Legend as RechartsLegend,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -83,9 +81,6 @@ export default function Dashboard() {
   const totalContribution = contribution[contribution.length - 1]
   const totalRevenue = totalFixedFee + totalContribution
 
-  const fixedPct = totalRevenue > 0 ? (totalFixedFee / totalRevenue) * 100 : 0
-  const contribPct = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : 0
-
   const feeChartData = useMemo(() => {
     return months.map((month, index) => ({
       month,
@@ -109,10 +104,7 @@ export default function Dashboard() {
         { name: "Cao tuổi (>60)", value: 518, color: "#A855F7" }
       ]
 
-
   const totalPopulation = dashboard?.cards?.totalResidents ?? 0
-
-
 
   const residencyPieData = dashboard
     ? [
@@ -126,13 +118,11 @@ export default function Dashboard() {
         { name: "Tạm vắng", value: 420, color: "#3B82F6" }
       ]
 
-
   const totalResidency = dashboard
-  ? dashboard.residenceStats.count.permanent
-    + dashboard.residenceStats.count.temporary
-    + dashboard.residenceStats.count.absent
-  : 0
-
+    ? dashboard.residenceStats.count.permanent
+      + dashboard.residenceStats.count.temporary
+      + dashboard.residenceStats.count.absent
+    : 0
 
   const totalHouseholds = dashboard?.cards.totalHouseholds ?? 0
   const totalResidents = dashboard?.cards.totalResidents ?? 0
@@ -140,28 +130,16 @@ export default function Dashboard() {
 
   const MAX_REVENUE = 1_000_000
 
-  const fixedWidthPct = Math.min(
-    (totalFixedFee / MAX_REVENUE) * 100,
-    100
-  )
+  const fixedWidthPct = Math.min((totalFixedFee / MAX_REVENUE) * 100, 100)
+  const contribWidthPct = Math.min((totalContribution / MAX_REVENUE) * 100, 100)
 
-  const contribWidthPct = Math.min(
-    (totalContribution / MAX_REVENUE) * 100,
-    100
-  )
-
-  const formatMoney = v =>
-    Math.round(v).toLocaleString("vi-VN")
+  const formatMoney = v => Math.round(v).toLocaleString("vi-VN")
 
   const unpaidHouseholds = dashboard?.currentMonthPayment.unpaidHouseholds ?? 0
   const paymentRate = dashboard?.currentMonthPayment.paymentRate ?? 0
 
-  const paymentRateChange =
-    dashboard?.currentMonthPayment.paymentRateChange ?? 0
-
-  const unpaidHouseholdsChange =
-    dashboard?.currentMonthPayment.unpaidHouseholdsChange ?? 0
-
+  const paymentRateChange = dashboard?.currentMonthPayment.paymentRateChange ?? 0
+  const unpaidHouseholdsChange = dashboard?.currentMonthPayment.unpaidHouseholdsChange ?? 0
 
   const unpaidRate =
     totalHouseholds > 0
@@ -171,16 +149,13 @@ export default function Dashboard() {
   if (!isReady) return null
   if (!dashboard) return <div style={{ padding: 24 }}>Không có dữ liệu dashboard</div>
 
-
   return (
     <div className="dashboard">
       <div className="top-cards">
         <div className="card card-revenue">
           <div className="card-content">
-
             <h4>Tổng thu trong tháng</h4>
 
-            {/* Tổng tiền */}
             <div className="value-row revenue-total-row">
               <span className="icon-container money"><GrMoney /></span>
               <span className="value revenue-value">
@@ -188,49 +163,34 @@ export default function Dashboard() {
               </span>
             </div>
 
-            {/* Thu cố định */}
             <div className="revenue-bar">
-              <div
-                className="revenue-bar-fill fixed"
-                style={{ width: `${fixedWidthPct}%` }}
-              />
+              <div className="revenue-bar-fill fixed" style={{ width: `${fixedWidthPct}%` }} />
               <div className="revenue-bar-content">
                 <span className="bar-label">Thu cố định</span>
-                <span className="bar-value">
-                  {formatMoney(totalFixedFee)} VND
-                </span>
+                <span className="bar-value">{formatMoney(totalFixedFee)} VND</span>
               </div>
             </div>
 
-            {/* Đóng góp */}
             <div className="revenue-bar">
-              <div
-                className="revenue-bar-fill contrib"
-                style={{ width: `${contribWidthPct}%` }}
-              />
+              <div className="revenue-bar-fill contrib" style={{ width: `${contribWidthPct}%` }} />
               <div className="revenue-bar-content">
                 <span className="bar-label">Đóng góp</span>
-                <span className="bar-value">
-                  {formatMoney(totalContribution)} VND
-                </span>
+                <span className="bar-value">{formatMoney(totalContribution)} VND</span>
               </div>
             </div>
-
-
           </div>
         </div>
 
         <div className="card">
           <div className="card-content">
             <h4>Tổng số hộ gia đình</h4>
-              <div className="value-row value-row-metric">
-                <span className="icon-container blue"><FaHome /></span>
-                <div className="value-with-unit">
-                  <span className="value-number">{totalHouseholds}</span>
-                  <span className="value-unit">hộ</span>
-                </div>
+            <div className="value-row value-row-metric">
+              <span className="icon-container blue"><FaHome /></span>
+              <div className="value-with-unit">
+                <span className="value-number">{totalHouseholds}</span>
+                <span className="value-unit">hộ</span>
               </div>
-
+            </div>
             <div className="card-sub">Hộ đang hoạt động</div>
           </div>
         </div>
@@ -245,10 +205,7 @@ export default function Dashboard() {
                 <span className="value-unit">nhân khẩu</span>
               </div>
             </div>
-
-            <div className="card-sub">
-              Thường trú · Tạm trú · Tạm vắng
-            </div>
+            <div className="card-sub">Thường trú · Tạm trú · Tạm vắng</div>
           </div>
         </div>
 
@@ -262,10 +219,7 @@ export default function Dashboard() {
                 <span className="value-unit">hồ sơ</span>
               </div>
             </div>
-
-            <div className="card-sub">
-              Đang chờ duyệt
-            </div>
+            <div className="card-sub">Đang chờ duyệt</div>
           </div>
         </div>
       </div>
@@ -273,19 +227,16 @@ export default function Dashboard() {
       <div className="dash-grid">
         <div className="panel panel-bars">
           <div className="panel-head panel-head-custom">
-            {/* Title + sub: căn trái */}
             <div className="panel-title-group">
               <h3>Thu phí theo tháng</h3>
               <span className="panel-sub">Thu cố định & Đóng góp</span>
             </div>
 
-            {/* 2 pill RIÊNG BIỆT – CENTER – có chấm màu */}
             <div className="legend-center">
               <span className="legend-pill active fixed">
                 <span className="legend-dot fixed" />
                 Thu cố định
               </span>
-
               <span className="legend-pill contrib">
                 <span className="legend-dot contrib" />
                 Đóng góp
@@ -336,27 +287,8 @@ export default function Dashboard() {
                     ]}
                   />
 
-                  {/*<RechartsLegend
-                    verticalAlign="top"
-                    height={32}
-                    iconType="circle"
-                    wrapperStyle={{ fontSize: 12, paddingBottom: 6 }}
-                  /> */}
-
-                  <Bar
-                    dataKey="fixedFee"
-                    name="Thu cố định"
-                    fill="#639beb"
-                    radius={[8, 8, 8, 8]}
-                    barSize={14}
-                  />
-                  <Bar
-                    dataKey="contribution"
-                    name="Đóng góp"
-                    fill="#d8e7f7"
-                    radius={[8, 8, 8, 8]}
-                    barSize={14}
-                  />
+                  <Bar dataKey="fixedFee" name="Thu cố định" fill="#639beb" radius={[8, 8, 8, 8]} barSize={14} />
+                  <Bar dataKey="contribution" name="Đóng góp" fill="#d8e7f7" radius={[8, 8, 8, 8]} barSize={14} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -370,26 +302,22 @@ export default function Dashboard() {
           </div>
 
           <div className="panel-body two-rows">
+            {/* ====== CARD 1 ====== */}
             <div className="mini-card">
-              <div className="mini-row">
-                <div className="mini-label-col">
-                  <span className="mini-label">Tỷ lệ đóng phí</span>
-                </div>
-
+              <div className="mini-row mini-row-inline">
                 <div className="mini-main-col">
-                  <div className="mini-value">
-                    <span className="mini-number">
-                      <CountUp end={paymentRate} duration={0.8} />
-                    </span>
-                    <span className="mini-unit">%</span>
+                  <div className="mini-head-row">
+                    <span className="mini-label">Tỷ lệ đóng phí</span>
+                    <div className="mini-value">
+                      <span className="mini-number">
+                        <CountUp end={paymentRate} duration={0.8} />
+                      </span>
+                      <span className="mini-unit">%</span>
+                    </div>
                   </div>
 
-
                   <div className="progress-bar">
-                    <div
-                      className="progress-fill green"
-                      style={{ width: `${paymentRate}%` }}
-                    />
+                    <div className="progress-fill green" style={{ width: `${paymentRate}%` }} />
                   </div>
 
                   <div className="mini-trend">
@@ -402,42 +330,31 @@ export default function Dashboard() {
                     )}
                     <span className="trend-sub">so với tháng trước</span>
                   </div>
-
                 </div>
 
                 <div className="mini-side">
                   <div className="mini-side-value">
                     {totalHouseholds - unpaidHouseholds} / {totalHouseholds}
                   </div>
-                  <div className="mini-side-label">
-                    hộ đã đóng
-                  </div>
+                  <div className="mini-side-label">hộ đã đóng</div>
                 </div>
-
               </div>
             </div>
-    
 
-
-
+            {/* ====== CARD 2 ====== */}
             <div className="mini-card">
-              <div className="mini-row">
-                <div className="mini-label-col">
-                  <span className="mini-label">Hộ còn nợ phí</span>
-                </div>
-
+              <div className="mini-row mini-row-inline">
                 <div className="mini-main-col">
-                  <div className="mini-value">
-                    <CountUp end={unpaidHouseholds} duration={0.8} />
-                    <span className="mini-unit">hộ</span>
+                  <div className="mini-head-row">
+                    <span className="mini-label">Hộ còn nợ phí</span>
+                    <div className="mini-value">
+                      <CountUp end={unpaidHouseholds} duration={0.8} />
+                      <span className="mini-unit">hộ</span>
+                    </div>
                   </div>
 
-
                   <div className="progress-bar">
-                    <div
-                      className="progress-fill red"
-                      style={{ width: `${unpaidRate}%` }}
-                    />
+                    <div className="progress-fill red" style={{ width: `${unpaidRate}%` }} />
                   </div>
 
                   <div className="mini-trend">
@@ -454,17 +371,14 @@ export default function Dashboard() {
 
                 <div className="mini-side">
                   <div className="mini-side-value">
-                    {unpaidHouseholds} / {totalHouseholds} 
+                    {unpaidHouseholds} / {totalHouseholds}
                   </div>
-                  <div className="mini-side-label">
+                  <div className="mini-side-label mini-side-label-one">
                     hộ chưa hoàn thành
                   </div>
                 </div>
-
               </div>
             </div>
-
-
           </div>
         </div>
 
@@ -631,9 +545,7 @@ export default function Dashboard() {
                     <div key={r.id} className="req-row">
                       <div className="req-main">
                         <div className="req-title">
-                          {r.resident?.fullname
-                            ?? r.extraData?.fullname
-                            ?? "Hồ sơ dân cư"}
+                          {r.resident?.fullname ?? r.extraData?.fullname ?? "Hồ sơ dân cư"}
                         </div>
                         <div className="req-sub">
                           {[
@@ -646,9 +558,7 @@ export default function Dashboard() {
                     </div>
                   ))
                 : (
-                    <div className="req-empty">
-                      Chưa có hồ sơ chờ xử lý
-                    </div>
+                    <div className="req-empty">Chưa có hồ sơ chờ xử lý</div>
                   )}
             </div>
           </div>
