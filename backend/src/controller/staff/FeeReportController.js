@@ -78,16 +78,17 @@ export const reportSummary = async (req, res) => {
       prisma.feeRecord.count({ where }),
       prisma.feeRecord.aggregate({ where, _sum: { amount: true } }),
       prisma.feeRecord.aggregate({
-        where: { ...where, status: 3 },
+        where: { ...where, method: "ONLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       }),
       prisma.feeRecord.aggregate({
-        where: { ...where, status: { not: 3 } },
+        where: { ...where, method: "OFFLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       })
     ])
+
 
     return res.json({
       data: {
@@ -137,13 +138,13 @@ export const reportByFee = async (req, res) => {
     const [onlineRows, offlineRows] = await Promise.all([
       prisma.feeRecord.groupBy({
         by: ["feeTypeId"],
-        where: { ...where, status: 3 },
+        where: { ...where, method: "ONLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       }),
       prisma.feeRecord.groupBy({
         by: ["feeTypeId"],
-        where: { ...where, status: { not: 3 } },
+        where: { ...where, method: "OFFLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       })
@@ -272,12 +273,12 @@ export const exportFeeReportExcel = async (req, res) => {
       prisma.feeRecord.count({ where: summaryWhere }),
       prisma.feeRecord.aggregate({ where: summaryWhere, _sum: { amount: true } }),
       prisma.feeRecord.aggregate({
-        where: { ...summaryWhere, status: 3 },
+        where: { ...summaryWhere, method: "ONLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       }),
       prisma.feeRecord.aggregate({
-        where: { ...summaryWhere, status: { not: 3 } },
+        where: { ...summaryWhere, method: "OFFLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       })
@@ -294,7 +295,7 @@ export const exportFeeReportExcel = async (req, res) => {
     const feeTypes = feeTypeIds.length
       ? await prisma.feeType.findMany({
           where: { id: { in: feeTypeIds } },
-          select: { id: true, name: true, isMandatory: true, unitPrice: true, fromDate: true, toDate: true, isActive: true }
+          select: { id: true, name: true, isMandatory: true, unitPrice: true, fromDate: true, toDate: true, isActive: true, shortDescription: true, longDescription: true }
         })
       : []
 
@@ -303,13 +304,13 @@ export const exportFeeReportExcel = async (req, res) => {
     const [onlineRows, offlineRows] = await Promise.all([
       prisma.feeRecord.groupBy({
         by: ["feeTypeId"],
-        where: { ...baseWhere, status: 3 },
+        where: { ...baseWhere, method: "ONLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       }),
       prisma.feeRecord.groupBy({
         by: ["feeTypeId"],
-        where: { ...baseWhere, status: { not: 3 } },
+        where: { ...baseWhere, method: "OFFLINE" },
         _sum: { amount: true },
         _count: { _all: true }
       })
@@ -372,6 +373,7 @@ export const exportFeeReportExcel = async (req, res) => {
       { header: "FeeTypeId", key: "feeTypeId", width: 10 },
       { header: "Khoản thu", key: "feeName", width: 28 },
       { header: "Loại", key: "type", width: 12 },
+      { header: "Mô tả", key: "shortDescription", width: 40 },
       { header: "Trạng thái", key: "active", width: 14 },
       { header: "Đơn giá", key: "unitPrice", width: 14 },
       { header: "Từ ngày", key: "fromDate", width: 12 },

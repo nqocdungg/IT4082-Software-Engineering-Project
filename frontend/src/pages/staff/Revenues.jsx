@@ -20,7 +20,8 @@ const API_BASE = "http://localhost:5000/api"
 
 const emptyFeeForm = {
   name: "",
-  description: "",
+  shortDescription: "",
+  longDescription: "",
   isMandatory: false,
   unitPrice: "",
   status: "1",
@@ -204,7 +205,8 @@ export default function RevenuesManagement() {
     try {
       const payload = {
         name: feeForm.name.trim(),
-        description: feeForm.description.trim(),
+        shortDescription: feeForm.shortDescription.trim(),
+        longDescription: feeForm.longDescription.trim(),
         isMandatory: feeForm.isMandatory,
         unitPrice:
           feeForm.unitPrice === "" || feeForm.unitPrice == null
@@ -338,6 +340,9 @@ export default function RevenuesManagement() {
                   <tr key={f.id} className="clickable-row">
                     <td className="col-name">
                       <div className="fee-name">{f.name}</div>
+                        {f.shortDescription && (
+                          <div className="fee-sub">{f.shortDescription}</div>
+                        )}
                     </td>
 
                     <td>
@@ -347,8 +352,11 @@ export default function RevenuesManagement() {
                     </td>
 
                     <td className="money-cell">
-                      {new Intl.NumberFormat("vi-VN").format(f.unitPrice ?? 0)} đ
+                      {f.unitPrice != null
+                        ? `${new Intl.NumberFormat("vi-VN").format(f.unitPrice)} đ`
+                        : <span className="fee-muted">Tự nguyện</span>}
                     </td>
+
 
                     <td className="col-date">
                       <span className={f.fromDate || f.toDate ? "fee-date-range" : "fee-date-range fee-date-none"}>
@@ -491,11 +499,28 @@ export default function RevenuesManagement() {
                 </div>
 
                 <div className="detail-item detail-wide">
-                  <div className="detail-label">Mô tả</div>
-                  <div className="detail-value">
-                    <textarea name="description" value={feeForm.description} onChange={handleFeeFormChange} />
-                  </div>
+                  <div className="detail-label">Mô tả ngắn</div>
+                  <textarea
+                    className="fee-description"
+                    name="shortDescription"
+                    value={feeForm.shortDescription}
+                    onChange={handleFeeFormChange}
+                    placeholder="Hiển thị ngắn gọn trong danh sách khoản thu"
+                  />
                 </div>
+
+                <div className="detail-item detail-wide">
+                  <div className="detail-label">Mô tả chi tiết</div>
+                  <textarea
+                    className="fee-description"
+                    name="longDescription"
+                    value={feeForm.longDescription}
+                    onChange={handleFeeFormChange}
+                    placeholder="Nội dung chi tiết, mục đích, ý nghĩa khoản thu"
+                    rows={6}
+                  />
+                </div>
+
               </div>
 
               <div className="fee-modal-footer">
