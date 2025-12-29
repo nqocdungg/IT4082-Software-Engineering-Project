@@ -12,6 +12,7 @@ import staffResidentRoutes from "./src/routes/staff/residentRoutes.js"
 import staffFeeRoutes from "./src/routes/staff/feeRoutes.js"
 import staffDashboardRoutes from "./src/routes/staff/dashboardRoutes.js"
 import staffResidentChangeRoutes from "./src/routes/staff/residentChangeRoutes.js"
+import staffFeeReportRoutes from "./src/routes/staff/feeReportRoutes.js"
 /* RESIDENT */
 import householdInfoRoutes from "./src/routes/resident/householdInfoRoutes.js"
 import feeViewRoutes from "./src/routes/resident/feeViewRoutes.js"
@@ -39,9 +40,11 @@ app.use("/api/households", staffHouseholdRoutes)
 app.use("/api/residents", staffResidentRoutes)
 app.use("/api/fees", staffFeeRoutes)
 app.use("/api/resident-changes", staffResidentChangeRoutes)
+app.use("/api/fees", staffFeeReportRoutes)
 // RESIDENT
 app.use("/api/resident", householdInfoRoutes)
 app.use("/api", feeViewRoutes)
+
 
 const distPath = path.join(__dirname, "../frontend/dist")
 app.use(express.static(distPath))

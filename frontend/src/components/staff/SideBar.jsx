@@ -36,7 +36,7 @@ const menuGroups = [
     title: "TÀI CHÍNH",
     items: [
       { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" },
-      { icon: FiFileText, label: "Báo cáo - Thống kê", disabled: true },
+      { icon: FiFileText, label: "Báo cáo - Thống kê", path: "/fees-report" },
       { icon: FiDollarSign, label: "Hóa đơn", disabled: true }
     ]
   },

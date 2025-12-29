@@ -11,6 +11,8 @@ import StaffRevenues from "./pages/staff/Revenues";
 import StaffResidentChange from "./pages/staff/ResidentChange";
 import StaffRevenuesDetail from "./pages/staff/RevenuesDetail";
 import StaffCreateResidentChange from "./pages/staff/CreateResidentChange.jsx";
+import StaffFeeReport from "./pages/staff/FeeReport.jsx";
+import StaffFeeReportDetail from "./pages/staff/FeeReportDetail.jsx"
 
 import ResidentHome from "./pages/resident/ResidentHome.jsx";
 import HouseholdInfo from "./pages/resident/HouseholdInfo.jsx";
@@ -47,10 +49,9 @@ function App() {
           <Route path="/revenues" element={<StaffRevenues />} />
           <Route path="/resident-changes" element={<StaffResidentChange />} />
           <Route path="/revenues/:id" element={<StaffRevenuesDetail />} />
-          <Route
-            path="/staff/resident-changes/create"
-            element={<StaffCreateResidentChange />}
-          />
+          <Route path="/staff/resident-changes/create"element={<StaffCreateResidentChange />}/>
+          <Route path ="/fees-report" element = {<StaffFeeReport/>}/>
+          <Route path="/fees-report/:feeTypeId" element={<StaffFeeReportDetail />} />
         </Route>
 
         {/* HOUSEHOLD / RESIDENT */}
