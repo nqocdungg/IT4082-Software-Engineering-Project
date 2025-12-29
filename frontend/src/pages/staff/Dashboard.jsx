@@ -149,6 +149,10 @@ export default function Dashboard() {
   if (!isReady) return null
   if (!dashboard) return <div style={{ padding: 24 }}>Không có dữ liệu dashboard</div>
 
+  const maxValue = Math.max(
+    ...feeChartData.map(d => Math.max(d.fixedFee, d.contribution))
+  )
+
   return (
     <div className="dashboard">
       <div className="top-cards">
@@ -246,10 +250,10 @@ export default function Dashboard() {
 
           <div className="panel-body">
             {isReady && (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={feeChartData}
-                  margin={{ top: 10, right: 14, left: 0, bottom: 0 }}
+                  margin={{ top: 5, right: 0, left: 0, bottom: 0 }}
                   barGap={4}
                   barCategoryGap="30%"
                 >
@@ -266,11 +270,12 @@ export default function Dashboard() {
                     tick={{ fontSize: 11, fill: "#6B7280" }}
                   />
                   <YAxis
-                    allowDecimals={true}
+                    domain={[0, maxValue]}
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: 11, fill: "#9CA3AF" }}
                   />
+
 
                   <RechartsTooltip
                     cursor={{ fill: "rgba(0,0,0,0.04)" }}
