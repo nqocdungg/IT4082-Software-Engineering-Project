@@ -5,7 +5,7 @@ import ExcelJS from "exceljs"
  */
 export const getResidents = async (req, res) => {
   try {
-    const { householdId, search, gender } = req.query
+    const { householdId, search, gender, status } = req.query
     const where = {}
 
     if (householdId) where.householdId = Number(householdId)
@@ -14,23 +14,27 @@ export const getResidents = async (req, res) => {
       where.gender = gender === "Nam" ? "M" : "F"
     }
 
+    if (status !== undefined && status !== "ALL" && status !== "") {
+      where.status = Number(status)
+    }
+
     if (search && String(search).trim()) {
       const q = String(search).trim()
       where.OR = [
         {
           fullname: {
-            startsWith: q,
+            contains: q,
             mode: "insensitive"
           }
         },
         {
           residentCCCD: {
-            startsWith: q,
-            mode: "insensitive"
+            startsWith: q
           }
         }
       ]
     }
+
 
     const residents = await prisma.resident.findMany({
       where,
@@ -38,13 +42,13 @@ export const getResidents = async (req, res) => {
       include: {
         household: {
           select: {
-            id: true,
             householdCode: true,
-            address: true
+            address: true  
           }
         }
       }
     })
+
 
     const mapped = residents.map(r => ({
       id: r.id,
@@ -263,16 +267,34 @@ export const exportResidentsExcel = async (req, res) => {
     if (search && String(search).trim()) {
       const q = String(search).trim()
       where.OR = [
-        { fullname: { contains: q, mode: "insensitive" } },
-        { residentCCCD: { contains: q } }
+        {
+          fullname: {
+            contains: q,
+            mode: "insensitive"
+          }
+        },
+        {
+          residentCCCD: {
+            startsWith: q
+          }
+        }
       ]
     }
 
+
     const residents = await prisma.resident.findMany({
       where,
-      include: { household: { select: { householdCode: true } } },
+      include: {
+        household: {
+          select: {
+            householdCode: true,
+            address: true
+          }
+        }
+      },
       orderBy: { createdAt: "desc" }
     })
+
 
     const STATUS_LABEL = {
       0: "Thường trú",
@@ -290,7 +312,14 @@ export const exportResidentsExcel = async (req, res) => {
       { header: "Giới tính", key: "gender", width: 10 },
       { header: "Ngày sinh", key: "dob", width: 15 },
       { header: "CCCD", key: "cccd", width: 20 },
-      { header: "Hộ khẩu", key: "household", width: 15 },
+      { header: "Dân tộc", key: "ethnicity", width: 15 },
+      { header: "Tôn giáo", key: "religion", width: 15 },
+      { header: "Quốc tịch", key: "nationality", width: 15 },
+      { header: "Quê quán", key: "hometown", width: 25 },
+      { header: "Nghề nghiệp", key: "occupation", width: 20 },
+      { header: "Mã hộ khẩu", key: "household", width: 15 },
+      { header: "Địa chỉ", key: "address", width: 30 },
+      { header: "Quan hệ với chủ hộ", key: "relation", width: 20 },
       { header: "Tình trạng", key: "status", width: 15 }
     ]
 
@@ -300,10 +329,17 @@ export const exportResidentsExcel = async (req, res) => {
     residents.forEach(r => {
       ws.addRow({
         fullname: r.fullname,
-        gender: r.gender === "M" ? "Nam" : "Nữ",
+        gender: r.gender === "M" ? "Nam" : r.gender === "F" ? "Nữ" : "",
         dob: r.dob ? new Date(r.dob) : null,
         cccd: r.residentCCCD || "",
+        ethnicity: r.ethnicity || "",
+        religion: r.religion || "",
+        nationality: r.nationality || "",
+        hometown: r.hometown || "",
+        occupation: r.occupation || "",
         household: r.household?.householdCode || "",
+        address: r.household?.address || "",
+        relation: r.relationToOwner || "",
         status: STATUS_LABEL[r.status] ?? "Không rõ"
       })
     })

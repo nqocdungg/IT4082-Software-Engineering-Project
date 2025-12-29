@@ -486,6 +486,36 @@ export default function HouseholdsPage() {
     }
   }
 
+  const handleExportExcel = () => {
+    const params = new URLSearchParams()
+
+    if (search.trim()) params.append("search", search.trim())
+    if (statusFilter && statusFilter !== "ALL") params.append("status", statusFilter)
+
+    const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
+
+    const url = `${API_BASE}/households/export-excel?${params.toString()}`
+
+    fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => res.blob())
+      .then(blob => {
+        const link = document.createElement("a")
+        link.href = window.URL.createObjectURL(blob)
+        link.download = "households.xlsx"
+        link.click()
+        window.URL.revokeObjectURL(link.href)
+      })
+      .catch(err => {
+        console.error(err)
+        alert("Không thể xuất file Excel")
+      })
+  }
+
+
   const totalPages = Math.max(1, Number(meta.totalPages || 1))
 
   useEffect(() => {
@@ -614,6 +644,9 @@ export default function HouseholdsPage() {
             </div>
 
             <div className="toolbar-right">
+              <button className="btn-secondary" onClick={handleExportExcel}>
+                Tải Excel
+              </button>
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
