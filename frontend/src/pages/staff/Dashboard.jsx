@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react"
 import { FaHome, FaUserFriends, FaFolderOpen } from "react-icons/fa"
+import { MdOutlineAttachMoney } from "react-icons/md"
+import CountUp from "react-countup"
+
 import "../../styles/staff/dashboard.css"
 
 import {
@@ -17,6 +20,20 @@ import {
   YAxis
 } from "recharts"
 
+function getChangeLabel(ct) {
+  switch (ct) {
+    case 0: return "Khai sinh"
+    case 1: return "Đăng ký tạm trú"
+    case 3: return "Khai báo thường trú"
+    case 5: return "Tách hộ"
+    case 6: return "Đổi chủ hộ"
+    case 2: return "Đăng ký tạm vắng"
+    case 4: return "Chuyển đi"
+    case 7: return "Khai tử"
+    default: return "Hồ sơ dân cư"
+  }
+}
+
 export default function Dashboard() {
   const [isReady, setIsReady] = useState(false)
   const [dashboard, setDashboard] = useState(null)
@@ -33,7 +50,6 @@ export default function Dashboard() {
 
         const data = await res.json()
 
-        // ✅ nếu backend trả 500/401 thì throw để khỏi setDashboard bậy
         if (!res.ok) {
           throw new Error(data?.message || "Dashboard request failed")
         }
@@ -80,10 +96,10 @@ export default function Dashboard() {
 
   const populationStructureData = dashboard
     ? [
-        { name: "Trẻ em (<15)", value: dashboard.agePercent.children, color: "#22C55E" },
-        { name: "Thanh niên (15–35)", value: dashboard.agePercent.youth, color: "#0EA5E9" },
-        { name: "Trung niên (36–60)", value: dashboard.agePercent.middle, color: "#F97316" },
-        { name: "Cao tuổi (>60)", value: dashboard.agePercent.elderly, color: "#A855F7" }
+        { name: "Trẻ em (<15)", value: dashboard.ageStats.count.children, color: "#22C55E" },
+        { name: "Thanh niên (15–35)", value: dashboard.ageStats.count.youth, color: "#0EA5E9" },
+        { name: "Trung niên (36–60)", value: dashboard.ageStats.count.middle, color: "#F97316" },
+        { name: "Cao tuổi (>60)", value: dashboard.ageStats.count.elderly, color: "#A855F7" }
       ]
     : [
         { name: "Trẻ em (<15)", value: 620, color: "#22C55E" },
@@ -92,82 +108,145 @@ export default function Dashboard() {
         { name: "Cao tuổi (>60)", value: 518, color: "#A855F7" }
       ]
 
-  const totalPopulation = useMemo(
-    () => populationStructureData.reduce((sum, item) => sum + item.value, 0),
-    [populationStructureData]
-  )
+
+  const totalPopulation = dashboard?.cards?.totalResidents ?? 0
+
+
 
   const residencyPieData = dashboard
     ? [
-        { name: "Thường trú", value: dashboard.residencePercent.permanent, color: "#16A34A" },
-        { name: "Tạm trú", value: dashboard.residencePercent.temporary, color: "#F59E0B" },
-        { name: "Tạm vắng", value: dashboard.residencePercent.absent, color: "#3B82F6" }
+        { name: "Thường trú", value: dashboard.residenceStats.count.permanent, color: "#16A34A" },
+        { name: "Tạm trú", value: dashboard.residenceStats.count.temporary, color: "#F59E0B" },
+        { name: "Tạm vắng", value: dashboard.residenceStats.count.absent, color: "#3B82F6" }
       ]
     : [
         { name: "Thường trú", value: 2100, color: "#16A34A" },
         { name: "Tạm trú", value: 680, color: "#F59E0B" },
-        { name: "Tạm vắng", value: 420, color: "#3B82F6" },
-        { name: "Chuyển đi", value: 240, color: "#6B7280" }
+        { name: "Tạm vắng", value: 420, color: "#3B82F6" }
       ]
 
-  const totalResidency = useMemo(
-    () => residencyPieData.reduce((sum, item) => sum + item.value, 0),
-    [residencyPieData]
+
+  const totalResidency = dashboard
+  ? dashboard.residenceStats.count.permanent
+    + dashboard.residenceStats.count.temporary
+    + dashboard.residenceStats.count.absent
+  : 0
+
+
+  const totalHouseholds = dashboard?.cards.totalHouseholds ?? 0
+  const totalResidents = dashboard?.cards.totalResidents ?? 0
+  const pendingProfiles = dashboard?.cards.pendingProfiles ?? 0
+
+  const MAX_REVENUE = 1_000_000
+
+  const fixedWidthPct = Math.min(
+    (totalFixedFee / MAX_REVENUE) * 100,
+    100
   )
 
-  const totalHouseholds = dashboard?.cards.totalHouseholds ?? 1234
-  const totalResidents = dashboard?.cards.totalResidents ?? 3568
-  const pendingProfiles = dashboard?.cards.pendingProfiles ?? 12
+  const contribWidthPct = Math.min(
+    (totalContribution / MAX_REVENUE) * 100,
+    100
+  )
+
+  const formatMoney = v =>
+    Math.round(v).toLocaleString("vi-VN")
+
+  const unpaidHouseholds = dashboard?.currentMonthPayment.unpaidHouseholds ?? 0
+  const paymentRate = dashboard?.currentMonthPayment.paymentRate ?? 0
+
+  const paymentRateChange =
+    dashboard?.currentMonthPayment.paymentRateChange ?? 0
+
+  const unpaidHouseholdsChange =
+    dashboard?.currentMonthPayment.unpaidHouseholdsChange ?? 0
+
+
+  const unpaidRate =
+    totalHouseholds > 0
+      ? Math.round((unpaidHouseholds / totalHouseholds) * 100)
+      : 0
+
+  if (!isReady) return null
+  if (!dashboard) return <div style={{ padding: 24 }}>Không có dữ liệu dashboard</div>
+
 
   return (
     <div className="dashboard">
       <div className="top-cards">
         <div className="card card-revenue">
           <div className="card-content">
-            <div className="revenue-head">
-              <h4>Tổng thu trong tháng</h4>
-              <span className="revenue-total">{totalRevenue.toFixed(1)} VND</span>
+
+            <h4>Tổng thu trong tháng</h4>
+
+            {/* Tổng tiền */}
+            <div className="value-row revenue-total-row">
+              <span className="icon-container money"><MdOutlineAttachMoney /></span>
+              <span className="value revenue-value">
+                {formatMoney(totalRevenue)} VND
+              </span>
             </div>
 
-            <div className="revenue-lines">
-              <div className="revenue-line">
-                <div className="revenue-line-top">
-                  <span>Thu cố định</span>
-                  <strong>{totalFixedFee.toFixed(1)} VND</strong>
-                </div>
-                <div className="revenue-bar">
-                  <div className="fixed" style={{ width: `${fixedPct}%` }} />
-                </div>
-              </div>
-              <div className="revenue-line">
-                <div className="revenue-line-top">
-                  <span>Đóng góp</span>
-                  <strong>{totalContribution.toFixed(1)} VND</strong>
-                </div>
-                <div className="revenue-bar">
-                  <div className="contrib" style={{ width: `${contribPct}%` }} />
-                </div>
+            {/* Thu cố định */}
+            <div className="revenue-bar">
+              <div
+                className="revenue-bar-fill fixed"
+                style={{ width: `${fixedWidthPct}%` }}
+              />
+              <div className="revenue-bar-content">
+                <span className="bar-label">Thu cố định</span>
+                <span className="bar-value">
+                  {formatMoney(totalFixedFee)} VND
+                </span>
               </div>
             </div>
+
+            {/* Đóng góp */}
+            <div className="revenue-bar">
+              <div
+                className="revenue-bar-fill contrib"
+                style={{ width: `${contribWidthPct}%` }}
+              />
+              <div className="revenue-bar-content">
+                <span className="bar-label">Đóng góp</span>
+                <span className="bar-value">
+                  {formatMoney(totalContribution)} VND
+                </span>
+              </div>
+            </div>
+
+
           </div>
         </div>
 
         <div className="card">
           <div className="card-content">
             <h4>Tổng số hộ gia đình</h4>
-            <div className="value-row">
-              <span className="icon-container blue"><FaHome /></span>
-              <span className="value">{totalHouseholds}</span>
-            </div>
+              <div className="value-row value-row-metric">
+                <span className="icon-container blue"><FaHome /></span>
+                <div className="value-with-unit">
+                  <span className="value-number">{totalHouseholds}</span>
+                  <span className="value-unit">hộ</span>
+                </div>
+              </div>
+
+            <div className="card-sub">Hộ đang hoạt động</div>
           </div>
         </div>
 
         <div className="card">
           <div className="card-content">
             <h4 className="card-title">Tổng số nhân khẩu</h4>
-            <div className="value-row">
+            <div className="value-row value-row-metric">
               <span className="icon-container green"><FaUserFriends /></span>
-              <span className="value">{totalResidents}</span>
+              <div className="value-with-unit">
+                <span className="value-number">{totalResidents}</span>
+                <span className="value-unit">nhân khẩu</span>
+              </div>
+            </div>
+
+            <div className="card-sub">
+              Thường trú · Tạm trú · Tạm vắng
             </div>
           </div>
         </div>
@@ -175,9 +254,16 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-content">
             <h4>Hồ sơ cần xử lý</h4>
-            <div className="value-row">
+            <div className="value-row value-row-metric">
               <span className="icon-container purple"><FaFolderOpen /></span>
-              <span className="value">{pendingProfiles}</span>
+              <div className="value-with-unit">
+                <span className="value-number">{pendingProfiles}</span>
+                <span className="value-unit">hồ sơ</span>
+              </div>
+            </div>
+
+            <div className="card-sub">
+              Đang chờ duyệt
             </div>
           </div>
         </div>
@@ -185,14 +271,30 @@ export default function Dashboard() {
 
       <div className="dash-grid">
         <div className="panel panel-bars">
-          <div className="panel-head">
-            <h3>Thu phí theo tháng</h3>
-            <span className="panel-sub">Thu cố định & Đóng góp</span>
+          <div className="panel-head panel-head-custom">
+            {/* Title + sub: căn trái */}
+            <div className="panel-title-group">
+              <h3>Thu phí theo tháng</h3>
+              <span className="panel-sub">Thu cố định & Đóng góp</span>
+            </div>
+
+            {/* 2 pill RIÊNG BIỆT – CENTER – có chấm màu */}
+            <div className="legend-center">
+              <span className="legend-pill active fixed">
+                <span className="legend-dot fixed" />
+                Thu cố định
+              </span>
+
+              <span className="legend-pill contrib">
+                <span className="legend-dot contrib" />
+                Đóng góp
+              </span>
+            </div>
           </div>
 
           <div className="panel-body">
             {isReady && (
-              <ResponsiveContainer width="100%" height={240}>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart
                   data={feeChartData}
                   margin={{ top: 10, right: 14, left: 0, bottom: 0 }}
@@ -227,17 +329,18 @@ export default function Dashboard() {
                       padding: 10
                     }}
                     labelStyle={{ fontSize: 12, fontWeight: 700 }}
-                    formatter={(value, name) => [
+                    formatter={(value, name, props) => [
                       `${Number(value).toFixed(1)} VND`,
-                      name === "fixedFee" ? "Thu cố định" : "Đóng góp"
+                      props.dataKey === "fixedFee" ? "Thu cố định" : "Đóng góp"
                     ]}
                   />
-                  <RechartsLegend
+
+                  {/*<RechartsLegend
                     verticalAlign="top"
                     height={32}
                     iconType="circle"
                     wrapperStyle={{ fontSize: 12, paddingBottom: 6 }}
-                  />
+                  /> */}
 
                   <Bar
                     dataKey="fixedFee"
@@ -267,41 +370,100 @@ export default function Dashboard() {
 
           <div className="panel-body two-rows">
             <div className="mini-card">
-              <div className="row-head">
-                <p className="mini-label">Tỷ lệ đóng phí tháng này</p>
-                <span className="row-change up">▲ 4%</span>
+              <div className="mini-row">
+                <div className="mini-label-col">
+                  <span className="mini-label">Tỷ lệ đóng phí</span>
+                </div>
+
+                <div className="mini-main-col">
+                  <div className="mini-value">
+                    <span className="mini-number">
+                      <CountUp end={paymentRate} duration={0.8} />
+                    </span>
+                    <span className="mini-unit">%</span>
+                  </div>
+
+
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill green"
+                      style={{ width: `${paymentRate}%` }}
+                    />
+                  </div>
+
+                  <div className="mini-trend">
+                    {paymentRateChange !== 0 ? (
+                      <span className={paymentRateChange > 0 ? "up" : "down"}>
+                        {paymentRateChange > 0 ? "▲" : "▼"} {Math.abs(paymentRateChange)}%
+                      </span>
+                    ) : (
+                      <span className="neutral">—</span>
+                    )}
+                    <span className="trend-sub">so với tháng trước</span>
+                  </div>
+
+                </div>
+
+                <div className="mini-side">
+                  <div className="mini-side-value">
+                    {totalHouseholds - unpaidHouseholds} / {totalHouseholds}
+                  </div>
+                  <div className="mini-side-label">
+                    hộ đã đóng
+                  </div>
+                </div>
+
               </div>
-
-              <p className="mini-value">{dashboard?.currentMonthPayment.paymentRate ?? 92}%</p>
-
-              <div className="progress-bar">
-                <div
-                  className="progress-fill green"
-                  style={{ width: `${dashboard?.currentMonthPayment.paymentRate ?? 92}%` }}
-                />
-              </div>
-
-              <p className="mini-sub">
-                {totalHouseholds - (dashboard?.currentMonthPayment.unpaidHouseholds ?? 98)} / {totalHouseholds} hộ đã đóng phí
-              </p>
             </div>
+    
+
+
 
             <div className="mini-card">
-              <div className="row-head">
-                <p className="mini-label">Số hộ còn nợ phí</p>
-                <span className="row-change down">▼ 5%</span>
+              <div className="mini-row">
+                <div className="mini-label-col">
+                  <span className="mini-label">Hộ còn nợ phí</span>
+                </div>
+
+                <div className="mini-main-col">
+                  <div className="mini-value">
+                    <CountUp end={unpaidHouseholds} duration={0.8} />
+                    <span className="mini-unit">hộ</span>
+                  </div>
+
+
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill red"
+                      style={{ width: `${unpaidRate}%` }}
+                    />
+                  </div>
+
+                  <div className="mini-trend">
+                    {unpaidHouseholdsChange !== 0 ? (
+                      <span className={unpaidHouseholdsChange > 0 ? "up" : "down"}>
+                        {unpaidHouseholdsChange > 0 ? "▲" : "▼"} {Math.abs(unpaidHouseholdsChange)}%
+                      </span>
+                    ) : (
+                      <span className="neutral">—</span>
+                    )}
+                    <span className="trend-sub">so với tháng trước</span>
+                  </div>
+                </div>
+
+                <div className="mini-side">
+                  <div className="mini-side-value">
+                    {unpaidHouseholds} / {totalHouseholds} 
+                  </div>
+                  <div className="mini-side-label">
+                    hộ chưa hoàn thành
+                  </div>
+                </div>
+
               </div>
-
-              <p className="mini-value">{dashboard?.currentMonthPayment.unpaidHouseholds ?? 18} hộ</p>
-
-              <div className="progress-bar">
-                <div className="progress-fill red" style={{ width: "1.46%" }} />
-              </div>
-
-              <p className="mini-sub">
-                {dashboard?.currentMonthPayment.unpaidHouseholds ?? 18} / {totalHouseholds} hộ chưa hoàn thành
-              </p>
             </div>
+
+
           </div>
         </div>
 
@@ -463,48 +625,30 @@ export default function Dashboard() {
             </div>
 
             <div className="panel-body">
-              {dashboard?.recentRequests
+              {dashboard?.recentRequests?.length > 0
                 ? dashboard.recentRequests.map(r => (
                     <div key={r.id} className="req-row">
                       <div className="req-main">
-                        {/* ✅ FIX CRASH: resident có thể null */}
                         <div className="req-title">
-                          {r.resident?.fullname ?? "(Không có cư dân)"}
+                          {r.resident?.fullname
+                            ?? r.extraData?.fullname
+                            ?? "Hồ sơ dân cư"}
                         </div>
                         <div className="req-sub">
-                          {r.resident?.residentCCCD ?? ""}
+                          {[
+                            r.resident?.residentCCCD ?? r.extraData?.residentCCCD,
+                            getChangeLabel(r.changeType)
+                          ].filter(Boolean).join(" · ")}
                         </div>
                       </div>
                       <span className="pill inprogress">Đang xử lý</span>
                     </div>
                   ))
                 : (
-                  <>
-                    <div className="req-row">
-                      <div className="req-main">
-                        <div className="req-title">Xác nhận tạm trú</div>
-                        <div className="req-sub">Hộ 277 West 11th Street</div>
-                      </div>
-                      <span className="pill inprogress">Đang xử lý</span>
+                    <div className="req-empty">
+                      Chưa có hồ sơ chờ xử lý
                     </div>
-
-                    <div className="req-row">
-                      <div className="req-main">
-                        <div className="req-title">Cập nhật nhân khẩu</div>
-                        <div className="req-sub">Hộ 123 Johnson Drive</div>
-                      </div>
-                      <span className="pill done">Hoàn tất</span>
-                    </div>
-
-                    <div className="req-row">
-                      <div className="req-main">
-                        <div className="req-title">Khai báo chuyển đi</div>
-                        <div className="req-sub">Hộ 44 Lock Brook</div>
-                      </div>
-                      <span className="pill overdue">Quá hạn</span>
-                    </div>
-                  </>
-                )}
+                  )}
             </div>
           </div>
         </div>

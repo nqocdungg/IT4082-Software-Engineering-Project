@@ -35,7 +35,6 @@ export default function HouseholdInfo() {
         setHousehold(data);
         
         if (data.residents && data.residents.length > 0) {
-          // Tìm chủ hộ để hiển thị mặc định, nếu không thì lấy người đầu tiên
           const owner = data.residents.find(r => r.relationToOwner === "Chủ hộ") || data.residents[0];
           setSelectedResident(owner);
         }
@@ -63,7 +62,6 @@ export default function HouseholdInfo() {
     return `${currentYear - year} tuổi`;
   };
 
-  // Hàm lấy chữ cái đầu để làm Avatar
   const getInitials = (name) => {
     if (!name) return "";
     const parts = name.trim().split(" ");
@@ -90,7 +88,6 @@ export default function HouseholdInfo() {
           
           {/* --- SECTION 1: HOUSEHOLD HEADER --- */}
           <div className="household-header-wrapper">
-            {/* Banner Tiêu đề */}
             <div className="header-banner">
               <div className="banner-left">
                 <Home size={20} className="banner-icon" />
@@ -106,7 +103,6 @@ export default function HouseholdInfo() {
               </div>
             </div>
 
-            {/* 3 Cards thông tin chung */}
             <div className="header-info-cards">
               <div className="info-card-item">
                 <div className="icon-box purple-bg">
@@ -143,7 +139,6 @@ export default function HouseholdInfo() {
           {/* --- SECTION 2: SPLIT LAYOUT --- */}
           <div className="content-grid">
             
-            {/* CỘT TRÁI: DANH SÁCH NHÂN KHẨU */}
             <div className="panel-container">
               <div className="panel-header blue-header">
                 <Users size={18} />
@@ -181,16 +176,14 @@ export default function HouseholdInfo() {
               </div>
             </div>
 
-            {/* CỘT PHẢI: CHI TIẾT NHÂN KHẨU */}
             <div className="panel-container">
-              <div className="panel-header purple-header">
+              <div className="panel-header blue-header">
                 <User size={18} />
                 <h3>Thông tin chi tiết nhân khẩu</h3>
               </div>
 
               {selectedResident ? (
                 <div className="detail-content">
-                  {/* Profile Header */}
                   <div className="profile-header">
                     <div className="profile-avatar-large">
                       {getInitials(selectedResident.fullname)}
@@ -208,20 +201,59 @@ export default function HouseholdInfo() {
                     </div>
                   </div>
 
-                  {/* Section: Thông tin cá nhân */}
                   <div className="detail-section-title">
                     <span>|</span> Thông tin cá nhân
                   </div>
 
                   <div className="info-grid-cards">
-                    <InfoBox icon={<CreditCard size={20} color="#6366f1"/>} label="CCCD" value={selectedResident.residentCCCD} />
-                    <InfoBox icon={<Calendar size={20} color="#f59e0b"/>} label="Ngày sinh" value={formatDate(selectedResident.dob)} />
-                    <InfoBox icon={<User size={20} color="#3b82f6"/>} label="Giới tính" value={formatGender(selectedResident.gender)} />
-                    <InfoBox icon={<Globe size={20} color="#10b981"/>} label="Quốc tịch" value={selectedResident.nationality} />
-                    <InfoBox icon={<Home size={20} color="#ec4899"/>} label="Dân tộc" value={selectedResident.ethnicity} />
-                    <InfoBox icon={<Heart size={20} color="#ef4444"/>} label="Tôn giáo" value={selectedResident.religion} />
-                    <InfoBox icon={<MapPin size={20} color="#8b5cf6"/>} label="Quê quán" value={selectedResident.hometown} />
-                    <InfoBox icon={<Briefcase size={20} color="#64748b"/>} label="Nghề nghiệp" value={selectedResident.occupation} />
+                    <InfoBox 
+                      bgClass="bg-indigo" 
+                      icon={<CreditCard size={20} color="#373abeff"/>} 
+                      label="CCCD" 
+                      value={selectedResident.residentCCCD} 
+                    />
+                    <InfoBox 
+                      bgClass="bg-amber" 
+                      icon={<Calendar size={20} color="#ec9600ff"/>} 
+                      label="Ngày sinh" 
+                      value={formatDate(selectedResident.dob)} 
+                    />
+                    <InfoBox 
+                      bgClass="bg-blue" 
+                      icon={<User size={20} color="#0e5ad3ff"/>} 
+                      label="Giới tính" 
+                      value={formatGender(selectedResident.gender)} 
+                    />
+                    <InfoBox 
+                      bgClass="bg-emerald" 
+                      icon={<Globe size={20} color="#009664ff"/>} 
+                      label="Quốc tịch" 
+                      value={selectedResident.nationality} 
+                    />
+                    <InfoBox 
+                      bgClass="bg-pink" 
+                      icon={<Home size={20} color="#da1778ff"/>} 
+                      label="Dân tộc" 
+                      value={selectedResident.ethnicity} 
+                    />
+                    <InfoBox 
+                      bgClass="bg-red" 
+                      icon={<Heart size={20} color="#d82222ff"/>} 
+                      label="Tôn giáo" 
+                      value={selectedResident.religion} 
+                    />
+                    <InfoBox 
+                      bgClass="bg-purple" 
+                      icon={<MapPin size={20} color="#5d2ccfff"/>} 
+                      label="Quê quán" 
+                      value={selectedResident.hometown} 
+                    />
+                    <InfoBox 
+                      bgClass="bg-slate" 
+                      icon={<Briefcase size={20} color="#424b57ff"/>} 
+                      label="Nghề nghiệp" 
+                      value={selectedResident.occupation} 
+                    />
                   </div>
 
                 </div>
@@ -237,10 +269,9 @@ export default function HouseholdInfo() {
   );
 }
 
-// Component nhỏ để hiển thị từng ô thông tin
-const InfoBox = ({ icon, label, value }) => (
+const InfoBox = ({ icon, label, value, bgClass }) => (
   <div className="info-box-card">
-    <div className="info-box-icon">{icon}</div>
+    <div className={`info-box-icon ${bgClass}`}>{icon}</div>
     <div className="info-box-text">
       <span className="ib-label">{label}</span>
       <span className="ib-value">{value || "---"}</span>

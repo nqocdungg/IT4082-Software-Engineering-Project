@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import ResidentHeader from "../../components/resident/ResidentHeader";
 import axios from "axios";
+import { QRCodeCanvas } from "qrcode.react";
+import { Wallet, CheckCircle, Loader2, Heart, ShieldAlert } from "lucide-react";
 import "../../styles/resident/ResidentFees.css";
 import {
   FaClipboardList,

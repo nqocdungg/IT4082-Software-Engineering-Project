@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom"
 import "../../styles/staff/households.css"
 import "../../styles/staff/residents.css"
 import "../../styles/staff/layout.css"
+import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
 
@@ -389,7 +390,7 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
                             " • " +
                             (m.residentCCCD || "—") +
                             " • " +
-                            String(m.dob).slice(0, 10)}
+                            formatDateDMY(m.dob)}
                         </div>
                         <button type="button" className="member-remove" onClick={() => removeMember(idx)} title="Xóa khỏi danh sách">
                           <FaTrash />
@@ -484,6 +485,36 @@ export default function HouseholdsPage() {
       setLoading(false)
     }
   }
+
+  const handleExportExcel = () => {
+    const params = new URLSearchParams()
+
+    if (search.trim()) params.append("search", search.trim())
+    if (statusFilter && statusFilter !== "ALL") params.append("status", statusFilter)
+
+    const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
+
+    const url = `${API_BASE}/households/export-excel?${params.toString()}`
+
+    fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => res.blob())
+      .then(blob => {
+        const link = document.createElement("a")
+        link.href = window.URL.createObjectURL(blob)
+        link.download = "households.xlsx"
+        link.click()
+        window.URL.revokeObjectURL(link.href)
+      })
+      .catch(err => {
+        console.error(err)
+        alert("Không thể xuất file Excel")
+      })
+  }
+
 
   const totalPages = Math.max(1, Number(meta.totalPages || 1))
 
@@ -613,6 +644,9 @@ export default function HouseholdsPage() {
             </div>
 
             <div className="toolbar-right">
+              <button className="btn-secondary" onClick={handleExportExcel}>
+                Tải Excel
+              </button>
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
@@ -629,12 +663,12 @@ export default function HouseholdsPage() {
         </div>
 
         <div className="table-wrapper">
-          <table className="household-table">
+          <table className="resident-table">
             <thead>
               <tr>
-                <th>Mã hộ khẩu</th>
-                <th>Chủ hộ</th>
-                <th>Địa chỉ</th>
+                <th >Mã hộ khẩu</th>
+                <th className="full_name">Chủ hộ</th>
+                <th className="address">Địa chỉ</th>
                 <th>Số nhân khẩu</th>
                 <th>Trạng thái</th>
                 <th style={{ width: 110 }}>Thao tác</th>
@@ -657,8 +691,8 @@ export default function HouseholdsPage() {
                   return (
                     <tr key={h.id} className="clickable-row" onClick={() => handleOpenDetail(h)}>
                       <td>{h.householdCode || `HK #${h.id}`}</td>
-                      <td>{ownerName}</td>
-                      <td>{h.address}</td>
+                      <td className="full_name">{ownerName}</td>
+                      <td className="address">{h.address}</td>
                       <td>{membersCount}</td>
                       <td>
                         <span className={`status-badge ${statusInfo.className}`}>{statusInfo.label}</span>

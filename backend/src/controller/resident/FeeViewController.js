@@ -109,3 +109,73 @@ export const getFeeHistory = async (req, res) => {
   }
 }
 
+export const processPayment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type, feeRecordIds, donations } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { householdId: true }
+    });
+
+    if (!user || !user.householdId) {
+      return res.status(400).json({ message: "Household information not found." });
+    }
+
+    if (type === 'MANDATORY') {
+      if (!feeRecordIds || !Array.isArray(feeRecordIds) || feeRecordIds.length === 0) {
+        return res.status(400).json({ message: "Invalid fee record list." });
+      }
+
+      const updateResult = await prisma.feeRecord.updateMany({
+        where: {
+          id: { in: feeRecordIds },
+          householdId: user.householdId
+        },
+        data: {
+          status: 2,
+          updatedAt: new Date()
+        }
+      });
+
+      return res.json({ 
+        message: "Service fee payment completed successfully.",
+        updatedCount: updateResult.count 
+      });
+    }
+
+    else if (type === 'CONTRIBUTION') {
+      if (!donations || !Array.isArray(donations) || donations.length === 0) {
+        return res.status(400).json({ message: "Invalid donation list." });
+      }
+
+      await prisma.$transaction(
+        donations.map(donation => {
+          return prisma.feeRecord.create({
+            data: {
+              amount: parseFloat(donation.amount),
+              status: 2,
+              householdId: user.householdId,
+              feeTypeId: donation.feeTypeId,
+              description: "Online donation via app",
+              managerId: userId
+            }
+          });
+        })
+      );
+
+      return res.json({
+        message: "Donation submitted successfully. Thank you for your generosity!"
+      });
+    }
+
+    else {
+      return res.status(400).json({ message: "Invalid payment type." });
+    }
+
+  } catch (error) {
+    console.error("Error in processPayment:", error);
+    res.status(500).json({ message: "Server error while processing payment." });
+  }
+};

@@ -1,7 +1,6 @@
-// src/pages/staff/Revenues.jsx
-import React, { useState, useMemo, useEffect } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react"
+import axios from "axios"
+import { useNavigate } from "react-router-dom"
 import {
   FaPlus,
   FaSearch,
@@ -10,12 +9,14 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaTimes,
-} from "react-icons/fa";
+  FaEye
+} from "react-icons/fa"
 
-import "../../styles/staff/fees.css";
-import "../../styles/staff/layout.css";
+import "../../styles/staff/fees.css"
+import "../../styles/staff/layout.css"
+import { formatDateDMY } from "../../utils/date"
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://localhost:5000/api"
 
 const emptyFeeForm = {
   name: "",
@@ -24,141 +25,138 @@ const emptyFeeForm = {
   unitPrice: "",
   status: "1",
   fromDate: "",
-  toDate: "",
-};
+  toDate: ""
+}
 
 function authHeaders() {
-  const token =
-    localStorage.getItem("token") || localStorage.getItem("accessToken");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 export default function RevenuesManagement() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const [fees, setFees] = useState([]);
+  const [fees, setFees] = useState([])
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [mandatoryFilter, setMandatoryFilter] = useState("ALL");
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
+  const [mandatoryFilter, setMandatoryFilter] = useState("ALL")
 
-  const [isAddFeeOpen, setIsAddFeeOpen] = useState(false);
-  const [feeForm, setFeeForm] = useState(emptyFeeForm);
+  const [isAddFeeOpen, setIsAddFeeOpen] = useState(false)
+  const [feeForm, setFeeForm] = useState(emptyFeeForm)
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1)
+  const [rowsPerPage, setRowsPerPage] = useState(5)
 
   useEffect(() => {
-    fetchFees();
-  }, []);
+    fetchFees()
+  }, [])
 
   async function fetchFees() {
     try {
       const res = await axios.get(`${API_BASE}/fees/list`, {
-        headers: authHeaders(),
-      });
-      const list = Array.isArray(res.data) ? res.data : [];
-      setFees(list);
+        headers: authHeaders()
+      })
+      const list = Array.isArray(res.data) ? res.data : []
+      setFees(list)
     } catch (err) {
-      console.error("fetchFees error:", err);
-      setFees([]);
-      alert("Không tải được danh sách khoản thu");
+      console.error("fetchFees error:", err)
+      setFees([])
+      alert("Không tải được danh sách khoản thu")
     }
   }
 
   const filteredFees = useMemo(() => {
-    const list = Array.isArray(fees) ? fees : [];
-    return list.filter((f) => {
+    const list = Array.isArray(fees) ? fees : []
+    return list.filter(f => {
       const matchSearch =
-        !search.trim() ||
-        (f.name || "").toLowerCase().includes(search.toLowerCase());
+        !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase())
 
       const matchStatus =
-        statusFilter === "ALL" || String(f.status) === String(statusFilter);
+        statusFilter === "ALL" || String(f.status) === String(statusFilter)
 
       const matchMandatory =
         mandatoryFilter === "ALL" ||
         (mandatoryFilter === "MANDATORY" && !!f.isMandatory) ||
-        (mandatoryFilter === "OPTIONAL" && !f.isMandatory);
+        (mandatoryFilter === "OPTIONAL" && !f.isMandatory)
 
-      return matchSearch && matchStatus && matchMandatory;
-    });
-  }, [fees, search, statusFilter, mandatoryFilter]);
+      return matchSearch && matchStatus && matchMandatory
+    })
+  }, [fees, search, statusFilter, mandatoryFilter])
 
   const stats = useMemo(() => {
-    const list = Array.isArray(fees) ? fees : [];
-    const total = list.length;
-    const mandatory = list.filter((f) => !!f.isMandatory).length;
-    const optional = list.filter((f) => !f.isMandatory).length;
-    const active = list.filter((f) => f.status === 1).length;
-    const inactive = list.filter((f) => f.status === 0).length;
-    return { total, mandatory, optional, active, inactive };
-  }, [fees]);
+    const list = Array.isArray(fees) ? fees : []
+    const total = list.length
+    const mandatory = list.filter(f => !!f.isMandatory).length
+    const optional = list.filter(f => !f.isMandatory).length
+    const active = list.filter(f => f.status === 1).length
+    const inactive = list.filter(f => f.status === 0).length
+    return { total, mandatory, optional, active, inactive }
+  }, [fees])
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, statusFilter, mandatoryFilter]);
+    setCurrentPage(1)
+  }, [search, statusFilter, mandatoryFilter])
 
-  const totalPages = Math.max(1, Math.ceil(filteredFees.length / rowsPerPage));
+  const totalPages = Math.max(1, Math.ceil(filteredFees.length / rowsPerPage))
 
   useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(1);
-  }, [totalPages, currentPage]);
+    if (currentPage > totalPages) setCurrentPage(1)
+  }, [totalPages, currentPage])
 
   const pageFees = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    return filteredFees.slice(start, start + rowsPerPage);
-  }, [filteredFees, currentPage, rowsPerPage]);
+    const start = (currentPage - 1) * rowsPerPage
+    return filteredFees.slice(start, start + rowsPerPage)
+  }, [filteredFees, currentPage, rowsPerPage])
 
   const rangeText = useMemo(() => {
-    const total = filteredFees.length;
-    if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`;
-    const start = (currentPage - 1) * rowsPerPage + 1;
-    const end = Math.min(currentPage * rowsPerPage, total);
-    return `${start} - ${end} trên tổng số ${total} bản ghi`;
-  }, [filteredFees.length, currentPage, rowsPerPage]);
+    const total = filteredFees.length
+    if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`
+    const start = (currentPage - 1) * rowsPerPage + 1
+    const end = Math.min(currentPage * rowsPerPage, total)
+    return `${start} - ${end} trên tổng số ${total} bản ghi`
+  }, [filteredFees.length, currentPage, rowsPerPage])
 
   function getStatusLabel(status) {
-    if (status === 1) return "Đang hoạt động";
-    if (status === 0) return "Ngừng áp dụng";
-    return "Khác";
+    if (status === 1) return "Đang hoạt động"
+    if (status === 0) return "Ngừng áp dụng"
+    return "Khác"
   }
 
   function getDateRangeLabel(fee) {
-    const hasFrom = !!fee.fromDate;
-    const hasTo = !!fee.toDate;
+    const hasFrom = !!fee.fromDate
+    const hasTo = !!fee.toDate
 
-    if (!hasFrom && !hasTo) return "Không thời hạn";
+    if (!hasFrom && !hasTo) return "Không thời hạn"
 
-    const fromStr = hasFrom
-      ? new Date(fee.fromDate).toLocaleDateString("vi-VN")
-      : "";
-    const toStr = hasTo ? new Date(fee.toDate).toLocaleDateString("vi-VN") : "";
+    const fromStr = hasFrom ? formatDateDMY(fee.fromDate) : ""
+    const toStr = hasTo ? formatDateDMY(fee.toDate) : ""
 
-    if (hasFrom && hasTo) return `${fromStr} – ${toStr}`;
-    if (hasFrom && !hasTo) return `Từ ${fromStr}`;
-    return `Đến ${toStr}`;
+    if (hasFrom && hasTo) return `${fromStr} – ${toStr}`
+    if (hasFrom && !hasTo) return `Từ ${fromStr}`
+    return `Đến ${toStr}`
   }
 
+
   function openAddFee() {
-    setFeeForm({ ...emptyFeeForm, status: "1" });
-    setIsAddFeeOpen(true);
+    setFeeForm({ ...emptyFeeForm, status: "1" })
+    setIsAddFeeOpen(true)
   }
 
   function closeAddFee() {
-    setIsAddFeeOpen(false);
+    setIsAddFeeOpen(false)
   }
 
   function handleFeeFormChange(e) {
-    const { name, value, type, checked } = e.target;
-    setFeeForm((prev) => ({
+    const { name, value, type, checked } = e.target
+    setFeeForm(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+      [name]: type === "checkbox" ? checked : value
+    }))
   }
 
   async function handleAddFeeSubmit(e) {
-    e.preventDefault();
+    e.preventDefault()
     try {
       const payload = {
         name: feeForm.name.trim(),
@@ -169,83 +167,59 @@ export default function RevenuesManagement() {
             ? null
             : parseFloat(feeForm.unitPrice),
         fromDate: feeForm.fromDate || null,
-        toDate: feeForm.toDate || null,
-      };
+        toDate: feeForm.toDate || null
+      }
 
-      if (!payload.name) return alert("Tên khoản thu không được để trống");
+      if (!payload.name) return alert("Tên khoản thu không được để trống")
 
       const res = await axios.post(`${API_BASE}/fees/create`, payload, {
-        headers: authHeaders(),
-      });
+        headers: authHeaders()
+      })
 
-      const created = res.data?.data;
-      if (created)
-        setFees((prev) => [created, ...(Array.isArray(prev) ? prev : [])]);
-      else await fetchFees();
+      const created = res.data?.data
+      if (created) setFees(prev => [created, ...(Array.isArray(prev) ? prev : [])])
+      else await fetchFees()
 
-      setIsAddFeeOpen(false);
-      setFeeForm(emptyFeeForm);
+      setIsAddFeeOpen(false)
+      setFeeForm(emptyFeeForm)
     } catch (err) {
-      console.error("handleAddFeeSubmit error:", err);
+      console.error("handleAddFeeSubmit error:", err)
       alert(
         err?.response?.data?.message ||
           err?.response?.data?.error ||
           "Thêm khoản thu thất bại"
-      );
+      )
     }
   }
 
   async function handleDeleteFee(id) {
-    if (!window.confirm("Bạn có chắc muốn xóa khoản thu ID " + id + " ?"))
-      return;
+    if (!window.confirm("Bạn có chắc muốn xóa khoản thu ID " + id + " ?")) return
     try {
       await axios.delete(`${API_BASE}/fees/delete/${id}`, {
-        headers: authHeaders(),
-      });
-      setFees((prev) =>
-        Array.isArray(prev) ? prev.filter((f) => f.id !== id) : []
-      );
+        headers: authHeaders()
+      })
+      setFees(prev => (Array.isArray(prev) ? prev.filter(f => f.id !== id) : []))
     } catch (err) {
       const message =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Xóa khoản thu thất bại";
-      alert(message);
+        "Xóa khoản thu thất bại"
+      alert(message)
     }
   }
 
   const miniCards = [
-    {
-      label: "Tổng khoản thu",
-      value: stats.total,
-      icon: <FaMoneyBillWave />,
-      tone: "blue",
-    },
+    { label: "Tổng khoản thu", value: stats.total, icon: <FaMoneyBillWave />, tone: "blue" },
     { label: "Bắt buộc", value: stats.mandatory, icon: <FaPlus />, tone: "green" },
-    {
-      label: "Tự nguyện",
-      value: stats.optional,
-      icon: <FaPlus />,
-      tone: "amber",
-    },
-    {
-      label: "Đang áp dụng",
-      value: stats.active,
-      icon: <FaMoneyBillWave />,
-      tone: "slate",
-    },
-    {
-      label: "Ngừng áp dụng",
-      value: stats.inactive,
-      icon: <FaTrash />,
-      tone: "rose",
-    },
-  ];
+    { label: "Tự nguyện", value: stats.optional, icon: <FaPlus />, tone: "amber" },
+    { label: "Đang áp dụng", value: stats.active, icon: <FaMoneyBillWave />, tone: "slate" },
+    { label: "Ngừng áp dụng", value: stats.inactive, icon: <FaTrash />, tone: "rose" }
+  ]
 
   return (
     <div className="page-container revenues-page">
       <div className="stats-strip">
-        {miniCards.map((c) => (
+        {miniCards.map(c => (
           <div key={c.label} className={`mini-card tone-${c.tone}`}>
             <div className="mini-ico">{c.icon}</div>
             <div className="mini-meta">
@@ -261,10 +235,7 @@ export default function RevenuesManagement() {
           <div className="toolbar-row">
             <div className="toolbar-left">
               <div className="toolbar-select">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                   <option value="ALL">Tất cả trạng thái</option>
                   <option value="1">Đang hoạt động</option>
                   <option value="0">Ngừng áp dụng</option>
@@ -274,26 +245,26 @@ export default function RevenuesManagement() {
               <div className="toolbar-select">
                 <select
                   value={mandatoryFilter}
-                  onChange={(e) => setMandatoryFilter(e.target.value)}
+                  onChange={e => setMandatoryFilter(e.target.value)}
                 >
                   <option value="ALL">Tất cả loại khoản thu</option>
                   <option value="MANDATORY">Bắt buộc</option>
                   <option value="OPTIONAL">Tự nguyện</option>
                 </select>
               </div>
+            </div>
 
+            <div className="toolbar-right">
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
                   type="text"
                   placeholder="Tìm theo tên khoản thu..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                 />
               </div>
-            </div>
 
-            <div className="toolbar-right">
               <button className="btn-primary compact" onClick={openAddFee}>
                 <FaPlus /> Thêm khoản thu
               </button>
@@ -302,13 +273,13 @@ export default function RevenuesManagement() {
         </div>
 
         <div className="table-wrapper">
-          <table className="fee-table">
+          <table className="resident-table revenues-table">
             <thead>
               <tr>
                 <th>Tên khoản thu</th>
                 <th>Loại</th>
                 <th>Đơn giá</th>
-                <th>Thời gian áp dụng</th>
+                <th className="col-date">Thời gian áp dụng</th>
                 <th>Trạng thái</th>
                 <th style={{ width: 130 }}>Thao tác</th>
               </tr>
@@ -322,9 +293,9 @@ export default function RevenuesManagement() {
                   </td>
                 </tr>
               ) : (
-                pageFees.map((f) => (
-                  <tr key={f.id}>
-                    <td>
+                pageFees.map(f => (
+                  <tr key={f.id} className="clickable-row">
+                    <td className="col-name">
                       <div className="fee-name">{f.name}</div>
                     </td>
 
@@ -344,7 +315,7 @@ export default function RevenuesManagement() {
                       {new Intl.NumberFormat("vi-VN").format(f.unitPrice ?? 0)} đ
                     </td>
 
-                    <td>
+                    <td className="col-date">
                       <span
                         className={
                           f.fromDate || f.toDate
@@ -375,7 +346,7 @@ export default function RevenuesManagement() {
                           title="Xem chi tiết"
                           onClick={() => navigate(`/revenues/${f.id}`)}
                         >
-                          <FaSearch />
+                          <FaEye />
                         </button>
 
                         <button
@@ -400,9 +371,9 @@ export default function RevenuesManagement() {
             <span className="footer-muted">Số bản ghi</span>
             <select
               value={rowsPerPage}
-              onChange={(e) => {
-                setCurrentPage(1);
-                setRowsPerPage(Number(e.target.value));
+              onChange={e => {
+                setCurrentPage(1)
+                setRowsPerPage(Number(e.target.value))
               }}
             >
               <option value={5}>5</option>
@@ -416,14 +387,14 @@ export default function RevenuesManagement() {
               <button
                 type="button"
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
+                onClick={() => setCurrentPage(p => p - 1)}
               >
                 <FaChevronLeft />
               </button>
               <button
                 type="button"
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
+                onClick={() => setCurrentPage(p => p + 1)}
               >
                 <FaChevronRight />
               </button>
@@ -432,21 +403,16 @@ export default function RevenuesManagement() {
         </div>
       </div>
 
-      {/* ===== MODAL: ADD ===== */}
       {isAddFeeOpen && (
         <div className="fee-modal-overlay" onClick={closeAddFee}>
-          <div className="fee-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="fee-modal" onClick={e => e.stopPropagation()}>
             <div className="fee-modal-header">
               <div>
                 <h3 className="fee-modal-title">Thêm khoản thu mới</h3>
                 <p className="fee-modal-sub">Tạo mới khoản thu</p>
               </div>
 
-              <button
-                className="fee-modal-close-btn"
-                type="button"
-                onClick={closeAddFee}
-              >
+              <button className="fee-modal-close-btn" type="button" onClick={closeAddFee}>
                 <FaTimes size={14} />
               </button>
             </div>
@@ -456,12 +422,7 @@ export default function RevenuesManagement() {
                 <div className="detail-item detail-wide">
                   <div className="detail-label">Tên khoản thu</div>
                   <div className="detail-value">
-                    <input
-                      name="name"
-                      value={feeForm.name}
-                      onChange={handleFeeFormChange}
-                      required
-                    />
+                    <input name="name" value={feeForm.name} onChange={handleFeeFormChange} required />
                   </div>
                 </div>
 
@@ -485,10 +446,10 @@ export default function RevenuesManagement() {
                     <select
                       name="isMandatory"
                       value={feeForm.isMandatory ? "1" : "0"}
-                      onChange={(e) =>
-                        setFeeForm((prev) => ({
+                      onChange={e =>
+                        setFeeForm(prev => ({
                           ...prev,
-                          isMandatory: e.target.value === "1",
+                          isMandatory: e.target.value === "1"
                         }))
                       }
                     >
@@ -508,45 +469,27 @@ export default function RevenuesManagement() {
                 <div className="detail-item">
                   <div className="detail-label">Ngày bắt đầu</div>
                   <div className="detail-value">
-                    <input
-                      type="date"
-                      name="fromDate"
-                      value={feeForm.fromDate}
-                      onChange={handleFeeFormChange}
-                    />
+                    <input type="date" name="fromDate" value={feeForm.fromDate} onChange={handleFeeFormChange} />
                   </div>
                 </div>
 
                 <div className="detail-item">
                   <div className="detail-label">Ngày kết thúc</div>
                   <div className="detail-value">
-                    <input
-                      type="date"
-                      name="toDate"
-                      value={feeForm.toDate}
-                      onChange={handleFeeFormChange}
-                    />
+                    <input type="date" name="toDate" value={feeForm.toDate} onChange={handleFeeFormChange} />
                   </div>
                 </div>
 
                 <div className="detail-item detail-wide">
                   <div className="detail-label">Mô tả</div>
                   <div className="detail-value">
-                    <textarea
-                      name="description"
-                      value={feeForm.description}
-                      onChange={handleFeeFormChange}
-                    />
+                    <textarea name="description" value={feeForm.description} onChange={handleFeeFormChange} />
                   </div>
                 </div>
               </div>
 
               <div className="fee-modal-footer">
-                <button
-                  className="btn-secondary"
-                  type="button"
-                  onClick={closeAddFee}
-                >
+                <button className="btn-secondary" type="button" onClick={closeAddFee}>
                   Hủy
                 </button>
                 <button className="btn-primary" type="submit">
@@ -558,5 +501,5 @@ export default function RevenuesManagement() {
         </div>
       )}
     </div>
-  );
+  )
 }

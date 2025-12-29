@@ -1,11 +1,11 @@
 import prisma from "../../../prisma/prismaClient.js"
-
+import ExcelJS from "exceljs"
 /**
  * GET /api/residents
  */
 export const getResidents = async (req, res) => {
   try {
-    const { householdId, search, gender } = req.query
+    const { householdId, search, gender, status } = req.query
     const where = {}
 
     if (householdId) where.householdId = Number(householdId)
@@ -14,23 +14,27 @@ export const getResidents = async (req, res) => {
       where.gender = gender === "Nam" ? "M" : "F"
     }
 
+    if (status !== undefined && status !== "ALL" && status !== "") {
+      where.status = Number(status)
+    }
+
     if (search && String(search).trim()) {
       const q = String(search).trim()
       where.OR = [
         {
           fullname: {
-            startsWith: q,
+            contains: q,
             mode: "insensitive"
           }
         },
         {
           residentCCCD: {
-            startsWith: q,
-            mode: "insensitive"
+            startsWith: q
           }
         }
       ]
     }
+
 
     const residents = await prisma.resident.findMany({
       where,
@@ -38,13 +42,13 @@ export const getResidents = async (req, res) => {
       include: {
         household: {
           select: {
-            id: true,
             householdCode: true,
-            address: true
+            address: true  
           }
         }
       }
     })
+
 
     const mapped = residents.map(r => ({
       id: r.id,
@@ -242,5 +246,117 @@ export const deleteResident = async (req, res) => {
       success: false,
       message: err.message
     })
+  }
+}
+
+export const exportResidentsExcel = async (req, res) => {
+  try {
+    const { search, gender, status, householdId } = req.query
+    const where = {}
+
+    if (householdId) where.householdId = Number(householdId)
+
+    if (gender && gender !== "ALL") {
+      where.gender = gender === "Nam" ? "M" : "F"
+    }
+
+    if (status !== undefined && status !== "ALL" && status !== "") {
+      where.status = Number(status)
+    }
+
+    if (search && String(search).trim()) {
+      const q = String(search).trim()
+      where.OR = [
+        {
+          fullname: {
+            contains: q,
+            mode: "insensitive"
+          }
+        },
+        {
+          residentCCCD: {
+            startsWith: q
+          }
+        }
+      ]
+    }
+
+
+    const residents = await prisma.resident.findMany({
+      where,
+      include: {
+        household: {
+          select: {
+            householdCode: true,
+            address: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    })
+
+
+    const STATUS_LABEL = {
+      0: "Thường trú",
+      1: "Tạm trú",
+      2: "Tạm vắng",
+      3: "Đã chuyển đi",
+      4: "Đã qua đời"
+    }
+
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet("Nhân khẩu")
+
+    ws.columns = [
+      { header: "Họ tên", key: "fullname", width: 25 },
+      { header: "Giới tính", key: "gender", width: 10 },
+      { header: "Ngày sinh", key: "dob", width: 15 },
+      { header: "CCCD", key: "cccd", width: 20 },
+      { header: "Dân tộc", key: "ethnicity", width: 15 },
+      { header: "Tôn giáo", key: "religion", width: 15 },
+      { header: "Quốc tịch", key: "nationality", width: 15 },
+      { header: "Quê quán", key: "hometown", width: 25 },
+      { header: "Nghề nghiệp", key: "occupation", width: 20 },
+      { header: "Mã hộ khẩu", key: "household", width: 15 },
+      { header: "Địa chỉ", key: "address", width: 30 },
+      { header: "Quan hệ với chủ hộ", key: "relation", width: 20 },
+      { header: "Tình trạng", key: "status", width: 15 }
+    ]
+
+    ws.getColumn("dob").numFmt = "dd-mm-yyyy"
+
+
+    residents.forEach(r => {
+      ws.addRow({
+        fullname: r.fullname,
+        gender: r.gender === "M" ? "Nam" : r.gender === "F" ? "Nữ" : "",
+        dob: r.dob ? new Date(r.dob) : null,
+        cccd: r.residentCCCD || "",
+        ethnicity: r.ethnicity || "",
+        religion: r.religion || "",
+        nationality: r.nationality || "",
+        hometown: r.hometown || "",
+        occupation: r.occupation || "",
+        household: r.household?.householdCode || "",
+        address: r.household?.address || "",
+        relation: r.relationToOwner || "",
+        status: STATUS_LABEL[r.status] ?? "Không rõ"
+      })
+    })
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=residents.xlsx"
+    )
+
+    await wb.xlsx.write(res)
+    res.end()
+  } catch (err) {
+    console.error("exportResidentsExcel error:", err)
+    return res.status(500).json({ success: false, message: err.message })
   }
 }

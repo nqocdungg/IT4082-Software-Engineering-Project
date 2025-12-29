@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react"
 import axios from "axios"
+import { useNavigate } from "react-router-dom"
 import {
   FaSearch,
   FaChevronLeft,
@@ -14,6 +15,7 @@ import {
 
 import "../../styles/staff/layout.css"
 import "../../styles/staff/residentchange.css"
+import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
 
@@ -69,16 +71,24 @@ function computeStats(list) {
   return s
 }
 
-function findMemberName(list, id) {
+/* ✅ CHỈ SỬA HÀM NÀY: ưu tiên detailMembers -> fallback sang changes(resident) -> cuối cùng mới #id */
+function findMemberName(list, id, allChanges) {
   const x = (list || []).find(m => Number(m.id) === Number(id))
-  if (!x) return `#${id}`
-  const cccd = x.residentCCCD ? ` • ${x.residentCCCD}` : ""
-  return `${x.fullname || "—"}${cccd}`
+  if (x) {
+    const cccd = x.residentCCCD ? ` • ${x.residentCCCD}` : ""
+    return `${x.fullname || "—"}${cccd}`
+  }
+
+  for (const c of allChanges || []) {
+    if (c?.resident && Number(c.resident.id) === Number(id)) {
+      const cccd = c.resident.residentCCCD ? ` • ${c.resident.residentCCCD}` : ""
+      return `${c.resident.fullname || "—"}${cccd}`
+    }
+  }
+
+  return `#${id}`
 }
 
-/* =========================
- * ✅ ROLE: lấy trực tiếp từ JWT
- * ========================= */
 function getJwtPayload() {
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
   if (!token) return null
@@ -98,6 +108,8 @@ function getJwtPayload() {
 }
 
 export default function ResidentChange() {
+  const navigate = useNavigate()
+
   const jwtPayload = getJwtPayload()
   const role = jwtPayload?.role || null
   const canApprove = role === "HEAD" || role === "DEPUTY"
@@ -115,63 +127,11 @@ export default function ResidentChange() {
 
   const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 })
 
-  const [openCreate, setOpenCreate] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [createForm, setCreateForm] = useState({
-    changeType: "3",
-    residentId: "",
-    fromAddress: "",
-    toAddress: "",
-    fromDate: "",
-    toDate: "",
-    reason: "",
-    extra_fullname: "",
-    extra_residentCCCD: "",
-    extra_dob: "",
-    extra_gender: "",
-    extra_ethnicity: "",
-    extra_religion: "",
-    extra_nationality: "",
-    extra_hometown: "",
-    extra_householdId: "",
-    extra_relationToOwner: ""
-  })
-
-  const [residentSearch, setResidentSearch] = useState("")
-  const [residentResult, setResidentResult] = useState(null)
-  const [residentOptions, setResidentOptions] = useState([])
-  const debouncedResidentSearch = useDebouncedValue(residentSearch, 300)
-
-  const [householdSearch, setHouseholdSearch] = useState("")
-  const [householdOptions, setHouseholdOptions] = useState([])
-  const [selectedHousehold, setSelectedHousehold] = useState(null)
-  const debouncedHouseholdSearch = useDebouncedValue(householdSearch, 300)
+  const [detailMembers, setDetailMembers] = useState([])
+  const [detailHouseholdCode, setDetailHouseholdCode] = useState(null)
 
   const debouncedSearch = useDebouncedValue(search, 350)
 
-  // ===== NHÓM NGHIỆP VỤ =====
-  const ctNum = Number(createForm.changeType)
-
-  const CREATE_RESIDENT_TYPES = [0, 1, 3]
-  const USE_RESIDENT_TYPES = [2, 4, 7]
-  const HOUSEHOLD_OP_TYPES = [5, 6]
-
-  const isCreateResident = CREATE_RESIDENT_TYPES.includes(ctNum)
-  const isUseResident = USE_RESIDENT_TYPES.includes(ctNum)
-  const isHouseholdOp = HOUSEHOLD_OP_TYPES.includes(ctNum)
-
-  const isDeath = ctNum === 7
-  const isTempStay = ctNum === 1
-
-  // ===== TÁCH HỘ / ĐỔI CHỦ HỘ =====
-  const [splitMembers, setSplitMembers] = useState([])
-  const [newOwnerId, setNewOwnerId] = useState(null)
-  const [householdMembers, setHouseholdMembers] = useState([])
-
-  // members riêng cho modal detail
-  const [detailMembers, setDetailMembers] = useState([])
-
-  // ✅ fallback extraData khi pending ct 0/1/3
   const residentDisplay = c => {
     const r = c?.resident
     if (r) {
@@ -190,18 +150,8 @@ export default function ResidentChange() {
     const g = c?.resident?.gender ?? c?.extraData?.gender
     const dob = c?.resident?.dob ?? c?.extraData?.dob
     const genderLabel = g === "M" ? "Nam" : g === "F" ? "Nữ" : "—"
-    const dobText = dob ? String(dob).slice(0, 10) : "—"
+    const dobText = dob ? formatDateDMY(dob) : "—"
     return `${genderLabel} • ${dobText}`
-  }
-
-  // ✅ fallback householdId từ extraData
-  const householdDisplay = c => {
-    const hh = c?.resident?.household
-    if (hh?.householdCode) return hh.householdCode
-    const exHid = c?.extraData?.householdId
-    if (exHid != null) return `HK #${exHid}`
-    const hid = c?.resident?.householdId
-    return hid != null ? `HK #${hid}` : "—"
   }
 
   const managerDisplay = c => {
@@ -209,14 +159,6 @@ export default function ResidentChange() {
     if (!m) return "—"
     return m.fullname || m.username || `#${m.id}`
   }
-
-  const miniCards = [
-    { label: "Tạo biến động", value: "＋", icon: <FaPlus />, tone: "violet", onClick: () => setOpenCreate(true) },
-    { label: "Tất cả", value: stats.total, icon: <FaFolderOpen />, tone: "blue" },
-    { label: "Chờ duyệt", value: stats.pending, icon: <FaClock />, tone: "amber" },
-    { label: "Đã duyệt", value: stats.approved, icon: <FaCheck />, tone: "green" },
-    { label: "Từ chối", value: stats.rejected, icon: <FaTimes />, tone: "rose" }
-  ]
 
   useEffect(() => {
     fetchChanges()
@@ -272,16 +214,45 @@ export default function ResidentChange() {
     return `${start} - ${end} trên tổng số ${total} bản ghi`
   }, [filteredChanges.length, currentPage, rowsPerPage])
 
+  const householdDisplay = c => {
+    const ex = c?.extraData || {}
+
+    if (ex.newHouseholdCode) return ex.newHouseholdCode
+    if (ex.oldHouseholdCode) return ex.oldHouseholdCode
+    if (ex.householdCode) return ex.householdCode
+
+    const hh = c?.resident?.household
+    if (hh?.householdCode) return hh.householdCode
+
+    return "—"
+  }
+
+  const miniCards = [
+    {
+      label: "Tạo biến động",
+      value: "＋",
+      icon: <FaPlus />,
+      tone: "violet",
+      onClick: () => navigate("/staff/resident-changes/create")
+    },
+    { label: "Tất cả", value: stats.total, icon: <FaFolderOpen />, tone: "blue" },
+    { label: "Chờ duyệt", value: stats.pending, icon: <FaClock />, tone: "amber" },
+    { label: "Đã duyệt", value: stats.approved, icon: <FaCheck />, tone: "green" },
+    { label: "Từ chối", value: stats.rejected, icon: <FaTimes />, tone: "rose" }
+  ]
+
   const closeDetail = () => {
     setSelectedChange(null)
     setLoadingDetail(false)
     setDetailMembers([])
+    setDetailHouseholdCode(null)
   }
 
   const handleOpenDetail = async row => {
     setSelectedChange(row)
     setLoadingDetail(true)
     setDetailMembers([])
+    setDetailHouseholdCode(null)
 
     try {
       const res = await axios.get(`${API_BASE}/resident-changes/${row.id}`, {
@@ -290,13 +261,18 @@ export default function ResidentChange() {
       const detail = res.data?.data || row
       setSelectedChange(detail)
 
+      const ex = detail?.extraData || {}
+      const code =
+        ex.newHouseholdCode || ex.oldHouseholdCode || ex.householdCode || detail?.resident?.household?.householdCode || null
+      setDetailHouseholdCode(code)
+
       if (detail?.changeType === 5 || detail?.changeType === 6) {
-        const hhId =
+        const hhIdForMembers =
           detail?.changeType === 5 ? detail?.extraData?.oldHouseholdId : detail?.extraData?.householdId
 
-        if (hhId) {
+        if (hhIdForMembers) {
           try {
-            const memRes = await axios.get(`${API_BASE}/households/${hhId}/members`, {
+            const memRes = await axios.get(`${API_BASE}/households/${hhIdForMembers}/members`, {
               headers: authHeaders()
             })
             setDetailMembers(memRes.data?.data || [])
@@ -343,240 +319,6 @@ export default function ResidentChange() {
     } catch (e) {
       console.error(e)
       alert(e?.response?.data?.message || "Từ chối thất bại")
-    }
-  }
-
-  const closeCreateModal = () => {
-    setOpenCreate(false)
-    setCreating(false)
-
-    setResidentSearch("")
-    setResidentResult(null)
-    setResidentOptions([])
-
-    setHouseholdSearch("")
-    setSelectedHousehold(null)
-    setHouseholdOptions([])
-
-    setSplitMembers([])
-    setNewOwnerId(null)
-    setHouseholdMembers([])
-
-    setCreateForm(prev => ({
-      ...prev,
-      residentId: "",
-      fromAddress: "",
-      toAddress: "",
-      fromDate: "",
-      toDate: "",
-      reason: "",
-      extra_fullname: "",
-      extra_residentCCCD: "",
-      extra_dob: "",
-      extra_gender: "",
-      extra_ethnicity: "",
-      extra_religion: "",
-      extra_nationality: "",
-      extra_hometown: "",
-      extra_householdId: "",
-      extra_relationToOwner: ""
-    }))
-  }
-
-  const onCreateField = (key, val) => setCreateForm(prev => ({ ...prev, [key]: val }))
-
-  // search resident suggestions
-  useEffect(() => {
-    if (debouncedResidentSearch.trim().length < 2) {
-      setResidentOptions([])
-      return
-    }
-
-    const fetch = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/residents/search`, {
-          headers: authHeaders(),
-          params: { q: debouncedResidentSearch.trim() }
-        })
-        const data = res.data?.data
-        setResidentOptions(Array.isArray(data) ? data : data ? [data] : [])
-      } catch {
-        setResidentOptions([])
-      }
-    }
-
-    fetch()
-  }, [debouncedResidentSearch])
-
-  // search household suggestions
-  useEffect(() => {
-    if (!debouncedHouseholdSearch.trim()) {
-      setHouseholdOptions([])
-      return
-    }
-
-    const fetch = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/households/search`, {
-          headers: authHeaders(),
-          params: { q: debouncedHouseholdSearch.trim() }
-        })
-        const data = res.data?.data
-        setHouseholdOptions(Array.isArray(data) ? data : data ? [data] : [])
-      } catch {
-        setHouseholdOptions([])
-      }
-    }
-
-    fetch()
-  }, [debouncedHouseholdSearch])
-
-  // reset theo loại biến động
-  useEffect(() => {
-    setResidentSearch("")
-    setResidentResult(null)
-    setResidentOptions([])
-    onCreateField("residentId", "")
-
-    setHouseholdSearch("")
-    setSelectedHousehold(null)
-    setHouseholdOptions([])
-    onCreateField("extra_householdId", "")
-
-    setSplitMembers([])
-    setNewOwnerId(null)
-    setHouseholdMembers([])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createForm.changeType])
-
-  // load members khi chọn hộ (phục vụ ct 5/6)
-  useEffect(() => {
-    if (![5, 6].includes(ctNum)) return
-    if (!selectedHousehold?.id) return
-
-    axios
-      .get(`${API_BASE}/households/${selectedHousehold.id}/members`, {
-        headers: authHeaders()
-      })
-      .then(res => {
-        setHouseholdMembers(res.data?.data || [])
-        setSplitMembers([])
-        setNewOwnerId(null)
-      })
-      .catch(() => {
-        setHouseholdMembers([])
-        setSplitMembers([])
-        setNewOwnerId(null)
-      })
-  }, [ctNum, selectedHousehold])
-
-  async function handleCreateSubmit(e) {
-    e.preventDefault()
-
-    try {
-      setCreating(true)
-      const changeTypeNum = Number(createForm.changeType)
-
-      const payload = {
-        changeType: changeTypeNum,
-        fromAddress: createForm.fromAddress || null,
-        toAddress: createForm.toAddress || null,
-        fromDate: createForm.fromDate || null,
-        toDate: createForm.toDate || null,
-        reason: createForm.reason || null
-      }
-
-      if (isCreateResident) {
-        if (!isTempStay && !selectedHousehold?.id) {
-          alert("Vui lòng chọn hộ khẩu")
-          setCreating(false)
-          return
-        }
-
-        payload.extraData = {
-          fullname: createForm.extra_fullname || undefined,
-          residentCCCD: createForm.extra_residentCCCD || undefined,
-          dob: createForm.extra_dob || undefined,
-          gender: createForm.extra_gender || undefined,
-          ethnicity: createForm.extra_ethnicity || undefined,
-          religion: createForm.extra_religion || undefined,
-          nationality: createForm.extra_nationality || undefined,
-          hometown: createForm.extra_hometown || undefined,
-
-          // ✅ gửi relationToOwner
-          relationToOwner: createForm.extra_relationToOwner || undefined,
-
-          // ✅ tạm trú: cho null
-          householdId: isTempStay ? null : (selectedHousehold?.id || null)
-        }
-      }
-
-      if (isUseResident) {
-        if (!residentResult?.id) {
-          alert("Vui lòng chọn nhân khẩu")
-          setCreating(false)
-          return
-        }
-        payload.residentId = residentResult.id
-      }
-
-      if (ctNum === 5) {
-        if (!selectedHousehold?.id) {
-          alert("Vui lòng chọn hộ khẩu")
-          setCreating(false)
-          return
-        }
-        if (splitMembers.length < 1) {
-          alert("Vui lòng chọn ít nhất 1 thành viên để tách hộ")
-          setCreating(false)
-          return
-        }
-        if (!newOwnerId) {
-          alert("Vui lòng chọn chủ hộ mới")
-          setCreating(false)
-          return
-        }
-
-        payload.residentId = null
-        payload.extraData = {
-          oldHouseholdId: selectedHousehold.id,
-          memberIds: splitMembers,
-          newOwnerId
-        }
-      }
-
-      if (ctNum === 6) {
-        if (!selectedHousehold?.id) {
-          alert("Vui lòng chọn hộ khẩu")
-          setCreating(false)
-          return
-        }
-        if (!newOwnerId) {
-          alert("Vui lòng chọn chủ hộ mới")
-          setCreating(false)
-          return
-        }
-
-        payload.residentId = null
-        payload.extraData = {
-          householdId: selectedHousehold.id,
-          oldOwnerId: householdMembers.find(m => m.relationToOwner === "Chủ hộ")?.id,
-          newOwnerId
-        }
-      }
-
-      await axios.post(`${API_BASE}/resident-changes`, payload, {
-        headers: authHeaders()
-      })
-
-      await fetchChanges()
-      closeCreateModal()
-      alert("Tạo thành công!")
-    } catch (err) {
-      console.error(err)
-      alert(err?.response?.data?.message || "Tạo thất bại")
-    } finally {
-      setCreating(false)
     }
   }
 
@@ -710,7 +452,7 @@ export default function ResidentChange() {
 
                       <td>{managerDisplay(c)}</td>
 
-                      <td>{String(c.createdAt).slice(0, 10)}</td>
+                      <td>{formatDateDMY(c.createdAt)}</td>
 
                       <td onClick={e => e.stopPropagation()}>
                         <div className="rc-row-actions">
@@ -721,11 +463,7 @@ export default function ResidentChange() {
                           <button
                             type="button"
                             title={
-                              !canApprove
-                                ? "Bạn không có quyền duyệt"
-                                : isPending
-                                  ? "Duyệt"
-                                  : "Chỉ duyệt khi chờ duyệt"
+                              !canApprove ? "Bạn không có quyền duyệt" : isPending ? "Duyệt" : "Chỉ duyệt khi chờ duyệt"
                             }
                             className="ok"
                             disabled={!canApprove || !isPending}
@@ -781,11 +519,7 @@ export default function ResidentChange() {
               <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
                 <FaChevronLeft />
               </button>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
-              >
+              <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
                 <FaChevronRight />
               </button>
             </div>
@@ -793,342 +527,6 @@ export default function ResidentChange() {
         </div>
       </div>
 
-      {/* =========================
-       *  ✅ MODAL CREATE (FULL)
-       * ========================= */}
-      {openCreate && (
-        <div className="rc-modal-overlay" onClick={closeCreateModal}>
-          <div className="rc-modal" onClick={e => e.stopPropagation()}>
-            <div className="rc-modal-header">
-              <div>
-                <h3 className="rc-modal-title">Tạo biến động</h3>
-                <p className="rc-modal-sub">Nhập thông tin và bấm Tạo</p>
-              </div>
-              <button className="rc-modal-close" onClick={closeCreateModal} type="button">
-                ✕
-              </button>
-            </div>
-
-            <form className="rc-modal-body" onSubmit={handleCreateSubmit}>
-              <div className="rc-detail-grid">
-                <div className="rc-detail-item rc-wide">
-                  <div className="rc-detail-label">Loại biến động</div>
-                  <select
-                    className="rc-input"
-                    value={createForm.changeType}
-                    onChange={e => onCreateField("changeType", e.target.value)}
-                  >
-                    {Object.entries(CHANGE_TYPES).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {k} — {v.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {(isCreateResident || isHouseholdOp) && (
-                  <div className="rc-detail-item rc-wide rc-suggest-wrap">
-                    <div className="rc-detail-label">
-                      Hộ khẩu {isTempStay && isCreateResident ? "(không bắt buộc)" : ""}
-                    </div>
-                    <input
-                      className="rc-input"
-                      value={householdSearch}
-                      onChange={e => setHouseholdSearch(e.target.value)}
-                      placeholder="Nhập mã hộ khẩu / địa chỉ"
-                    />
-
-                    {householdOptions.length > 0 && (
-                      <div className="rc-suggest-list">
-                        {householdOptions.map(h => (
-                          <button
-                            key={h.id}
-                            type="button"
-                            className="rc-suggest-item"
-                            onMouseDown={e => e.preventDefault()}
-                            onClick={() => {
-                              setSelectedHousehold(h)
-                              setHouseholdSearch(h.householdCode || `HK #${h.id}`)
-                              setHouseholdOptions([])
-                            }}
-                          >
-                            <span className="rc-suggest-main">{h.householdCode || `HK #${h.id}`}</span>
-                            <span className="rc-suggest-sub">{h.address || "—"}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {selectedHousehold?.id && (
-                      <div className="rc-sub-text" style={{ marginTop: 6 }}>
-                        Đã chọn: <b>{selectedHousehold.householdCode || `HK #${selectedHousehold.id}`}</b>
-                        {selectedHousehold.address ? ` • ${selectedHousehold.address}` : ""}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {isCreateResident && (
-                  <>
-                    <div className="rc-detail-item">
-                      <div className="rc-detail-label">Họ và tên</div>
-                      <input
-                        className="rc-input"
-                        value={createForm.extra_fullname}
-                        onChange={e => onCreateField("extra_fullname", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="rc-detail-item">
-                      <div className="rc-detail-label">CCCD</div>
-                      <input
-                        className="rc-input"
-                        value={createForm.extra_residentCCCD}
-                        onChange={e => onCreateField("extra_residentCCCD", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="rc-detail-item">
-                      <div className="rc-detail-label">Ngày sinh</div>
-                      <input
-                        type="date"
-                        className="rc-input"
-                        value={createForm.extra_dob}
-                        onChange={e => onCreateField("extra_dob", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="rc-detail-item">
-                      <div className="rc-detail-label">Giới tính</div>
-                      <select
-                        className="rc-input"
-                        value={createForm.extra_gender}
-                        onChange={e => onCreateField("extra_gender", e.target.value)}
-                      >
-                        <option value="">--</option>
-                        <option value="M">Nam</option>
-                        <option value="F">Nữ</option>
-                      </select>
-                    </div>
-
-                    <div className="rc-detail-item rc-wide">
-                      <div className="rc-detail-label">
-                        Quan hệ với chủ hộ <span className="rc-muted">(tuỳ chọn)</span>
-                      </div>
-                      <input
-                        className="rc-input"
-                        placeholder="Ví dụ: Con, Vợ, Cháu, Anh ruột, ..."
-                        value={createForm.extra_relationToOwner}
-                        onChange={e => onCreateField("extra_relationToOwner", e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {ctNum === 5 && (
-                  <div className="rc-detail-item rc-wide">
-                    <div className="rc-detail-label">Tách hộ – chọn thành viên</div>
-
-                    {!selectedHousehold?.id ? (
-                      <div className="rc-sub-text">Vui lòng chọn hộ khẩu trước</div>
-                    ) : householdMembers.length === 0 ? (
-                      <div className="rc-sub-text">Hộ khẩu này chưa có thành viên</div>
-                    ) : (
-                      <div className="rc-split-box">
-                        {householdMembers.map(m => {
-                          const checked = splitMembers.includes(m.id)
-                          return (
-                            <label key={m.id} className="rc-split-row">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={e => {
-                                  if (e.target.checked) {
-                                    setSplitMembers(prev => [...prev, m.id])
-                                  } else {
-                                    setSplitMembers(prev => prev.filter(id => id !== m.id))
-                                    if (newOwnerId === m.id) setNewOwnerId(null)
-                                  }
-                                }}
-                              />
-
-                              <span className="rc-split-info">
-                                <b>{m.fullname}</b>
-                                {m.residentCCCD && ` • ${m.residentCCCD}`}
-                                <span className="rc-sub-text">
-                                  {m.gender === "M" ? "Nam" : m.gender === "F" ? "Nữ" : "—"} •{" "}
-                                  {String(m.dob).slice(0, 10)}
-                                </span>
-                              </span>
-
-                              {checked && (
-                                <button
-                                  type="button"
-                                  className={`rc-chip ${newOwnerId === m.id ? "active" : ""}`}
-                                  onClick={() => setNewOwnerId(m.id)}
-                                >
-                                  {newOwnerId === m.id ? "✓ Chủ hộ mới" : "Đặt làm chủ hộ"}
-                                </button>
-                              )}
-                            </label>
-                          )
-                        })}
-                      </div>
-                    )}
-
-                    {selectedHousehold?.id && splitMembers.length > 0 && !newOwnerId && (
-                      <div className="rc-sub-text" style={{ color: "#b45309" }}>
-                        ⚠️ Vui lòng chọn chủ hộ mới
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {ctNum === 6 && (
-                  <div className="rc-detail-item rc-wide">
-                    <div className="rc-detail-label">Đổi chủ hộ – chọn chủ hộ mới</div>
-
-                    {!selectedHousehold?.id ? (
-                      <div className="rc-sub-text">Vui lòng chọn hộ khẩu trước</div>
-                    ) : householdMembers.length === 0 ? (
-                      <div className="rc-sub-text">Hộ khẩu này chưa có thành viên</div>
-                    ) : (
-                      <div className="rc-split-box">
-                        {householdMembers.map(m => (
-                          <div
-                            key={m.id}
-                            className={`rc-split-row rc-click-row ${newOwnerId === m.id ? "selected" : ""}`}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setNewOwnerId(m.id)}
-                            onKeyDown={e => e.key === "Enter" && setNewOwnerId(m.id)}
-                          >
-                            <span className={`rc-dot ${newOwnerId === m.id ? "on" : ""}`} />
-                            <span className="rc-split-info">
-                              <b>{m.fullname}</b>
-                              {m.residentCCCD && ` • ${m.residentCCCD}`}
-                              <span className="rc-sub-text">{m.relationToOwner ? `Quan hệ: ${m.relationToOwner}` : ""}</span>
-                            </span>
-
-                            {newOwnerId === m.id && <span className="rc-tag">Chủ hộ mới</span>}
-                          </div>
-
-                        ))}
-                      </div>
-                    )}
-
-                    {selectedHousehold?.id && !newOwnerId && (
-                      <div className="rc-sub-text" style={{ color: "#b45309" }}>
-                        ⚠️ Vui lòng chọn chủ hộ mới
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {isUseResident && (
-                  <>
-                    <div className="rc-detail-item rc-wide rc-suggest-wrap">
-                      <div className="rc-detail-label">Nhân khẩu</div>
-                      <input
-                        className="rc-input"
-                        value={residentSearch}
-                        onChange={e => setResidentSearch(e.target.value)}
-                        placeholder="Nhập họ tên / CCCD"
-                      />
-
-                      {residentOptions.length > 0 && (
-                        <div className="rc-suggest-list">
-                          {residentOptions.map(r => (
-                            <button
-                              key={r.id}
-                              type="button"
-                              className="rc-suggest-item"
-                              onMouseDown={e => e.preventDefault()}
-                              onClick={() => {
-                                setResidentResult(r)
-                                setResidentSearch(`${r.fullname || "—"} • ${r.residentCCCD || "—"}`)
-                                setResidentOptions([])
-                              }}
-                            >
-                              <span className="rc-suggest-main">{r.fullname || "—"}</span>
-                              <span className="rc-suggest-sub">{r.residentCCCD || "—"}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {!isDeath && (
-                      <>
-                        <div className="rc-detail-item">
-                          <div className="rc-detail-label">Từ địa chỉ</div>
-                          <input
-                            className="rc-input"
-                            value={createForm.fromAddress}
-                            onChange={e => onCreateField("fromAddress", e.target.value)}
-                          />
-                        </div>
-
-                        <div className="rc-detail-item">
-                          <div className="rc-detail-label">Đến địa chỉ</div>
-                          <input
-                            className="rc-input"
-                            value={createForm.toAddress}
-                            onChange={e => onCreateField("toAddress", e.target.value)}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </>
-                )}
-
-                <div className="rc-detail-item">
-                  <div className="rc-detail-label">Từ ngày</div>
-                  <input
-                    type="date"
-                    className="rc-input"
-                    value={createForm.fromDate}
-                    onChange={e => onCreateField("fromDate", e.target.value)}
-                  />
-                </div>
-
-                <div className="rc-detail-item">
-                  <div className="rc-detail-label">Đến ngày</div>
-                  <input
-                    type="date"
-                    className="rc-input"
-                    value={createForm.toDate}
-                    onChange={e => onCreateField("toDate", e.target.value)}
-                  />
-                </div>
-
-                <div className="rc-detail-item rc-wide">
-                  <div className="rc-detail-label">Lý do</div>
-                  <textarea
-                    className="rc-input rc-textarea"
-                    rows={3}
-                    value={createForm.reason}
-                    onChange={e => onCreateField("reason", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="rc-modal-footer">
-                <button type="button" className="rc-btn secondary" onClick={closeCreateModal}>
-                  Đóng
-                </button>
-                <button className="rc-btn ok" type="submit" disabled={creating}>
-                  <FaPlus /> {creating ? "Đang tạo..." : "Tạo biến động"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =========================
-       *  ✅ MODAL DETAIL (FULL)
-       * ========================= */}
       {selectedChange && (
         <div className="rc-modal-overlay" onClick={closeDetail}>
           <div className="rc-modal" onClick={e => e.stopPropagation()}>
@@ -1174,7 +572,11 @@ export default function ResidentChange() {
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Hộ khẩu</div>
-                    <div className="rc-detail-value">{householdDisplay(selectedChange)}</div>
+                    <div className="rc-detail-value">
+                      {selectedChange?.resident?.household?.householdCode ||
+                        detailHouseholdCode ||
+                        householdDisplay(selectedChange)}
+                    </div>
                   </div>
 
                   <div className="rc-detail-item rc-wide">
@@ -1189,14 +591,12 @@ export default function ResidentChange() {
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Từ ngày</div>
-                    <div className="rc-detail-value">{String(selectedChange.fromDate).slice(0, 10)}</div>
+                    <div className="rc-detail-value">{formatDateDMY(selectedChange.fromDate)}</div>
                   </div>
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Đến ngày</div>
-                    <div className="rc-detail-value">
-                      {selectedChange.toDate ? String(selectedChange.toDate).slice(0, 10) : "—"}
-                    </div>
+                    <div className="rc-detail-value">{selectedChange.toDate ? formatDateDMY(selectedChange.toDate) : "—"}</div>
                   </div>
 
                   <div className="rc-detail-item rc-wide">
@@ -1212,12 +612,12 @@ export default function ResidentChange() {
                           <b>Thành viên tách:</b>
                           <ul style={{ margin: "6px 0 0 18px" }}>
                             {(selectedChange.extraData.memberIds || []).map(id => (
-                              <li key={id}>{findMemberName(detailMembers, id)}</li>
+                              <li key={id}>{findMemberName(detailMembers, id, changes)}</li>
                             ))}
                           </ul>
                         </div>
                         <div style={{ marginTop: 6 }}>
-                          <b>Chủ hộ mới:</b> {findMemberName(detailMembers, selectedChange.extraData.newOwnerId)}
+                          <b>Chủ hộ mới:</b> {findMemberName(detailMembers, selectedChange.extraData.newOwnerId, changes)}
                         </div>
                       </div>
                     </div>
@@ -1228,10 +628,10 @@ export default function ResidentChange() {
                       <div className="rc-detail-label">Chi tiết đổi chủ hộ</div>
                       <div className="rc-detail-value">
                         <div>
-                          <b>Chủ hộ cũ:</b> {findMemberName(detailMembers, selectedChange.extraData.oldOwnerId)}
+                          <b>Chủ hộ cũ:</b> {findMemberName(detailMembers, selectedChange.extraData.oldOwnerId, changes)}
                         </div>
                         <div style={{ marginTop: 4 }}>
-                          <b>Chủ hộ mới:</b> {findMemberName(detailMembers, selectedChange.extraData.newOwnerId)}
+                          <b>Chủ hộ mới:</b> {findMemberName(detailMembers, selectedChange.extraData.newOwnerId, changes)}
                         </div>
                       </div>
                     </div>
@@ -1244,7 +644,7 @@ export default function ResidentChange() {
 
                   <div className="rc-detail-item">
                     <div className="rc-detail-label">Ngày tạo</div>
-                    <div className="rc-detail-value">{String(selectedChange.createdAt).slice(0, 10)}</div>
+                    <div className="rc-detail-value">{formatDateDMY(selectedChange.createdAt)}</div>
                   </div>
                 </div>
               )}

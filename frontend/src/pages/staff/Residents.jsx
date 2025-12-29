@@ -17,6 +17,7 @@ import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
 
 import "../../styles/staff/residents.css"
 import "../../styles/staff/layout.css"
+import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
 
@@ -29,7 +30,7 @@ const RESIDENCY_STATUS = {
 }
 
 function getResidencyStatusInfo(code) {
-  return RESIDENCY_STATUS[code] || { label: "Không rõ", className: "" }
+  return RESIDENCY_STATUS[Number(code)] || { label: "Không rõ", className: "" }
 }
 
 function authHeaders() {
@@ -103,20 +104,19 @@ export default function ResidentManagement() {
 
   const debouncedSearch = useDebouncedValue(search, 350)
 
-  // ✅ Backend mới: GET /residents có query search + gender + householdId
   useEffect(() => {
     fetchResidents()
-    // reset trang khi đổi filter server-side
     setCurrentPage(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, genderFilter, householdIdFilter])
+  }, [debouncedSearch, genderFilter, householdIdFilter, statusFilter])
 
   async function fetchResidents() {
     try {
       const params = {}
 
       if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
-      if (genderFilter !== "ALL") params.gender = genderFilter // backend nhận "Nam"/"Nữ"
+      if (genderFilter !== "ALL") params.gender = genderFilter 
+      if (statusFilter !== "ALL") params.status = statusFilter
       if (String(householdIdFilter).trim()) params.householdId = String(householdIdFilter).trim()
 
       const res = await axios.get(`${API_BASE}/residents`, {
@@ -135,15 +135,7 @@ export default function ResidentManagement() {
     }
   }
 
-  // ✅ statusFilter backend chưa hỗ trợ -> lọc client-side
-  const filteredResidents = useMemo(() => {
-    return residents.filter(r => {
-      const matchStatus = statusFilter === "ALL" || String(r.status) === String(statusFilter)
-      return matchStatus
-    })
-  }, [residents, statusFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filteredResidents.length / rowsPerPage))
+  const totalPages = Math.max(1, Math.ceil(residents.length / rowsPerPage))
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1)
@@ -151,16 +143,16 @@ export default function ResidentManagement() {
 
   const pageResidents = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage
-    return filteredResidents.slice(start, start + rowsPerPage)
-  }, [filteredResidents, currentPage, rowsPerPage])
+    return residents.slice(start, start + rowsPerPage)
+  }, [residents, currentPage, rowsPerPage])
 
   const rangeText = useMemo(() => {
-    const total = filteredResidents.length
+    const total = residents.length
     if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`
     const start = (currentPage - 1) * rowsPerPage + 1
     const end = Math.min(currentPage * rowsPerPage, total)
     return `${start} - ${end} trên tổng số ${total} bản ghi`
-  }, [filteredResidents.length, currentPage, rowsPerPage])
+  }, [residents.length, currentPage, rowsPerPage])
 
   const householdDisplay = r => {
     // backend trả householdCode + address (có thể null)
@@ -183,6 +175,45 @@ export default function ResidentManagement() {
       alert("Không tải được chi tiết nhân khẩu")
     } finally {
       setLoadingDetail(false)
+    }
+  }
+
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExportExcel() {
+    if (exporting) return
+    setExporting(true)
+    try {
+      const params = {
+        search: debouncedSearch.trim() || undefined,
+        gender: genderFilter !== "ALL" ? genderFilter : undefined,
+        status: statusFilter !== "ALL" ? statusFilter : undefined,
+        householdId: String(householdIdFilter).trim() || undefined
+      }
+
+      const res = await axios.get(`${API_BASE}/residents/export-excel`, {
+        headers: authHeaders(),
+        responseType: "blob",
+        params
+      })
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      })
+
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `residents_${new Date().toISOString().slice(0, 10)}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error(e)
+      alert("Xuất Excel thất bại")
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -260,18 +291,19 @@ export default function ResidentManagement() {
                 </select>
               </div>
 
-              {/* Nếu m không cần lọc householdId thì xoá block này */}
-              {/* <div className="toolbar-search" style={{ maxWidth: 220 }}>
-                <input
-                  type="text"
-                  placeholder="Household ID..."
-                  value={householdIdFilter}
-                  onChange={e => setHouseholdIdFilter(e.target.value)}
-                />
-              </div> */}
+
             </div>
 
             <div className="toolbar-right">
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleExportExcel}
+                disabled={exporting}
+                style={{ marginRight: 10 }}
+              >
+                {exporting ? "Đang xuất..." : "Tải Excel"}
+              </button>
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
@@ -317,14 +349,14 @@ export default function ResidentManagement() {
 
                   return (
                     <tr key={r.id} className="clickable-row" onClick={() => handleOpenDetail(r)}>
-                      <td>
+                      <td className="full_name">
                         {r.fullname}
                       </td>
 
                       <td>{r.gender === "M" ? "Nam" : "Nữ"}</td>
 
                       <td>
-                        {String(r.dob).slice(0, 10)}
+                        {formatDateDMY(r.dob)}
                         <div className="sub-text">{age} tuổi</div>
                       </td>
 
@@ -336,7 +368,7 @@ export default function ResidentManagement() {
                         <span className={`status-badge ${info.className}`}>{info.label}</span>
                       </td>
 
-                      <td>{String(r.createdAt).slice(0, 10)}</td>
+                      <td>{formatDateDMY(r.createdAt)}</td>
 
                       <td onClick={e => e.stopPropagation()}>
                         <div className="row-actions">
@@ -425,7 +457,7 @@ export default function ResidentManagement() {
                   <div className="detail-item">
                     <div className="detail-label">Ngày sinh / Tuổi</div>
                     <div className="detail-value">
-                      {String(selectedResident.dob).slice(0, 10)}{" "}
+                      {formatDateDMY(selectedResident.dob)}{" "}
                       <span className="sub-text">({calcAge(selectedResident.dob)} tuổi)</span>
                     </div>
                   </div>
@@ -499,23 +531,7 @@ export default function ResidentManagement() {
                     <div className="detail-value">{selectedResident.occupation || "—"}</div>
                   </div>
 
-                  {/* Nếu m muốn show lịch sử biến động (changes) */}
-                  {/* <div className="detail-item detail-wide">
-                    <div className="detail-label">Lịch sử biến động</div>
-                    <div className="detail-value">
-                      {Array.isArray(selectedResident.changes) && selectedResident.changes.length > 0 ? (
-                        <ul style={{ margin: 0, paddingLeft: 18 }}>
-                          {selectedResident.changes.slice(0, 5).map(ch => (
-                            <li key={ch.id}>
-                              {String(ch.createdAt).slice(0, 10)} — {ch.type || ch.action || "Biến động"}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        "—"
-                      )}
-                    </div>
-                  </div> */}
+                 
                 </div>
               )}
             </div>
