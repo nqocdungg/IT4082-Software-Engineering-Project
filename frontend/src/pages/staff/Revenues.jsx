@@ -33,6 +33,26 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+function toStartOfDay(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return null
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function toEndOfDay(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return null
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+function rangesOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart <= bEnd && bStart <= aEnd
+}
+
 export default function RevenuesManagement() {
   const navigate = useNavigate()
 
@@ -41,6 +61,9 @@ export default function RevenuesManagement() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [mandatoryFilter, setMandatoryFilter] = useState("ALL")
+
+  const [dateFromFilter, setDateFromFilter] = useState("")
+  const [dateToFilter, setDateToFilter] = useState("")
 
   const [isAddFeeOpen, setIsAddFeeOpen] = useState(false)
   const [feeForm, setFeeForm] = useState(emptyFeeForm)
@@ -68,6 +91,14 @@ export default function RevenuesManagement() {
 
   const filteredFees = useMemo(() => {
     const list = Array.isArray(fees) ? fees : []
+
+    const fFrom = toStartOfDay(dateFromFilter)
+    const fTo = toEndOfDay(dateToFilter)
+
+    const hasDateFilter = !!(fFrom || fTo)
+    const filterStart = fFrom || new Date(-8640000000000000)
+    const filterEnd = fTo || new Date(8640000000000000)
+
     return list.filter(f => {
       const matchSearch =
         !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase())
@@ -80,9 +111,23 @@ export default function RevenuesManagement() {
         (mandatoryFilter === "MANDATORY" && !!f.isMandatory) ||
         (mandatoryFilter === "OPTIONAL" && !f.isMandatory)
 
-      return matchSearch && matchStatus && matchMandatory
+      let matchDate = true
+      if (hasDateFilter) {
+        const feeHasFrom = !!f.fromDate
+        const feeHasTo = !!f.toDate
+
+        if (!feeHasFrom && !feeHasTo) {
+          matchDate = true
+        } else {
+          const feeStart = feeHasFrom ? new Date(f.fromDate) : new Date(-8640000000000000)
+          const feeEnd = feeHasTo ? new Date(f.toDate) : new Date(8640000000000000)
+          matchDate = rangesOverlap(feeStart, feeEnd, filterStart, filterEnd)
+        }
+      }
+
+      return matchSearch && matchStatus && matchMandatory && matchDate
     })
-  }, [fees, search, statusFilter, mandatoryFilter])
+  }, [fees, search, statusFilter, mandatoryFilter, dateFromFilter, dateToFilter])
 
   const stats = useMemo(() => {
     const list = Array.isArray(fees) ? fees : []
@@ -96,7 +141,7 @@ export default function RevenuesManagement() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, statusFilter, mandatoryFilter])
+  }, [search, statusFilter, mandatoryFilter, dateFromFilter, dateToFilter])
 
   const totalPages = Math.max(1, Math.ceil(filteredFees.length / rowsPerPage))
 
@@ -136,7 +181,6 @@ export default function RevenuesManagement() {
     if (hasFrom && !hasTo) return `Từ ${fromStr}`
     return `Đến ${toStr}`
   }
-
 
   function openAddFee() {
     setFeeForm({ ...emptyFeeForm, status: "1" })
@@ -243,10 +287,7 @@ export default function RevenuesManagement() {
               </div>
 
               <div className="toolbar-select">
-                <select
-                  value={mandatoryFilter}
-                  onChange={e => setMandatoryFilter(e.target.value)}
-                >
+                <select value={mandatoryFilter} onChange={e => setMandatoryFilter(e.target.value)}>
                   <option value="ALL">Tất cả loại khoản thu</option>
                   <option value="MANDATORY">Bắt buộc</option>
                   <option value="OPTIONAL">Tự nguyện</option>
@@ -300,13 +341,7 @@ export default function RevenuesManagement() {
                     </td>
 
                     <td>
-                      <span
-                        className={
-                          f.isMandatory
-                            ? "fee-tag fee-tag-mandatory"
-                            : "fee-tag fee-tag-optional"
-                        }
-                      >
+                      <span className={f.isMandatory ? "fee-tag fee-tag-mandatory" : "fee-tag fee-tag-optional"}>
                         {f.isMandatory ? "Bắt buộc" : "Tự nguyện"}
                       </span>
                     </td>
@@ -316,45 +351,24 @@ export default function RevenuesManagement() {
                     </td>
 
                     <td className="col-date">
-                      <span
-                        className={
-                          f.fromDate || f.toDate
-                            ? "fee-date-range"
-                            : "fee-date-range fee-date-none"
-                        }
-                      >
+                      <span className={f.fromDate || f.toDate ? "fee-date-range" : "fee-date-range fee-date-none"}>
                         {getDateRangeLabel(f)}
                       </span>
                     </td>
 
                     <td>
-                      <span
-                        className={
-                          f.status === 1
-                            ? "fee-status-badge fee-status-active"
-                            : "fee-status-badge fee-status-inactive"
-                        }
-                      >
+                      <span className={f.status === 1 ? "fee-status-badge fee-status-active" : "fee-status-badge fee-status-inactive"}>
                         {getStatusLabel(f.status)}
                       </span>
                     </td>
 
                     <td>
                       <div className="row-actions">
-                        <button
-                          type="button"
-                          title="Xem chi tiết"
-                          onClick={() => navigate(`/revenues/${f.id}`)}
-                        >
+                        <button type="button" title="Xem chi tiết" onClick={() => navigate(`/revenues/${f.id}`)}>
                           <FaEye />
                         </button>
 
-                        <button
-                          type="button"
-                          title="Xóa"
-                          className="danger"
-                          onClick={() => handleDeleteFee(f.id)}
-                        >
+                        <button type="button" title="Xóa" className="danger" onClick={() => handleDeleteFee(f.id)}>
                           <FaTrash />
                         </button>
                       </div>
@@ -384,18 +398,10 @@ export default function RevenuesManagement() {
           <div className="footer-right">
             <span className="footer-muted">{rangeText}</span>
             <div className="pager">
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
-              >
+              <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
                 <FaChevronLeft />
               </button>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
-              >
+              <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
                 <FaChevronRight />
               </button>
             </div>
@@ -426,57 +432,61 @@ export default function RevenuesManagement() {
                   </div>
                 </div>
 
-                <div className="detail-item">
-                  <div className="detail-label">Đơn giá</div>
-                  <div className="detail-value">
-                    <input
-                      name="unitPrice"
-                      type="number"
-                      min="0"
-                      value={feeForm.unitPrice}
-                      onChange={handleFeeFormChange}
-                      placeholder="Để trống nếu không có"
-                    />
+                <div className="detail-row3">
+                  <div className="detail-item">
+                    <div className="detail-label">Đơn giá</div>
+                    <div className="detail-value">
+                      <input
+                        name="unitPrice"
+                        type="number"
+                        min="0"
+                        value={feeForm.unitPrice}
+                        onChange={handleFeeFormChange}
+                        placeholder="Để trống nếu không có"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Loại khoản thu</div>
+                    <div className="detail-value">
+                      <select
+                        name="isMandatory"
+                        value={feeForm.isMandatory ? "1" : "0"}
+                        onChange={e =>
+                          setFeeForm(prev => ({
+                            ...prev,
+                            isMandatory: e.target.value === "1"
+                          }))
+                        }
+                      >
+                        <option value="1">Bắt buộc</option>
+                        <option value="0">Tự nguyện</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="detail-item">
+                    <div className="detail-label">Trạng thái</div>
+                    <div className="detail-value">
+                      <input value="Đang hoạt động" disabled />
+                    </div>
                   </div>
                 </div>
 
-                <div className="detail-item">
-                  <div className="detail-label">Loại khoản thu</div>
-                  <div className="detail-value">
-                    <select
-                      name="isMandatory"
-                      value={feeForm.isMandatory ? "1" : "0"}
-                      onChange={e =>
-                        setFeeForm(prev => ({
-                          ...prev,
-                          isMandatory: e.target.value === "1"
-                        }))
-                      }
-                    >
-                      <option value="1">Bắt buộc</option>
-                      <option value="0">Tự nguyện</option>
-                    </select>
+                <div className="detail-row2">
+                  <div className="detail-item">
+                    <div className="detail-label">Ngày bắt đầu</div>
+                    <div className="detail-value">
+                      <input type="date" name="fromDate" value={feeForm.fromDate} onChange={handleFeeFormChange} />
+                    </div>
                   </div>
-                </div>
 
-                <div className="detail-item">
-                  <div className="detail-label">Trạng thái</div>
-                  <div className="detail-value">
-                    <input value="Đang hoạt động" disabled />
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-label">Ngày bắt đầu</div>
-                  <div className="detail-value">
-                    <input type="date" name="fromDate" value={feeForm.fromDate} onChange={handleFeeFormChange} />
-                  </div>
-                </div>
-
-                <div className="detail-item">
-                  <div className="detail-label">Ngày kết thúc</div>
-                  <div className="detail-value">
-                    <input type="date" name="toDate" value={feeForm.toDate} onChange={handleFeeFormChange} />
+                  <div className="detail-item">
+                    <div className="detail-label">Ngày kết thúc</div>
+                    <div className="detail-value">
+                      <input type="date" name="toDate" value={feeForm.toDate} onChange={handleFeeFormChange} />
+                    </div>
                   </div>
                 </div>
 

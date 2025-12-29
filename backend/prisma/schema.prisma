@@ -168,6 +168,7 @@ model FeeRecord {
   // 0: unpaid
   // 1: partial
   // 2: paid
+  // 3: online paid 
 
   description String?
 
