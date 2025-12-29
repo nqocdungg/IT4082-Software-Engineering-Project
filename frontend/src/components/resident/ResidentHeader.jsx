@@ -26,8 +26,15 @@ export default function ResidentHeader() {
         </div>
 
         <nav className="nav-menu">
-          <div className="nav-item-resident" onClick={() => toggleDropdown("home")}>
-            <span><Link to="/resident-home" className="nav-link">Trang chủ</Link></span>
+          <div
+            className="nav-item-resident"
+            onClick={() => toggleDropdown("home")}
+          >
+            <span>
+              <Link to="/resident-home" className="nav-link">
+                Trang chủ
+              </Link>
+            </span>
           </div>
 
           <div
@@ -44,14 +51,16 @@ export default function ResidentHeader() {
           </div>
 
           <div
-            className={`nav-item-resident ${openDropdown === "bill" ? "active" : ""}`}
+            className={`nav-item-resident ${
+              openDropdown === "bill" ? "active" : ""
+            }`}
             onClick={() => toggleDropdown("bill")}
           >
             <span>Hóa đơn</span>
             <div className="dropdown">
-              <Link to="/resident/payment">Hóa đơn cần nộp</Link>
-              <Link to="/resident/history">Lịch sử thanh toán</Link>
-              <Link to="/resident/payment">Các khoản thu</Link>
+              <Link to="/resident/payment-infor">Thông tin khoản thu</Link>
+              <Link to="/resident/payment">Thanh toán hoá đơn </Link>
+              <Link to="/resident/history">Lịch sử thanh toán </Link>
             </div>
           </div>
 
@@ -91,7 +100,9 @@ export default function ResidentHeader() {
             }`}
           >
             <div>Hồ sơ cá nhân</div>
-            <div onClick={handleLogout} style={{cursor: "pointer"}}>Đăng xuất</div>
+            <div onClick={handleLogout} style={{ cursor: "pointer" }}>
+              Đăng xuất
+            </div>
           </div>
         </div>
       </div>
