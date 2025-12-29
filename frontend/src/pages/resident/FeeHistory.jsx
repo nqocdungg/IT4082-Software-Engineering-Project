@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ResidentHeader from "../../components/resident/ResidentHeader";
 import axios from "axios";
 import "../../styles/resident/FeeHistory.css";
@@ -9,22 +9,17 @@ const formatCurrency = (amount) =>
   );
 
 const formatDate = (date) =>
-  date ? new Date(date).toLocaleDateString("vi-VN") : "";
-
-const toDateOnly = (d) => {
-  const date = new Date(d);
-  date.setHours(0, 0, 0, 0);
-  return date;
-};
+  date ? new Date(date).toLocaleDateString("vi-VN") : "-";
 
 export default function FeeHistory() {
   const [loading, setLoading] = useState(false);
   const [feeRecords, setFeeRecords] = useState([]);
-
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [fromDate, setFromDate] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
+  /* ================= FETCH DATA ================= */
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -35,8 +30,8 @@ export default function FeeHistory() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setFeeRecords(res.data.history || []);
-      } catch (err) {
-        console.error("Fetch fee history error:", err);
+      } catch (error) {
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -44,135 +39,191 @@ export default function FeeHistory() {
     fetchData();
   }, []);
 
+  /* ================= FILTER ================= */
   const filteredFees = useMemo(() => {
     return feeRecords
-
       .filter((f) =>
         f.feeType?.name?.toLowerCase().includes(search.toLowerCase())
       )
-
       .filter((f) => {
-        if (typeFilter === "all") return true;
         if (typeFilter === "mandatory") return f.feeType?.isMandatory;
-        return !f.feeType?.isMandatory;
-      })
-
-      .filter((f) => {
-        if (!fromDate) return true;
-        return (
-          toDateOnly(f.createdAt).getTime() === toDateOnly(fromDate).getTime()
-        );
+        if (typeFilter === "optional") return !f.feeType?.isMandatory;
+        return true;
       });
-  }, [feeRecords, search, typeFilter, fromDate]);
+  }, [feeRecords, search, typeFilter]);
 
-  const getStatusLabel = (status) => {
-    if (status === 0) return "Chưa thanh toán";
-    if (status === 1) return "Thanh toán một phần";
-    return "Đã thanh toán";
+  /* ================= PAGINATION ================= */
+  const totalPages = Math.ceil(filteredFees.length / pageSize);
+  const pagedFees = filteredFees.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  /* ================= STATUS ================= */
+  const getPaymentStatus = (fee) => {
+    switch (fee.status) {
+      case 0:
+        return "Chưa thanh toán";
+      case 1:
+        return "Thanh toán 1 phần";
+      case 2:
+        return "Đã thanh toán";
+      default:
+        return "-";
+    }
   };
 
-  const getStatusClass = (status) => {
-    if (status === 0) return "status-chua_dong";
-    if (status === 1) return "status-dong_phan";
-    return "status-hoan_thanh";
+  const getPaymentClass = (fee) => {
+    switch (fee.status) {
+      case 0:
+        return "fee-status-unpaid";
+      case 1:
+        return "fee-status-partial";
+      case 2:
+        return "fee-status-paid";
+      default:
+        return "";
+    }
   };
 
   return (
-    <div className="fee-page">
+    <div className="revenues-page">
       <ResidentHeader />
 
-      <h1 className="page-title">Lịch sử thanh toán </h1>
+      {/* ================= TITLE ================= */}
+      <h1 className="page-title">Lịch sử thanh toán</h1>
 
-      <div className="fee-container">
-        <div className="fee-toolbar">
-          <div className="fee-toggle">
+      {/* ================= TOOLBAR ================= */}
+      <div className="table-toolbar">
+        <div className="filter-type">
+          {["all", "mandatory", "optional"].map((type) => (
             <button
-              className={`fee-toggle-btn ${
-                typeFilter === "all" ? "active-all" : ""
-              }`}
-              onClick={() => setTypeFilter("all")}
+              key={type}
+              className={typeFilter === type ? "active" : ""}
+              onClick={() => {
+                setTypeFilter(type);
+                setCurrentPage(1);
+              }}
             >
-              Tất cả
+              {type === "all"
+                ? "Tất cả"
+                : type === "mandatory"
+                ? "Bắt buộc"
+                : "Đóng góp"}
             </button>
-            <button
-              className={`fee-toggle-btn ${
-                typeFilter === "mandatory" ? "active-mandatory" : ""
-              }`}
-              onClick={() => setTypeFilter("mandatory")}
-            >
-              Phí cố định
-            </button>
-            <button
-              className={`fee-toggle-btn ${
-                typeFilter === "optional" ? "active-contribution" : ""
-              }`}
-              onClick={() => setTypeFilter("optional")}
-            >
-              Phí tự nguyện
-            </button>
-          </div>
-
-          <div className="fee-filter-right">
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-
-            <input
-              className="fee-search"
-              type="text"
-              placeholder="Tìm theo tên khoản thu..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          ))}
         </div>
 
-        <div className="fee-list">
-          {loading ? (
-            <div className="empty">Đang tải dữ liệu...</div>
-          ) : filteredFees.length === 0 ? (
-            <div className="empty">Không có khoản thu</div>
-          ) : (
-            filteredFees.map((f) => (
-              <div key={f.id} className="fee-card">
-                <div className="fee-left">
-                  <div className="fee-icon">📄</div>
-                  <div className="fee-info">
-                    <div className="fee-title-row">
-                      <h3>{f.feeType?.name}</h3>
+        <div className="toolbar-search">
+          <input
+            type="text"
+            placeholder="Tìm theo tên khoản thu..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ================= TABLE ================= */}
+      <div className="table-card">
+        <div className="table-wrapper">
+          <table className="fee-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tên khoản thu</th>
+                <th>Loại</th>
+                <th>Số tiền</th>
+                <th>Thông tin</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="empty-row">
+                    Đang tải...
+                  </td>
+                </tr>
+              ) : pagedFees.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="empty-row">
+                    Không có khoản thu phù hợp
+                  </td>
+                </tr>
+              ) : (
+                pagedFees.map((f) => (
+                  <tr key={f.id}>
+                    <td>{f.id}</td>
+                    <td>{f.feeType?.name ?? "-"}</td>
+                    <td>
                       <span
-                        className={`fee-badge ${
-                          f.feeType?.isMandatory ? "mandatory" : "optional"
-                        }`}
+                        className={
+                          f.feeType?.isMandatory
+                            ? "fee-type-mandatory"
+                            : "fee-type-optional"
+                        }
                       >
-                        {f.feeType?.isMandatory
-                          ? "Phí cố định"
-                          : "Phí tự nguyện"}
+                        {f.feeType?.isMandatory ? "Bắt buộc" : "Đóng góp"}
                       </span>
-                    </div>
+                    </td>
+                    <td>{formatCurrency(f.amount)}</td>
+                    <td>
+                      <div style={{ fontSize: 12 }}>
+                        <div>
+                          <strong>Mô tả:</strong> {f.description || "—"}
+                        </div>
+                        <div style={{ color: "#6b7280", marginTop: 4 }}>
+                          <strong>
+                            {f.feeType?.isMandatory
+                              ? "Ngày nộp:"
+                              : "Ngày đóng góp:"}
+                          </strong>{" "}
+                          {formatDate(f.createdAt)}
+                        </div>
+                      </div>
+                    </td>
 
-                    {f.description && (
-                      <p className="fee-description">{f.description}</p>
-                    )}
+                    <td>
+                      <span className={getPaymentClass(f)}>
+                        {getPaymentStatus(f)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                    <div className="fee-meta">
-                      <span>📅 {formatDate(f.createdAt)}</span>
-                      {f.updatedAt && <span>🕒 {formatDate(f.updatedAt)}</span>}
-                    </div>
-                  </div>
-                </div>
+        {/* ================= PAGINATION ================= */}
+        <div className="table-footer">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            &lt;
+          </button>
 
-                <div className="fee-right">
-                  <div className="fee-amount">{formatCurrency(f.amount)}</div>
-                  <span className={`fee-status ${getStatusClass(f.status)}`}>
-                    {getStatusLabel(f.status)}
-                  </span>
-                </div>
-              </div>
-            ))
-          )}
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i + 1}
+              className={currentPage === i + 1 ? "active" : ""}
+              onClick={() => setCurrentPage(i + 1)}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            &gt;
+          </button>
         </div>
       </div>
     </div>
