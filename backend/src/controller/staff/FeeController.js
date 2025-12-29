@@ -9,7 +9,8 @@ export const getAllFees = async (req, res) => {
     const mapped = feeTypes.map((f) => ({
       id: f.id,
       name: f.name,
-      description: f.description,
+      shortDescription: f.shortDescription,
+      longDescription: f.longDescription,
       isMandatory: f.isMandatory,
       unitPrice: f.unitPrice, // có thể null nếu đóng góp
       status: f.isActive ? 1 : 0,
@@ -25,7 +26,7 @@ export const getAllFees = async (req, res) => {
 };
 
 export const createFee = async (req, res) => {
-  const { name, description, isMandatory, unitPrice, fromDate, toDate } = req.body;
+  const { name, shortDescription, longDescription, isMandatory, unitPrice, fromDate, toDate } = req.body;
 
   try {
     const cleanName = String(name || "").trim();
@@ -62,7 +63,8 @@ export const createFee = async (req, res) => {
     const newFeeType = await prisma.feeType.create({
       data: {
         name: cleanName,
-        description: description ? String(description) : "",
+        shortDescription: shortDescription ? String(shortDescription) : null,
+        longDescription: longDescription ? String(longDescription) : null,
         isMandatory: mandatoryBool,
         unitPrice: priceValue,
         fromDate: fromDate ? new Date(fromDate) : null,
@@ -76,7 +78,8 @@ export const createFee = async (req, res) => {
       data: {
         id: newFeeType.id,
         name: newFeeType.name,
-        description: newFeeType.description,
+        shortDescription: newFeeType.shortDescription,
+        longDescription: newFeeType.longDescription,
         isMandatory: newFeeType.isMandatory,
         unitPrice: newFeeType.unitPrice,
         status: newFeeType.isActive ? 1 : 0,
@@ -92,7 +95,7 @@ export const createFee = async (req, res) => {
 
 export const updateFee = async (req, res) => {
   const { id } = req.params;
-  const { name, description, isMandatory, unitPrice, status, fromDate, toDate } = req.body;
+  const { name, shortDescription, longDescription, isMandatory, unitPrice, status, fromDate, toDate } = req.body;
 
   try {
     const feeTypeId = parseInt(id, 10);
@@ -116,7 +119,12 @@ export const updateFee = async (req, res) => {
       data.name = cleanName;
     }
 
-    if (description !== undefined) data.description = description ? String(description) : "";
+    if (shortDescription !== undefined)
+      data.shortDescription = shortDescription ? String(shortDescription) : null
+
+    if (longDescription !== undefined)
+      data.longDescription = longDescription ? String(longDescription) : null
+
 
     if (isMandatory !== undefined) data.isMandatory = Boolean(isMandatory);
 
@@ -156,7 +164,8 @@ export const updateFee = async (req, res) => {
       data: {
         id: updated.id,
         name: updated.name,
-        description: updated.description,
+        shortDescription: updated.shortDescription,
+        longDescription: updated.longDescription,
         isMandatory: updated.isMandatory,
         unitPrice: updated.unitPrice,
         status: updated.isActive ? 1 : 0,
@@ -200,12 +209,23 @@ export const deleteFee = async (req, res) => {
 };
 
 export const createTransaction = async (req, res) => {
-  const { feeId, householdId, amount, note } = req.body;
+  const { feeId, householdId, amount, note} = req.body;
 
   try {
     const feeTypeId = parseInt(feeId, 10);
     const hhId = parseInt(householdId, 10);
     const payAmount = Number(amount);
+
+    const role = req.user?.role;
+
+    if (role === "HOUSEHOLD") {
+      return res.status(403).json({
+        message: "Cư dân không được phép thao tác chức năng thu tiền của ban quản lý",
+      });
+    }
+
+    const paymentMethod = "OFFLINE";
+
 
     if (!feeTypeId || !hhId || !Number.isFinite(payAmount) || payAmount <= 0) {
       return res.status(400).json({ message: "Dữ liệu thu phí không hợp lệ" });
@@ -233,21 +253,15 @@ export const createTransaction = async (req, res) => {
       return res.status(400).json({ message: "Khoản thu đang ngừng áp dụng" });
     }
 
-    // ✅ ĐÓNG GÓP: cho thu bất kỳ >0, không check remaining
     if (!feeType.isMandatory) {
-      const manager =
-        (await prisma.user.findFirst({
-          where: { role: "ACCOUNTANT", isActive: true },
-          select: { id: true, fullname: true, role: true },
-        })) ||
-        (await prisma.user.findFirst({
-          where: { role: "HEAD", isActive: true },
-          select: { id: true, fullname: true, role: true },
-        })) ||
-        (await prisma.user.findFirst({
-          where: { role: "DEPUTY", isActive: true },
-          select: { id: true, fullname: true, role: true },
-        }));
+      const manager = await prisma.user.findFirst({
+        where: {
+          role: { in: ["ACCOUNTANT", "HEAD", "DEPUTY"] },
+          isActive: true,
+        },
+        select: { id: true, fullname: true, role: true },
+      });
+
 
       if (!manager) {
         return res.status(400).json({ message: "Không tìm thấy cán bộ quản lý để ghi nhận thu" });
@@ -256,7 +270,8 @@ export const createTransaction = async (req, res) => {
       const newRecord = await prisma.feeRecord.create({
         data: {
           amount: payAmount,
-          status: 2, // đóng góp: coi như “đã ghi nhận”
+          status: 2, 
+          method: paymentMethod,
           description: note || "",
           householdId: hhId,
           feeTypeId: feeTypeId,
@@ -276,7 +291,7 @@ export const createTransaction = async (req, res) => {
           amount: newRecord.amount,
           status: newRecord.status,
           note: newRecord.description,
-          date: newRecord.updatedAt,
+          date: newRecord.createdAt,
           fee: newRecord.feeType,
           household: newRecord.household,
           manager: newRecord.manager,
@@ -300,9 +315,14 @@ export const createTransaction = async (req, res) => {
     const expected = unitPrice * memberCount;
 
     const paidAgg = await prisma.feeRecord.aggregate({
-      where: { feeTypeId, householdId: hhId },
+      where: {
+        feeTypeId,
+        householdId: hhId,
+        status: { in: [1, 2] }
+      },
       _sum: { amount: true },
     });
+
 
     const paidSoFar = Number(paidAgg?._sum?.amount) || 0;
     const remainingBefore = Math.max(expected - paidSoFar, 0);
@@ -317,19 +337,14 @@ export const createTransaction = async (req, res) => {
 
     const recordStatus = payAmount >= remainingBefore ? 2 : 1;
 
-    const manager =
-      (await prisma.user.findFirst({
-        where: { role: "ACCOUNTANT", isActive: true },
-        select: { id: true, fullname: true, role: true },
-      })) ||
-      (await prisma.user.findFirst({
-        where: { role: "HEAD", isActive: true },
-        select: { id: true, fullname: true, role: true },
-      })) ||
-      (await prisma.user.findFirst({
-        where: { role: "DEPUTY", isActive: true },
-        select: { id: true, fullname: true, role: true },
-      }));
+    const manager = await prisma.user.findFirst({
+      where: {
+        role: { in: ["ACCOUNTANT", "HEAD", "DEPUTY"] },
+        isActive: true,
+      },
+      select: { id: true, fullname: true, role: true },
+    });
+
 
     if (!manager) {
       return res.status(400).json({ message: "Không tìm thấy cán bộ quản lý để ghi nhận thu" });
@@ -339,6 +354,7 @@ export const createTransaction = async (req, res) => {
       data: {
         amount: payAmount,
         status: recordStatus,
+        method: paymentMethod,
         description: note || "",
         householdId: hhId,
         feeTypeId: feeTypeId,
@@ -358,7 +374,7 @@ export const createTransaction = async (req, res) => {
         amount: newRecord.amount,
         status: newRecord.status,
         note: newRecord.description,
-        date: newRecord.updatedAt,
+        date: newRecord.createdAt,
         fee: newRecord.feeType,
         household: newRecord.household,
         manager: newRecord.manager,
@@ -371,11 +387,15 @@ export const createTransaction = async (req, res) => {
 };
 
 export const getTransactions = async (req, res) => {
-  const { feeId, householdId } = req.query;
-
+  const { feeId, householdId, method } = req.query;
   const whereClause = {};
+
   if (feeId) whereClause.feeTypeId = parseInt(feeId, 10);
   if (householdId) whereClause.householdId = parseInt(householdId, 10);
+
+  if (method === "ONLINE" || method === "OFFLINE") {
+    whereClause.method = method;
+  }
 
   try {
     const history = await prisma.feeRecord.findMany({
@@ -385,13 +405,14 @@ export const getTransactions = async (req, res) => {
         household: { select: { id: true, householdCode: true } },
         manager: { select: { id: true, fullname: true, role: true } },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
     });
 
     const mapped = history.map((r) => ({
       id: r.id,
       amount: r.amount,
       status: r.status,
+      method: r.method,
       note: r.description,
       date: r.updatedAt,
       fee: r.feeType,
@@ -431,7 +452,10 @@ export const getFeeSummary = async (req, res) => {
 
     const paidByHousehold = await prisma.feeRecord.groupBy({
       by: ["householdId"],
-      where: { feeTypeId },
+      where: { 
+        feeTypeId, 
+        status: { in: [1, 2] } // partial + paid
+      },
       _sum: { amount: true },
     });
 

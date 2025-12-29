@@ -1,4 +1,4 @@
-import express from "express";
+import express from "express"
 import {
   getAllFees,
   createFee,
@@ -7,18 +7,55 @@ import {
   createTransaction,
   getTransactions,
   getFeeSummary,
-} from "../../controller/staff/FeeController.js";
+} from "../../controller/staff/FeeController.js"
 
-const router = express.Router();
+import verifyToken from "../../middleware/authMiddleware.js"
+import { allowRoles } from "../../middleware/roleMiddleware.js"
 
-router.get("/list", getAllFees);
-router.post("/create", createFee);
-router.put("/update/:id", updateFee);
-router.delete("/delete/:id", deleteFee);
+const router = express.Router()
 
-router.post("/pay", createTransaction);
-router.get("/history", getTransactions);
+router.use(verifyToken)
 
-router.get("/summary", getFeeSummary);
+router.get(
+  "/list",
+  allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
+  getAllFees
+)
 
-export default router;
+router.post(
+  "/create",
+  allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
+  createFee
+)
+
+router.put(
+  "/update/:id",
+  allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
+  updateFee
+)
+
+router.delete(
+  "/delete/:id",
+  allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
+  deleteFee
+)
+
+router.post(
+  "/pay",
+  allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
+  createTransaction
+)
+
+router.get(
+  "/history",
+  allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
+  getTransactions
+)
+
+router.get(
+  "/summary",
+  allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
+  getFeeSummary
+)
+
+export default router
