@@ -1,322 +1,306 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import ResidentHeader from "../../components/resident/ResidentHeader";
 import axios from "axios";
 import { QRCodeCanvas } from "qrcode.react";
 import { Wallet, CheckCircle, Loader2, Heart, ShieldAlert } from "lucide-react";
 import "../../styles/resident/ResidentFees.css";
-import {
-  FaClipboardList,
-  FaHandHoldingUsd,
-  FaCalendarAlt,
-  FaMoneyBillWave,
-} from "react-icons/fa";
 
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
-    value ?? 0
-  );
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
 
 export default function FeePayment() {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState({ mandatoryFees: [], contributionFees: [] });
-  const [selectedType, setSelectedType] = useState("all");
-  const [filterMonth, setFilterMonth] = useState("");
-  const [searchName, setSearchName] = useState("");
-  const [expandedId, setExpandedId] = useState(null);
-  const [popupFee, setPopupFee] = useState(null);
+  const [mandatoryFees, setMandatoryFees] = useState([]);
+  const [contributionFees, setContributionFees] = useState([]);
+  const [donationInputs, setDonationInputs] = useState({});
+
+  const [paymentModal, setPaymentModal] = useState({
+    isOpen: false,
+    type: null,
+    amount: 0,
+    step: 0,
+  });
 
   useEffect(() => {
-    const fetchFees = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(
-          "http://localhost:5000/api/household/fees/pending",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setData(res.data);
+        const res = await axios.get("http://localhost:5000/api/household/fees/pending", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setMandatoryFees(res.data.mandatoryFees || []);
+        setContributionFees(res.data.contributionFees || []);
       } catch (error) {
-        console.error("Lỗi load phí:", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
-    fetchFees();
+    fetchData();
   }, []);
 
-  const allFees = [
-    ...data.mandatoryFees.map((fee) => ({ ...fee, type: "mandatory" })),
-    ...data.contributionFees.map((fee) => ({ ...fee, type: "contribution" })),
-  ];
+  const handleDonationChange = (id, value) => {
+    const numValue = parseInt(value.replace(/[^0-9]/g, ''), 10) || 0;
+    setDonationInputs((prev) => ({
+      ...prev,
+      [id]: numValue,
+    }));
+  };
 
-  const filteredFees = allFees.filter((fee) => {
-    if (selectedType !== "all" && fee.type !== selectedType) return false;
+  const totalDonationInput = Object.values(donationInputs).reduce((a, b) => a + b, 0);
+  const totalMandatory = mandatoryFees.reduce((sum, item) => sum + item.amount, 0);
 
-    const dateSource =
-      fee.type === "mandatory" ? fee.feeType?.fromDate : fee.fromDate;
-    if (filterMonth && dateSource && !dateSource.startsWith(filterMonth))
-      return false;
+  const startPayment = (type) => {
+    const amount = type === 'MANDATORY' ? totalMandatory : totalDonationInput;
+    
+    if (amount <= 0) {
+      alert("Vui lòng nhập số tiền cần thanh toán!");
+      return;
+    }
 
-    const feeName = fee.type === "mandatory" ? fee.feeType?.name : fee.name;
-    if (
-      searchName &&
-      !feeName?.toLowerCase().includes(searchName.toLowerCase())
-    )
-      return false;
+    setPaymentModal({
+      isOpen: true,
+      type,
+      amount,
+      step: 0,
+    });
+  };
 
-    return true;
-  });
+  useEffect(() => {
+    let timer;
 
-  const toggleExpand = (id) => setExpandedId(expandedId === id ? null : id);
+    if (paymentModal.isOpen && paymentModal.step === 0) {
+      timer = setTimeout(() => {
+        setPaymentModal((prev) => ({ ...prev, step: 1 }));
+      }, 2000);
+    }
 
-  // Xác định số tiền thực tế đã nộp
-  const getPaidAmount = (fee) =>
-    fee.type === "mandatory" ? fee.amount : fee.totalCommunityDonated ?? 0;
+    if (paymentModal.isOpen && paymentModal.step === 1) {
+      const executePayment = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          
+          let payload = { type: paymentModal.type };
+          
+          if (paymentModal.type === 'MANDATORY') {
+            payload.feeRecordIds = mandatoryFees.map(f => f.id);
+          } else {
+            const donations = [];
+            for (const [id, amount] of Object.entries(donationInputs)) {
+              if (amount > 0) donations.push({ feeTypeId: parseInt(id), amount });
+            }
+            payload.donations = donations;
+          }
 
-  // Trạng thái
-  const getStatusText = (fee) =>
-    getPaidAmount(fee) > 0 ? "Đã đóng" : "Chưa đóng";
-  const getStatusClass = (fee) =>
-    getPaidAmount(fee) > 0 ? "status-paid" : "status-0";
+          await axios.post("http://localhost:5000/api/household/pay", payload, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          timer = setTimeout(() => {
+            setPaymentModal((prev) => ({ ...prev, step: 2 }));
+            handleUpdateAfterPayment();
+          }, 1000);
+
+        } catch (error) {
+          console.error("Lỗi thanh toán:", error);
+          alert("Giao dịch thất bại! Vui lòng thử lại sau.");
+          setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 });
+        }
+      };
+
+      executePayment();
+    }
+
+    return () => clearTimeout(timer);
+  }, [paymentModal.step, paymentModal.isOpen]);
+
+  const handleUpdateAfterPayment = () => {
+    if (paymentModal.type === 'MANDATORY') {
+      setMandatoryFees([]);
+    } else {
+      const updatedContributions = contributionFees.map(fee => {
+        const donated = donationInputs[fee.id] || 0;
+        if (donated > 0) {
+            return { 
+                ...fee, 
+                totalCommunityDonated: (fee.totalCommunityDonated || 0) + donated 
+            };
+        }
+        return fee;
+      });
+      setContributionFees(updatedContributions);
+      setDonationInputs({});
+    }
+  };
+
+  const closePaymentModal = () => {
+    setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 });
+  };
 
   return (
-    <>
+    <div>
       <ResidentHeader />
-      <div className="fee-wrapper">
-        <div className="fee-container">
-          <h1 className="page-title">Thông tin các khoản thu</h1>
+      <div className="square-layout">
+        <h2 className="page-title">Thanh toán hóa đơn</h2>
 
-          {/* FILTER */}
-          <div className="filter-bar">
-            <div className="filter-tabs">
-              <button
-                className={selectedType === "all" ? "active" : ""}
-                onClick={() => setSelectedType("all")}
-              >
-                Tất cả
-              </button>
-              <button
-                className={
-                  selectedType === "mandatory" ? "active mandatory" : ""
-                }
-                onClick={() => setSelectedType("mandatory")}
-              >
-                Thu cố định
-              </button>
-              <button
-                className={
-                  selectedType === "contribution" ? "active contribution" : ""
-                }
-                onClick={() => setSelectedType("contribution")}
-              >
-                Đóng góp
-              </button>
-            </div>
-            <div
-              className="filter-actions"
-              style={{ display: "flex", gap: 12, alignItems: "center" }}
-            >
-              <input
-                type="month"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-                style={{ padding: 4 }}
-              />
-              <input
-                type="text"
-                placeholder="Tìm theo tên khoản thu..."
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                style={{ padding: 4 }}
-              />
-            </div>
-          </div>
+        {loading ? <p>Đang tải...</p> : (
+          <div className="payment-grid-layout">
+            <div className="payment-column">
+              <div className="column-header">
+                <h3><ShieldAlert size={20} className="icon-mandatory"/> Phí Dịch Vụ</h3>
+                <span className="status-badge badge-mandatory">Bắt buộc</span>
+              </div>
+              
+              <div className="table-container">
+                {mandatoryFees.length > 0 ? (
+                  <table className="mini-table">
+                    <thead>
+                      <tr>
+                        <th>Khoản phí</th>
+                        <th>Hạn nộp</th>
+                        <th className="text-right">Số tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mandatoryFees.map((fee) => (
+                        <tr key={fee.id}>
+                          <td>
+                            <div className="fee-name">{fee.feeType.name}</div>
+                            <div className="fee-desc">{fee.feeType.description || "Thu định kỳ"}</div>
+                          </td>
+                          <td>{fee.feeType.toDate ? new Date(fee.feeType.toDate).toLocaleDateString('vi-VN') : '—'}</td>
+                          <td className="text-right fee-amount">
+                            {formatCurrency(fee.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="empty-state">Bạn đã hoàn thành tất cả khoản phí bắt buộc!</div>
+                )}
+              </div>
 
-          {/* LIST */}
-          {loading ? (
-            <p className="empty-text">Đang tải dữ liệu...</p>
-          ) : filteredFees.length === 0 ? (
-            <p className="empty-text">Không có khoản thu nào</p>
-          ) : (
-            <div className="fee-list">
-              {filteredFees.map((fee) => (
-                <div key={fee.id} className={`fee-card ${fee.type}`}>
-                  <div
-                    className="fee-main"
-                    onClick={() => toggleExpand(fee.id)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className={`fee-icon ${fee.type}`}>
-                      {fee.type === "mandatory" ? (
-                        <FaClipboardList />
-                      ) : (
-                        <FaHandHoldingUsd />
-                      )}
-                    </div>
-                    <div className="fee-info">
-                      <div className="fee-name">
-                        {fee.type === "mandatory"
-                          ? fee.feeType?.name
-                          : fee.name}
-                        <span
-                          className={`fee-tag ${
-                            fee.type === "mandatory" ? "mandatory" : "voluntary"
-                          }`}
-                        >
-                          {fee.type === "mandatory" ? "Bắt buộc" : "Đóng góp"}
-                        </span>
-                      </div>
-                      <div className="fee-desc">
-                        {fee.type === "mandatory"
-                          ? fee.feeType?.description
-                          : fee.description || "Không có mô tả"}
-                      </div>
-                      <div className="fee-date">
-                        <div className="date-row">
-                          <span className="date-item">
-                            <FaCalendarAlt className="icon" />
-                            {fee.type === "mandatory"
-                              ? new Date(
-                                  fee.feeType?.fromDate
-                                ).toLocaleDateString("vi-VN")
-                              : fee.fromDate
-                              ? new Date(fee.fromDate).toLocaleDateString(
-                                  "vi-VN"
-                                )
-                              : "—"}
-                          </span>
-                          {fee.type === "mandatory" && fee.feeType?.toDate && (
-                            <span className="date-item">
-                              <FaCalendarAlt className="icon" />
-                              {new Date(fee.feeType.toDate).toLocaleDateString(
-                                "vi-VN"
-                              )}
-                            </span>
-                          )}
-                          <span className="date-item">
-                            <FaMoneyBillWave className="icon" />
-                            {fee.type === "mandatory"
-                              ? formatCurrency(fee.feeType?.unitPrice)
-                              : "Tự nguyện"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {expandedId === fee.id && (
-                        <div className="fee-actions">
-                          <button
-                            className="pay"
-                            onClick={() => alert(`Thanh toán ${fee.id}`)}
-                          >
-                            Thanh toán
-                          </button>
-                          <button
-                            className="detail"
-                            onClick={() => setPopupFee(fee)}
-                          >
-                            Xem chi tiết
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="fee-right">
-                    <div className="fee-paid">
-                      {formatCurrency(getPaidAmount(fee))}
-                    </div>
-                    <span className={`fee-status ${getStatusClass(fee)}`}>
-                      {getStatusText(fee)}
-                    </span>
-                  </div>
+              <div className="column-footer">
+                <div className="total-row">
+                  <span>Tổng cần nộp:</span>
+                  <span className="total-amount mandatory">{formatCurrency(totalMandatory)}</span>
                 </div>
-              ))}
+                <button 
+                  className="pay-btn btn-mandatory"
+                  disabled={totalMandatory === 0}
+                  onClick={() => startPayment('MANDATORY')}
+                >
+                  Thanh toán ngay
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+
+            <div className="payment-column">
+              <div className="column-header">
+                <h3><Heart size={20} className="icon-voluntary"/> Quỹ Đóng Góp</h3>
+                <span className="status-badge badge-voluntary">Tự nguyện</span>
+              </div>
+
+              <div className="table-container">
+                <table className="mini-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '35%'}}>Quỹ vận động</th>
+                      <th style={{width: '25%'}}>Thời gian</th>
+                      <th style={{width: '40%', textAlign: 'right'}}>Ủng hộ (VNĐ)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contributionFees.map((fee) => (
+                      <tr key={fee.id}>
+                        <td>
+                          <div className="fee-name">{fee.name}</div>
+                          <div className="fee-community">
+                             Toàn dân đã góp: <span style={{color:'#059669', fontWeight:700}}>{formatCurrency(fee.totalCommunityDonated || 0)}</span>
+                          </div>
+                        </td>
+                        <td>{fee.toDate ? new Date(fee.toDate).toLocaleDateString('vi-VN') : 'Không hạn'}</td>
+                        <td className="text-right">
+                          <input 
+                            type="text" 
+                            className="donation-input"
+                            placeholder="Nhập số tiền..."
+                            value={donationInputs[fee.id] ? donationInputs[fee.id].toLocaleString('vi-VN') : ''}
+                            onChange={(e) => handleDonationChange(fee.id, e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="column-footer">
+                <div className="total-row">
+                  <span>Tổng tiền ủng hộ:</span>
+                  <span className="total-amount voluntary">{formatCurrency(totalDonationInput)}</span>
+                </div>
+                <button 
+                    className="pay-btn btn-voluntary"
+                    disabled={totalDonationInput === 0}
+                    onClick={() => startPayment('CONTRIBUTION')}
+                >
+                  <Wallet size={18}/> Gửi ủng hộ
+                </button>
+              </div>
+            </div>
+
+          </div>
+        )}
       </div>
 
-      {/* POPUP CHI TIẾT */}
-      {popupFee && (
-        <div className="fee-popup" onClick={() => setPopupFee(null)}>
-          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-            <h2>📋 Chi tiết khoản thu</h2>
-            <div className="popup-info-list">
-              <div className="popup-info-item">
-                <span className="label">Tên khoản thu</span>
-                <span className="value">
-                  {popupFee.type === "mandatory"
-                    ? popupFee.feeType?.name
-                    : popupFee.name}
-                </span>
+      {paymentModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            
+            {paymentModal.step === 0 && (
+              <div className="modal-step fade-in">
+                <h3>Quét mã để thanh toán</h3>
+                <div className="qr-box">
+                  <QRCodeCanvas 
+                    value={`PAYMENT:${paymentModal.type}:${paymentModal.amount}`} 
+                    size={200}
+                    level={"H"}
+                  />
+                </div>
+                <p className="modal-amount">{formatCurrency(paymentModal.amount)}</p>
+                <p className="modal-note">Hệ thống đang chờ xác nhận...</p>
               </div>
-              <div className="popup-info-item">
-                <span className="label">Loại</span>
-                <span className="value">
-                  {popupFee.type === "mandatory"
-                    ? "Thu bắt buộc"
-                    : "Đóng góp tự nguyện"}
-                </span>
+            )}
+
+            {paymentModal.step === 1 && (
+              <div className="modal-step fade-in">
+                <div className="loader-box">
+                  <Loader2 size={48} className="spinner" />
+                </div>
+                <h3>Đang xử lý giao dịch...</h3>
+                <p>Vui lòng không tắt trình duyệt</p>
               </div>
-              <div className="popup-info-item full">
-                <span className="label">Mô tả</span>
-                <span className="value">
-                  {popupFee.type === "mandatory"
-                    ? popupFee.feeType?.description
-                    : popupFee.description || "Không có mô tả"}
-                </span>
+            )}
+
+            {paymentModal.step === 2 && (
+              <div className="modal-step fade-in">
+                <div className="success-box">
+                   <CheckCircle size={64} color="#16a34a" />
+                </div>
+                <h3 className="text-success">Thanh toán thành công!</h3>
+                <p>Cảm ơn bạn đã đóng góp cho tổ dân phố.</p>
+                <button className="close-modal-btn" onClick={closePaymentModal}>
+                  Hoàn tất
+                </button>
               </div>
-              <div className="popup-info-item">
-                <span className="label">Từ ngày</span>
-                <span className="value">
-                  {popupFee.type === "mandatory" && popupFee.feeType?.fromDate
-                    ? new Date(popupFee.feeType.fromDate).toLocaleDateString(
-                        "vi-VN"
-                      )
-                    : popupFee.fromDate
-                    ? new Date(popupFee.fromDate).toLocaleDateString("vi-VN")
-                    : "—"}
-                </span>
-              </div>
-              <div className="popup-info-item">
-                <span className="label">Đến ngày</span>
-                <span className="value">
-                  {popupFee.type === "mandatory" && popupFee.feeType?.toDate
-                    ? new Date(popupFee.feeType.toDate).toLocaleDateString(
-                        "vi-VN"
-                      )
-                    : popupFee.toDate
-                    ? new Date(popupFee.toDate).toLocaleDateString("vi-VN")
-                    : "—"}
-                </span>
-              </div>
-              <div className="popup-info-item">
-                <span className="label">Đơn giá</span>
-                <span className="value highlight">
-                  {popupFee.type === "mandatory"
-                    ? formatCurrency(popupFee.feeType?.unitPrice)
-                    : "Tự nguyện"}
-                </span>
-              </div>
-              <div className="popup-info-item">
-                <span className="label">Số tiền đã đóng</span>
-                <span className="value">
-                  {formatCurrency(getPaidAmount(popupFee))}
-                </span>
-              </div>
-              <div className="popup-info-item">
-                <span className="label">Trạng thái</span>
-                <span className={`value status ${getStatusClass(popupFee)}`}>
-                  {getStatusText(popupFee)}
-                </span>
-              </div>
-            </div>
-            <div className="popup-footer">
-              <button onClick={() => setPopupFee(null)}>Đóng</button>
-            </div>
+            )}
           </div>
         </div>
       )}
-    </>
+
+    </div>
   );
 }
