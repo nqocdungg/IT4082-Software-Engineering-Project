@@ -66,16 +66,34 @@ export const getDashboard = async (req, res) => {
     // =========================
     // 5. Tỷ lệ đóng phí tháng hiện tại
     // =========================
-    const paidHouseholds = await prisma.feeRecord.findMany({
-      where: {
-        status: 2,
-        updatedAt: { gte: startOfMonth, lt: startOfNextMonth },
-        feeType: { isMandatory: true },
-        household: { status: 1 }
-      },
-      distinct: ["householdId"],
-      select: { householdId: true }
+
+    // số loại phí cố định (mandatory) cần phải đóng
+    const mandatoryTypeCount = await prisma.feeType.count({
+      where: { isMandatory: true }
     })
+
+    const paidHouseholds =
+      mandatoryTypeCount === 0
+        ? await prisma.household.findMany({
+          where: { status: 1 },
+          select: { id: true }
+        })
+        : await prisma.feeRecord
+          .groupBy({
+            by: ["householdId"],
+            where: {
+              status: 2,
+              updatedAt: { gte: startOfMonth, lt: startOfNextMonth },
+              feeType: { isMandatory: true },
+              household: { status: 1 }
+            },
+            _count: { feeTypeId: true }
+          })
+          .then(rows =>
+            rows
+              .filter(r => r._count.feeTypeId === mandatoryTypeCount)
+              .map(r => ({ householdId: r.householdId }))
+          )
 
     const paidCount = paidHouseholds.length
     const paymentRate =
@@ -85,16 +103,28 @@ export const getDashboard = async (req, res) => {
 
     const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
 
-    const paidHouseholdsPrev = await prisma.feeRecord.findMany({
-      where: {
-        status: 2,
-        updatedAt: { gte: startOfPrevMonth, lt: startOfCurrentMonth },
-        feeType: { isMandatory: true },
-        household: { status: 1 }
-      },
-      distinct: ["householdId"],
-      select: { householdId: true }
-    })
+    const paidHouseholdsPrev =
+      mandatoryTypeCount === 0
+        ? await prisma.household.findMany({
+          where: { status: 1 },
+          select: { id: true }
+        })
+        : await prisma.feeRecord
+          .groupBy({
+            by: ["householdId"],
+            where: {
+              status: 2,
+              updatedAt: { gte: startOfPrevMonth, lt: startOfCurrentMonth },
+              feeType: { isMandatory: true },
+              household: { status: 1 }
+            },
+            _count: { feeTypeId: true }
+          })
+          .then(rows =>
+            rows
+              .filter(r => r._count.feeTypeId === mandatoryTypeCount)
+              .map(r => ({ householdId: r.householdId }))
+          )
 
     const paidPrevCount = paidHouseholdsPrev.length
 
@@ -107,15 +137,15 @@ export const getDashboard = async (req, res) => {
 
     const prevUnpaidHouseholds = Math.max(totalHouseholds - paidPrevCount, 0)
 
-      let unpaidHouseholdsChange = 0
+    let unpaidHouseholdsChange = 0
 
-      if (prevUnpaidHouseholds === 0 && unpaidHouseholds > 0) {
-        unpaidHouseholdsChange = 100
-      } else if (prevUnpaidHouseholds > 0) {
-        unpaidHouseholdsChange = Math.round(
-          ((unpaidHouseholds - prevUnpaidHouseholds) / prevUnpaidHouseholds) * 100
-        )
-      }
+    if (prevUnpaidHouseholds === 0 && unpaidHouseholds > 0) {
+      unpaidHouseholdsChange = 100
+    } else if (prevUnpaidHouseholds > 0) {
+      unpaidHouseholdsChange = Math.round(
+        ((unpaidHouseholds - prevUnpaidHouseholds) / prevUnpaidHouseholds) * 100
+      )
+    }
 
 
     // =========================
@@ -180,7 +210,7 @@ export const getDashboard = async (req, res) => {
     // moved_out & deceased KHÔNG đưa vào mẫu số
     const totalResidence =
       permanent + temporary + absent || 1
-    
+
     const residenceStats = {
       count: {
         permanent,
@@ -208,7 +238,7 @@ export const getDashboard = async (req, res) => {
       take: 8,
       select: {
         id: true,
-        changeType: true, 
+        changeType: true,
         extraData: true,
         resident: {
           select: {
@@ -226,9 +256,9 @@ export const getDashboard = async (req, res) => {
         pendingProfiles
       },
       feeByMonth,
-      ageStats,         
-      residenceStats,   
-      recentRequests, 
+      ageStats,
+      residenceStats,
+      recentRequests,
       currentMonthPayment: {
         paymentRate,
         paymentRateChange,
