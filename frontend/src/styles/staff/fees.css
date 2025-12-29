@@ -8,14 +8,18 @@
   position: relative;
 }
 
-.stats-strip {
+/* =========================
+   Common blocks (SCOPED)
+   ========================= */
+
+.revenues-page .stats-strip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
 
-.mini-card {
+.revenues-page .mini-card {
   background: #fff;
   border-radius: 16px;
   border: 1px solid #eef0f6;
@@ -26,7 +30,7 @@
   min-height: 86px;
 }
 
-.mini-ico {
+.revenues-page .mini-ico {
   width: 44px;
   height: 44px;
   border-radius: 14px;
@@ -37,51 +41,51 @@
   border: 1px solid transparent;
 }
 
-.mini-meta {
+.revenues-page .mini-meta {
   display: flex;
   flex-direction: column;
 }
 
-.mini-value {
+.revenues-page .mini-value {
   font-size: 18px;
   font-weight: 900;
   line-height: 1;
 }
 
-.mini-label {
+.revenues-page .mini-label {
   margin-top: 4px;
   font-size: 14px;
   color: #6b7280;
   font-weight: 700;
 }
 
-.tone-blue .mini-ico {
+.revenues-page .tone-blue .mini-ico {
   background: #eff6ff;
   color: #2563eb;
   border-color: #bfdbfe;
 }
-.tone-green .mini-ico {
+.revenues-page .tone-green .mini-ico {
   background: #ecfdf5;
   color: #16a34a;
   border-color: #bbf7d0;
 }
-.tone-amber .mini-ico {
+.revenues-page .tone-amber .mini-ico {
   background: #fffbeb;
   color: #d97706;
   border-color: #fde68a;
 }
-.tone-rose .mini-ico {
+.revenues-page .tone-rose .mini-ico {
   background: #fef2f2;
   color: #e11d48;
   border-color: #fecdd3;
 }
-.tone-slate .mini-ico {
+.revenues-page .tone-slate .mini-ico {
   background: #f8fafc;
   color: #475569;
   border-color: #e2e8f0;
 }
 
-.table-card {
+.revenues-page .table-card {
   background: #fff;
   border-radius: 16px;
   border: 1px solid #eef0f6;
@@ -89,13 +93,13 @@
   overflow: hidden;
 }
 
-.table-toolbar {
+.revenues-page .table-toolbar {
   padding: 14px 16px;
   border-bottom: 1px solid #eef0f6;
   background: #fff;
 }
 
-.toolbar-row {
+.revenues-page .toolbar-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -103,14 +107,14 @@
   flex-wrap: wrap;
 }
 
-.toolbar-left {
+.revenues-page .toolbar-left {
   display: flex;
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.toolbar-select select {
+.revenues-page .toolbar-select select {
   border: 1px solid #e5e7eb;
   background: #fff;
   border-radius: 12px;
@@ -120,19 +124,19 @@
   min-width: 210px;
 }
 
-.toolbar-right {
+.revenues-page .toolbar-right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.toolbar-search {
+.revenues-page .toolbar-search {
   position: relative;
   min-width: 260px;
   max-width: 340px;
 }
 
-.toolbar-search input {
+.revenues-page .toolbar-search input {
   width: 100%;
   border: 1px solid #e5e7eb;
   background: #fff;
@@ -142,7 +146,7 @@
   outline: none;
 }
 
-.search-icon {
+.revenues-page .search-icon {
   position: absolute;
   top: 50%;
   left: 12px;
@@ -150,7 +154,7 @@
   color: #9ca3af;
 }
 
-.btn-primary {
+.revenues-page .btn-primary {
   background: #111827;
   color: #fff;
   padding: 10px 16px;
@@ -163,15 +167,14 @@
   gap: 8px;
   font-weight: 800;
 }
-.btn-primary:hover {
+.revenues-page .btn-primary:hover {
   background: #000;
 }
-
-.btn-primary.compact {
+.revenues-page .btn-primary.compact {
   padding: 10px 14px;
 }
 
-.btn-secondary {
+.revenues-page .btn-secondary {
   background: #fff;
   color: #111827;
   padding: 10px 16px;
@@ -181,11 +184,11 @@
   cursor: pointer;
   font-weight: 800;
 }
-.btn-secondary:hover {
+.revenues-page .btn-secondary:hover {
   background: #f9fafb;
 }
 
-.btn-danger {
+.revenues-page .btn-danger {
   background: #111827;
   color: #fff;
   padding: 10px 16px;
@@ -195,27 +198,27 @@
   cursor: pointer;
   font-weight: 800;
 }
-.btn-danger:hover {
+.revenues-page .btn-danger:hover {
   background: #000;
 }
 
-.table-wrapper {
+.revenues-page .table-wrapper {
   min-height: 355px;
   overflow: visible;
 }
 
-.fee-table {
+.revenues-page .fee-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
 
-.fee-table thead {
+.revenues-page .fee-table thead {
   background: #f9fafb;
 }
 
-.fee-table th,
-.fee-table td {
+.revenues-page .fee-table th,
+.revenues-page .fee-table td {
   padding: 12px 10px;
   border-bottom: 1px solid #f1f5f9;
   text-align: left;
@@ -223,41 +226,41 @@
   font-size: 14px;
 }
 
-.fee-table thead th {
+.revenues-page .fee-table thead th {
   color: #6b7280;
   font-weight: 800;
   font-size: 12px;
 }
 
-.fee-table tbody tr {
+.revenues-page .fee-table tbody tr {
   height: 64px;
 }
 
-.fee-table tbody tr:hover {
+.revenues-page .fee-table tbody tr:hover {
   background: #f5f7ff;
 }
 
-.clickable-row {
+.revenues-page .clickable-row {
   cursor: pointer;
 }
 
-.sub-text {
+.revenues-page .sub-text {
   font-size: 12px;
   color: #6b7280;
   margin-top: 2px;
 }
 
-.money-cell {
+.revenues-page .money-cell {
   white-space: nowrap;
   color: #111827;
 }
 
-.fee-name {
+.revenues-page .fee-name {
   font-weight: 900;
   color: #111827;
 }
 
-.fee-tag {
+.revenues-page .fee-tag {
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -267,26 +270,26 @@
   gap: 6px;
 }
 
-.fee-tag-mandatory {
+.revenues-page .fee-tag-mandatory {
   background: #ecfdf5;
   color: #065f46;
 }
 
-.fee-tag-optional {
+.revenues-page .fee-tag-optional {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
-.fee-date-range {
+.revenues-page .fee-date-range {
   color: #111827;
 }
 
-.fee-date-none {
+.revenues-page .fee-date-none {
   color: #64748b;
   font-weight: 800;
 }
 
-.fee-status-badge {
+.revenues-page .fee-status-badge {
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -296,22 +299,27 @@
   gap: 6px;
 }
 
-.fee-status-active {
+.revenues-page .fee-status-active {
   background: #ecfdf5;
   color: #065f46;
 }
 
-.fee-status-inactive {
+.revenues-page .fee-status-inactive {
   background: #f3f4f6;
   color: #4b5563;
 }
 
-.row-actions {
+.revenues-page .fee-status-partial {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.revenues-page .row-actions {
   display: flex;
   gap: 10px;
 }
 
-.row-actions button {
+.revenues-page .row-actions button {
   width: 38px;
   height: 38px;
   border-radius: 14px;
@@ -323,21 +331,21 @@
   cursor: pointer;
 }
 
-.row-actions .danger {
+.revenues-page .row-actions .danger {
   border-color: #fecaca;
   color: #b91c1c;
 }
 
-.row-actions .danger:hover {
+.revenues-page .row-actions .danger:hover {
   background: #fef2f2;
 }
 
-.row-actions button:disabled {
+.revenues-page .row-actions button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.table-footer {
+.revenues-page .table-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -347,20 +355,20 @@
   background: #fff;
 }
 
-.footer-left,
-.footer-right {
+.revenues-page .footer-left,
+.revenues-page .footer-right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.footer-muted {
+.revenues-page .footer-muted {
   color: #6b7280;
   font-size: 14px;
   font-weight: 700;
 }
 
-.table-footer select {
+.revenues-page .table-footer select {
   border: 1px solid #e5e7eb;
   background: #fff;
   border-radius: 12px;
@@ -368,12 +376,12 @@
   font-size: 14px;
 }
 
-.pager {
+.revenues-page .pager {
   display: flex;
   gap: 8px;
 }
 
-.pager button {
+.revenues-page .pager button {
   width: 38px;
   height: 38px;
   border-radius: 14px;
@@ -382,18 +390,22 @@
   cursor: pointer;
 }
 
-.pager button:disabled {
+.revenues-page .pager button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.empty-row {
+.revenues-page .empty-row {
   text-align: center;
   padding: 26px;
   color: #94a3b8;
 }
 
-.fee-modal-overlay {
+/* =========================
+   Modal (SCOPED)
+   ========================= */
+
+.revenues-page .fee-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
@@ -404,7 +416,7 @@
   padding: 14px;
 }
 
-.fee-modal {
+.revenues-page .fee-modal {
   width: min(1280px, calc(100vw - 28px));
   max-width: 100%;
   height: calc(100vh - 28px);
@@ -417,7 +429,7 @@
   overflow: hidden;
 }
 
-.fee-modal-header {
+.revenues-page .fee-modal-header {
   padding: 14px 16px;
   display: flex;
   justify-content: space-between;
@@ -425,18 +437,18 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.fee-modal-title {
+.revenues-page .fee-modal-title {
   font-size: 18px;
   font-weight: 800;
   color: #111827;
 }
 
-.fee-modal-sub {
+.revenues-page .fee-modal-sub {
   font-size: 14px;
   color: #6b7280;
 }
 
-.fee-modal-close-btn {
+.revenues-page .fee-modal-close-btn {
   width: 40px;
   height: 40px;
   border-radius: 14px;
@@ -447,11 +459,11 @@
   align-items: center;
   justify-content: center;
 }
-.fee-modal-close-btn:hover {
+.revenues-page .fee-modal-close-btn:hover {
   background: #f9fafb;
 }
 
-.fee-modal-body {
+.revenues-page .fee-modal-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -461,23 +473,23 @@
   min-height: 0;
 }
 
-.detail-grid {
+.revenues-page .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 18px;
 }
 
-.detail-item {
+.revenues-page .detail-item {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.detail-item.detail-wide {
+.revenues-page .detail-item.detail-wide {
   grid-column: span 2;
 }
 
-.detail-label {
+.revenues-page .detail-label {
   font-size: 12px;
   color: #94a3b8;
   text-transform: uppercase;
@@ -485,15 +497,15 @@
   font-weight: 800;
 }
 
-.detail-value {
+.revenues-page .detail-value {
   font-size: 14px;
   color: #111827;
   font-weight: 600;
 }
 
-.detail-value input,
-.detail-value select,
-.detail-value textarea {
+.revenues-page .detail-value input,
+.revenues-page .detail-value select,
+.revenues-page .detail-value textarea {
   width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -503,17 +515,17 @@
   background: #fff;
 }
 
-.detail-value textarea {
+.revenues-page .detail-value textarea {
   min-height: 92px;
   resize: vertical;
 }
 
-.detail-value input:disabled {
+.revenues-page .detail-value input:disabled {
   background: #f9fafb;
   color: #6b7280;
 }
 
-.fee-modal-footer {
+.revenues-page .fee-modal-footer {
   margin-top: auto;
   padding: 12px 16px;
   border-top: 1px solid #e5e7eb;
@@ -523,14 +535,14 @@
   background: #fff;
 }
 
-.fee-modal-body .table-toolbar {
+.revenues-page .fee-modal-body .table-toolbar {
   padding: 0;
   margin: 0;
   border: none;
   background: transparent;
 }
 
-.fee-modal-body .table-wrapper {
+.revenues-page .fee-modal-body .table-wrapper {
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -539,12 +551,12 @@
   background: #fff;
 }
 
-.fee-modal-body .fee-table {
+.revenues-page .fee-modal-body .fee-table {
   min-width: 1100px;
 }
 
-.fee-modal-body .fee-table td input[type="number"],
-.fee-modal-body .fee-table td input[type="text"] {
+.revenues-page .fee-modal-body .fee-table td input[type="number"],
+.revenues-page .fee-modal-body .fee-table td input[type="text"] {
   width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -554,64 +566,22 @@
   background: #fff;
 }
 
-.fee-modal-body .fee-table td input:disabled {
+.revenues-page .fee-modal-body .fee-table td input:disabled {
   background: #f9fafb;
   color: #6b7280;
 }
 
-@media (max-width: 980px) {
-  .stats-strip {
-    grid-template-columns: 1fr 1fr;
-  }
-  .toolbar-search {
-    min-width: 220px;
-    max-width: 100%;
-  }
-}
+/* =========================
+   Fee records section (SCOPED)
+   ========================= */
 
-@media (max-width: 640px) {
-  .stats-strip {
-    grid-template-columns: 1fr;
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    width: 100%;
-  }
-
-  .toolbar-search {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  .toolbar-right {
-    justify-content: flex-end;
-  }
-
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-  .detail-item.detail-wide {
-    grid-column: span 1;
-  }
-
-  .fee-modal-overlay {
-    padding: 10px;
-  }
-
-  .fee-modal {
-    height: calc(100vh - 20px);
-  }
-}
-
-.fee-records-section {
+.revenues-page .fee-records-section {
   margin-top: 14px;
   border-top: 1px solid #eef0f6;
   padding-top: 12px;
 }
 
-.fee-records-head {
+.revenues-page .fee-records-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -619,18 +589,18 @@
   margin-bottom: 10px;
 }
 
-.fee-records-title {
+.revenues-page .fee-records-title {
   font-weight: 900;
   color: #111827;
 }
 
-.fee-records-sub {
+.revenues-page .fee-records-sub {
   color: #6b7280;
   font-size: 13px;
   font-weight: 700;
 }
 
-.fee-records-empty {
+.revenues-page .fee-records-empty {
   padding: 12px;
   background: #f9fafb;
   border: 1px dashed #e5e7eb;
@@ -639,73 +609,76 @@
   font-weight: 700;
 }
 
-.fee-records-table-wrap {
+.revenues-page .fee-records-table-wrap {
   overflow: auto;
   border: 1px solid #eef0f6;
   border-radius: 12px;
 }
 
-.fee-records-table {
+.revenues-page .fee-records-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   min-width: 820px;
 }
 
-.fee-records-table thead {
+.revenues-page .fee-records-table thead {
   background: #f9fafb;
 }
 
-.fee-records-table th,
-.fee-records-table td {
+.revenues-page .fee-records-table th,
+.revenues-page .fee-records-table td {
   padding: 10px 10px;
   border-bottom: 1px solid #f1f5f9;
   text-align: left;
   vertical-align: top;
 }
 
-.fr-owner {
+.revenues-page .fr-owner {
   font-weight: 900;
   color: #111827;
 }
 
-.fr-address {
+.revenues-page .fr-address {
   margin-top: 2px;
   color: #6b7280;
   font-weight: 700;
   font-size: 12px;
 }
 
-.fr-note {
+.revenues-page .fr-note {
   color: #475569;
 }
 
-.fee-status-partial {
-  background: #fffbeb;
-  color: #92400e;
-}
+/* =========================
+   Inputs tweaks (SCOPED)
+   ========================= */
 
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+.revenues-page input[type="number"]::-webkit-inner-spin-button,
+.revenues-page input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-input[type="number"] {
+.revenues-page input[type="number"] {
   -moz-appearance: textfield;
 }
 
-.revenues-detail-stats {
+/* =========================
+   Detail page helpers (SCOPED)
+   ========================= */
+
+.revenues-page .revenues-detail-stats {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
 
-.revenues-detail-info {
+.revenues-page .revenues-detail-info {
   margin-bottom: 12px;
 }
 
-.revenues-detail-right {
+.revenues-page .revenues-detail-right {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -713,23 +686,12 @@ input[type="number"] {
   justify-content: flex-end;
 }
 
-.revenues-detail-footer {
+.revenues-page .revenues-detail-footer {
   display: flex;
 }
 
-@media (max-width: 980px) {
-  .revenues-detail-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .revenues-detail-right {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-
 /* =========================================================
-   ONLY REVENUES DETAIL — trả UI về như cũ (KHÔNG ảnh hưởng Revenues list)
+   ONLY REVENUES DETAIL — trả UI về như cũ (đã scoped sẵn)
    ========================================================= */
 
 .revenues-page .stats-strip.revenues-detail-stats {
@@ -786,8 +748,67 @@ input[type="number"] {
   gap: 10px;
 }
 
+/* =========================
+   Responsive (SCOPED)
+   ========================= */
+
 @media (max-width: 980px) {
+  .revenues-page .stats-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .revenues-page .toolbar-search {
+    min-width: 220px;
+    max-width: 100%;
+  }
+
+  .revenues-page .revenues-detail-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .revenues-page .revenues-detail-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .revenues-page .stats-strip.revenues-detail-stats {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .revenues-page .stats-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .revenues-page .toolbar-left,
+  .revenues-page .toolbar-right {
+    width: 100%;
+  }
+
+  .revenues-page .toolbar-search {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .revenues-page .toolbar-right {
+    justify-content: flex-end;
+  }
+
+  .revenues-page .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .revenues-page .detail-item.detail-wide {
+    grid-column: span 1;
+  }
+
+  .revenues-page .fee-modal-overlay {
+    padding: 10px;
+  }
+
+  .revenues-page .fee-modal {
+    height: calc(100vh - 20px);
   }
 }

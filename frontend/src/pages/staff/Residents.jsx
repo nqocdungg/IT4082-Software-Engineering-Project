@@ -104,20 +104,19 @@ export default function ResidentManagement() {
 
   const debouncedSearch = useDebouncedValue(search, 350)
 
-  // ✅ Backend mới: GET /residents có query search + gender + householdId
   useEffect(() => {
     fetchResidents()
-    // reset trang khi đổi filter server-side
     setCurrentPage(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, genderFilter, householdIdFilter])
+  }, [debouncedSearch, genderFilter, householdIdFilter, statusFilter])
 
   async function fetchResidents() {
     try {
       const params = {}
 
       if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
-      if (genderFilter !== "ALL") params.gender = genderFilter // backend nhận "Nam"/"Nữ"
+      if (genderFilter !== "ALL") params.gender = genderFilter 
+      if (statusFilter !== "ALL") params.status = statusFilter
       if (String(householdIdFilter).trim()) params.householdId = String(householdIdFilter).trim()
 
       const res = await axios.get(`${API_BASE}/residents`, {
@@ -136,15 +135,7 @@ export default function ResidentManagement() {
     }
   }
 
-  // ✅ statusFilter backend chưa hỗ trợ -> lọc client-side
-  const filteredResidents = useMemo(() => {
-    return residents.filter(r => {
-      const matchStatus = statusFilter === "ALL" || String(r.status) === String(statusFilter)
-      return matchStatus
-    })
-  }, [residents, statusFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filteredResidents.length / rowsPerPage))
+  const totalPages = Math.max(1, Math.ceil(residents.length / rowsPerPage))
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1)
@@ -152,16 +143,16 @@ export default function ResidentManagement() {
 
   const pageResidents = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage
-    return filteredResidents.slice(start, start + rowsPerPage)
-  }, [filteredResidents, currentPage, rowsPerPage])
+    return residents.slice(start, start + rowsPerPage)
+  }, [residents, currentPage, rowsPerPage])
 
   const rangeText = useMemo(() => {
-    const total = filteredResidents.length
+    const total = residents.length
     if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`
     const start = (currentPage - 1) * rowsPerPage + 1
     const end = Math.min(currentPage * rowsPerPage, total)
     return `${start} - ${end} trên tổng số ${total} bản ghi`
-  }, [filteredResidents.length, currentPage, rowsPerPage])
+  }, [residents.length, currentPage, rowsPerPage])
 
   const householdDisplay = r => {
     // backend trả householdCode + address (có thể null)

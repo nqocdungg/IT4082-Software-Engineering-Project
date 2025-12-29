@@ -41,17 +41,18 @@ export const getDashboard = async (req, res) => {
     // 4. Thống kê thu phí theo năm
     // =========================
     const feeRows = await prisma.$queryRaw`
-      SELECT
-        EXTRACT(MONTH FROM fr."updatedAt")::int AS month,
-        SUM(CASE WHEN ft."isMandatory" = true THEN fr."amount" ELSE 0 END)::float AS mandatory,
-        SUM(CASE WHEN ft."isMandatory" = false THEN fr."amount" ELSE 0 END)::float AS contribution
-      FROM "FeeRecord" fr
-      JOIN "FeeType" ft ON ft."id" = fr."feeTypeId"
-      WHERE fr."status" = 2
-        AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
-      GROUP BY month
-      ORDER BY month
+    SELECT
+    EXTRACT(MONTH FROM fr."updatedAt")::int AS month,
+    SUM(CASE WHEN ft."isMandatory" = true THEN fr."amount" ELSE 0 END)::float AS mandatory,
+    SUM(CASE WHEN ft."isMandatory" = false THEN fr."amount" ELSE 0 END)::float AS contribution
+    FROM "FeeRecord" fr
+    JOIN "FeeType" ft ON ft."id" = fr."feeTypeId"
+    WHERE fr."status" IN (1, 2)
+    AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
+    GROUP BY month
+    ORDER BY month
     `
+
 
     const feeByMonth = Array.from({ length: 12 }, (_, i) => {
       const m = i + 1
@@ -107,15 +108,15 @@ export const getDashboard = async (req, res) => {
 
     const prevUnpaidHouseholds = Math.max(totalHouseholds - paidPrevCount, 0)
 
-      let unpaidHouseholdsChange = 0
+    let unpaidHouseholdsChange = 0
 
-      if (prevUnpaidHouseholds === 0 && unpaidHouseholds > 0) {
-        unpaidHouseholdsChange = 100
-      } else if (prevUnpaidHouseholds > 0) {
-        unpaidHouseholdsChange = Math.round(
-          ((unpaidHouseholds - prevUnpaidHouseholds) / prevUnpaidHouseholds) * 100
-        )
-      }
+    if (prevUnpaidHouseholds === 0 && unpaidHouseholds > 0) {
+      unpaidHouseholdsChange = 100
+    } else if (prevUnpaidHouseholds > 0) {
+      unpaidHouseholdsChange = Math.round(
+        ((unpaidHouseholds - prevUnpaidHouseholds) / prevUnpaidHouseholds) * 100
+      )
+    }
 
 
     // =========================
@@ -180,7 +181,7 @@ export const getDashboard = async (req, res) => {
     // moved_out & deceased KHÔNG đưa vào mẫu số
     const totalResidence =
       permanent + temporary + absent || 1
-    
+
     const residenceStats = {
       count: {
         permanent,
@@ -208,7 +209,7 @@ export const getDashboard = async (req, res) => {
       take: 8,
       select: {
         id: true,
-        changeType: true, 
+        changeType: true,
         extraData: true,
         resident: {
           select: {
@@ -226,9 +227,9 @@ export const getDashboard = async (req, res) => {
         pendingProfiles
       },
       feeByMonth,
-      ageStats,         
-      residenceStats,   
-      recentRequests, 
+      ageStats,
+      residenceStats,
+      recentRequests,
       currentMonthPayment: {
         paymentRate,
         paymentRateChange,

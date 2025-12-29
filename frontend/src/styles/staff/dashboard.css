@@ -461,8 +461,8 @@ button:focus-visible,
 .icon-container {
   width: 42px;
   height: 42px;
-  border-radius: 50%;              /* ✅ tạo hình tròn */
-  display: flex;                   /* ✅ căn icon */
+  border-radius: 50%;              
+  display: flex;                   
   align-items: center;
   justify-content: center;
 
@@ -471,7 +471,6 @@ button:focus-visible,
 }
 
 
-/* Xanh dương */
 .icon-container.blue {
   background: #eef2ff;  /* indigo-50 */
   color: #4f46e5;       /* indigo-600 */
@@ -535,12 +534,13 @@ button:focus-visible,
 
 /* Thu cố định – pastel xanh giống mẫu */
 .revenue-bar-fill.fixed {
-  background: #6ee7b7;      /* emerald-300 */
+  /*background: #6ee7b7;*/
+  background: #06e9a1;     
 }
 
 /* Đóng góp – pastel xám */
 .revenue-bar-fill.contrib {
-  background: #e2e8f0;      /* slate-200 (nhẹ hơn nền chút) */
+  background: #6ee7b7;      /* slate-200 (nhẹ hơn nền chút) */
 }
 
 /* Lớp text phủ toàn thanh */
