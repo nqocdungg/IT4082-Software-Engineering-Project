@@ -113,9 +113,11 @@ body {
 
 .dash-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(0, 65%) minmax(0, 35%);
+  gap: 18px;
+  align-items: stretch;
 }
+
 
 .panel {
   background: #ffffff;
@@ -149,12 +151,11 @@ body {
   width: 100%;
 }
 
-.panel-bars {
-  grid-column: 1 / 2;
-}
-.panel-two-rows {
+.panel.panel-two-rows {
   grid-column: 2 / 3;
+  width: 100%;
 }
+
 
 .bottom-row {
   grid-column: 1 / -1;
@@ -328,9 +329,9 @@ body {
 }
 
 .mini-trend {
-  margin-top: 6px;
+  margin-top: 5px;
   font-size: 11px;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .mini-trend .up {
@@ -647,6 +648,16 @@ button:focus-visible,
   background: #e9eefb;
 }
 
+.panel.panel-bars {
+  grid-column: 1 / 2;
+  width: 100%;
+  padding-bottom: 12px;
+}
+
+.panel.panel-bars .panel-body {
+  width: 100%;
+}
+
 .panel.panel-bars .panel-head-custom {
   gap: 4px;
   margin-bottom: 6px;
@@ -692,6 +703,7 @@ button:focus-visible,
 }
 
 .mini-side-label {
+  width: 140px;
   margin-top: 2px;
   font-size: 14px;
   font-weight: 500;
@@ -728,17 +740,33 @@ button:focus-visible,
    ========================= */
 
 .mini-row.mini-row-inline {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto; /* ⬅️ CHÌA KHÓA */
+  column-gap: 14px;
+  align-items: start; 
 }
 
+
+
 .mini-row.mini-row-inline .mini-main-col {
-  flex: 1;
-  min-width: 0;
+  grid-column: 1 / 2;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+
+/* cột trái */
+.mini-main-col > .progress-bar,
+.mini-main-col > .mini-trend {
+  grid-column: 1 / 2;
+}
+
+/* Cột phải */
+.mini-main-col .mini-side {
+  grid-column: 2 / 3;
+  text-align: right;
+  align-self: center;
 }
 
 .mini-head-row {
@@ -747,6 +775,10 @@ button:focus-visible,
   justify-content: flex-start;
   gap: 14px;
 }
+.mini-row.mini-row-inline .mini-head-row {
+  grid-column: 1 / -1;
+}
+
 
 .mini-head-row .mini-label {
   margin: 0;
@@ -761,16 +793,64 @@ button:focus-visible,
 }
 
 .mini-row.mini-row-inline .progress-bar {
+  height: 12px;
   width: 100%;
-  margin-top: 4px;
+  margin: 4px 0 2px;
 }
 
 .mini-row.mini-row-inline .mini-side {
-  flex: 0 0 92px;
+  grid-column: 2 / 3;
+  align-self: center;   /* ⬅️ CHÌA KHÓA */
   text-align: right;
+  
 }
+
 
 .mini-side-label-one {
   white-space: nowrap;
   word-break: normal;
+}
+
+.panel-two-rows .mini-card {
+  padding: 12px 14px;
+}
+
+.panel-two-rows .two-rows {
+  gap: 14px;
+}
+
+.panel.panel-bars,
+.panel.panel-two-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel.panel-bars .panel-body,
+.panel.panel-two-rows .panel-body {
+  flex: 1;
+}
+
+.mini-row.mini-row-inline .mini-side {
+  justify-self: end;           /* ⬅️ ôm sát phải */
+  width: max-content;          /* ⬅️ CHÌA KHÓA */
+}
+
+/* ===== OVERRIDE chắc chắn cho 2 mini-card ===== */
+.mini-row.mini-row-inline{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* cột giữa ăn hết */
+.mini-row.mini-row-inline .mini-main-col{
+  flex: 1;
+  min-width: 0;
+}
+
+/* cột phải cố định vừa đủ */
+.mini-row.mini-row-inline .mini-side{
+  flex: 0 0 92px;     /* m có rồi, giữ */
+  margin-left: auto;  /* QUAN TRỌNG: đẩy sát mép phải */
 }
