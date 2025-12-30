@@ -14,6 +14,7 @@ import staffDashboardRoutes from "./src/routes/staff/dashboardRoutes.js"
 import staffResidentChangeRoutes from "./src/routes/staff/residentChangeRoutes.js"
 
 import staffFeeReportRoutes from "./src/routes/staff/feeReportRoutes.js"
+import staffFeeHistoryRoutes from "./src/routes/staff/feeHistoryRoutes.js"
 
 import staffNotificationRoutes from "./src/routes/staff/notificationRoutes.js";
 
@@ -48,15 +49,16 @@ app.use("/api/households", staffHouseholdRoutes)
 app.use("/api/residents", staffResidentRoutes)
 app.use("/api/fees", staffFeeRoutes)
 app.use("/api/resident-changes", staffResidentChangeRoutes)
+app.use("/api/fee-reports", staffFeeReportRoutes)
+app.use("/api/fee-history", staffFeeHistoryRoutes)
 
-app.use("/api/fees", staffFeeReportRoutes)
 
-app.use("/api/notifications", staffNotificationRoutes);
+app.use("/api/notifications", staffNotificationRoutes)
 
 // RESIDENT
 app.use("/api/resident", householdInfoRoutes)
 app.use("/api", feeViewRoutes)
-app.use("/api/resident/notifications", residentNotificationRoutes);
+app.use("/api/resident/notifications", residentNotificationRoutes)
 
 
 const distPath = path.join(__dirname, "../frontend/dist")
