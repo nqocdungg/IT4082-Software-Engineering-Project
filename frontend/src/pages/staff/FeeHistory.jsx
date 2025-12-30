@@ -13,7 +13,7 @@ import {
 } from "react-icons/fa"
 
 import "../../styles/staff/layout.css"
-import "../../styles/staff/residentchange.css" // 🔥 dùng chung style
+import "../../styles/staff/fees-history.css"
 import { formatDateDMY } from "../../utils/date"
 
 const API_BASE = "http://localhost:5000/api"
@@ -27,29 +27,37 @@ function money(v) {
   return new Intl.NumberFormat("vi-VN").format(Number(v || 0))
 }
 
+function useDebouncedValue(value, delay = 350) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
+
 export default function FeeHistory() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
 
-  // filters
   const [search, setSearch] = useState("")
   const [method, setMethod] = useState("ALL")
   const [status, setStatus] = useState("ALL")
 
-  // paging
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
   const [total, setTotal] = useState(0)
 
-  // detail popup
   const [selected, setSelected] = useState(null)
   const [detail, setDetail] = useState(null)
+
+  const debouncedSearch = useDebouncedValue(search, 350)
 
   async function fetchData() {
     setLoading(true)
     try {
       const params = { page, pageSize }
-      if (search.trim()) params.q = search.trim()
+      if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
       if (method !== "ALL") params.method = method
       if (status !== "ALL") params.status = status
 
@@ -74,7 +82,7 @@ export default function FeeHistory() {
 
   useEffect(() => {
     fetchData()
-  }, [page, pageSize, method, status])
+  }, [page, pageSize, method, status, debouncedSearch])
 
   useEffect(() => {
     if (selected) fetchDetail(selected.id)
@@ -92,6 +100,10 @@ export default function FeeHistory() {
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
+  useEffect(() => {
+    if (page > totalPages) setPage(1)
+  }, [totalPages, page])
+
   const rangeText = useMemo(() => {
     if (!total) return `0 - 0 trên tổng số 0 bản ghi`
     const start = (page - 1) * pageSize + 1
@@ -101,7 +113,7 @@ export default function FeeHistory() {
 
   const exportExcel = () => {
     const params = new URLSearchParams()
-    if (search.trim()) params.append("q", search.trim())
+    if (debouncedSearch.trim()) params.append("q", debouncedSearch.trim())
     if (method !== "ALL") params.append("method", method)
     if (status !== "ALL") params.append("status", status)
     window.open(`${API_BASE}/fee-history/export-excel?${params.toString()}`)
@@ -112,66 +124,93 @@ export default function FeeHistory() {
     window.open(`${API_BASE}/fee-history/${selected.id}/invoice`, "_blank")
   }
 
+  const statusBadgeClass = s => {
+    if (s === 2) return "status-thuong_tru"
+    if (s === 0) return "status-tam_tru"
+    return "status-tam_vang"
+  }
+
   return (
-    <div className="page-container rc-page">
-      {/* ===== STATS STRIP ===== */}
-      <div className="rc-stats-strip">
+    <div className="page-container fee-history-page">
+      <div className="stats-strip">
         {[
           { label: "Tất cả", value: stats.total, icon: <FaMoneyBill />, tone: "blue" },
           { label: "Đã nộp", value: stats.paid, icon: <FaCheckCircle />, tone: "green" },
           { label: "Chưa nộp", value: stats.pending, icon: <FaClock />, tone: "amber" },
           { label: "Nộp 1 phần", value: stats.partial, icon: <FaTimesCircle />, tone: "rose" }
         ].map(c => (
-          <div key={c.label} className={`rc-mini-card tone-${c.tone}`}>
-            <div className="rc-mini-ico">{c.icon}</div>
-            <div className="rc-mini-meta">
-              <div className="rc-mini-value">{c.value}</div>
-              <div className="rc-mini-label">{c.label}</div>
+          <div key={c.label} className={`mini-card tone-${c.tone}`}>
+            <div className="mini-ico">{c.icon}</div>
+            <div className="mini-meta">
+              <div className="mini-value">{c.value ?? 0}</div>
+              <div className="mini-label">{c.label}</div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ===== TABLE CARD ===== */}
-      <div className="card rc-table-card">
-        {/* Toolbar */}
-        <div className="rc-table-toolbar">
-          <div className="rc-toolbar-row">
-            <div className="rc-toolbar-left">
-              <select value={method} onChange={e => setMethod(e.target.value)}>
-                <option value="ALL">Tất cả hình thức</option>
-                <option value="ONLINE">Online</option>
-                <option value="OFFLINE">Offline</option>
-              </select>
-
-              <select value={status} onChange={e => setStatus(e.target.value)}>
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="0">Chưa nộp</option>
-                <option value="1">Nộp 1 phần</option>
-                <option value="2">Đã nộp</option>
-              </select>
-            </div>
-
-            <div className="rc-toolbar-right">
-              <div className="rc-toolbar-search">
-                <FaSearch />
-                <input
-                  placeholder="Tìm hộ / khoản thu / người thu"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
+      <div className="card table-card">
+        <div className="table-toolbar">
+          <div className="toolbar-row">
+            <div className="toolbar-left">
+              <div className="toolbar-select">
+                <select
+                  value={method}
+                  onChange={e => {
+                    setPage(1)
+                    setMethod(e.target.value)
+                  }}
+                >
+                  <option value="ALL">Tất cả hình thức</option>
+                  <option value="ONLINE">Online</option>
+                  <option value="OFFLINE">Offline</option>
+                </select>
               </div>
 
-              <button className="rc-btn secondary" onClick={exportExcel}>
+              <div className="toolbar-select">
+                <select
+                  value={status}
+                  onChange={e => {
+                    setPage(1)
+                    setStatus(e.target.value)
+                  }}
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="0">Chưa nộp</option>
+                  <option value="1">Nộp 1 phần</option>
+                  <option value="2">Đã nộp</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="toolbar-right">
+              <button
+                type="button"
+                className="btn-primary-excel"
+                onClick={exportExcel}
+                style={{ marginRight: 10 }}
+              >
                 <FaFileExcel /> Xuất Excel
               </button>
+
+              <div className="toolbar-search">
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Tìm hộ / khoản thu / người thu"
+                  value={search}
+                  onChange={e => {
+                    setPage(1)
+                    setSearch(e.target.value)
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="rc-table-wrapper">
-          <table className="rc-table">
+        <div className="table-wrapper">
+          <table className="resident-table fee-history-table">
             <thead>
               <tr>
                 <th>Ngày thu</th>
@@ -187,23 +226,23 @@ export default function FeeHistory() {
             <tbody>
               {loading || rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="rc-empty-row">
-                    {loading ? "Đang tải..." : "Không có dữ liệu"}
+                  <td colSpan={7} className="empty-row">
+                    {loading ? "Đang tải..." : "Không có dữ liệu nào để hiển thị"}
                   </td>
                 </tr>
               ) : (
                 rows.map(r => (
-                  <tr key={r.id} className="rc-clickable" onClick={() => setSelected(r)}>
+                  <tr key={r.id} className="clickable-row" onClick={() => setSelected(r)}>
                     <td>{formatDateDMY(r.createdAt)}</td>
                     <td>
                       <b>{r.household?.householdCode}</b>
-                      <div className="rc-sub-text">{r.household?.address}</div>
+                      <div className="sub-text">{r.household?.address}</div>
                     </td>
                     <td>{r.feeType?.name}</td>
                     <td>{money(r.amount)} đ</td>
                     <td>{r.method}</td>
                     <td>
-                      <span className={`rc-badge ${r.status === 2 ? "as-approved" : r.status === 0 ? "as-pending" : "as-rejected"}`}>
+                      <span className={`status-badge ${statusBadgeClass(r.status)}`}>
                         {r.status === 2 ? "Đã nộp" : r.status === 1 ? "Nộp 1 phần" : "Chưa nộp"}
                       </span>
                     </td>
@@ -215,23 +254,28 @@ export default function FeeHistory() {
           </table>
         </div>
 
-        {/* Footer */}
-        <div className="rc-table-footer">
-          <div className="rc-footer-left">
-            <span className="rc-muted">Số bản ghi</span>
-            <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))}>
+        <div className="table-footer">
+          <div className="footer-left">
+            <span className="footer-muted">Số bản ghi</span>
+            <select
+              value={pageSize}
+              onChange={e => {
+                setPage(1)
+                setPageSize(Number(e.target.value))
+              }}
+            >
               <option value={5}>5</option>
               <option value={10}>10</option>
             </select>
           </div>
 
-          <div className="rc-footer-right">
-            <span className="rc-muted">{rangeText}</span>
-            <div className="rc-pager">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+          <div className="footer-right">
+            <span className="footer-muted">{rangeText}</span>
+            <div className="pager">
+              <button type="button" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
                 <FaChevronLeft />
               </button>
-              <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+              <button type="button" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
                 <FaChevronRight />
               </button>
             </div>
@@ -239,29 +283,62 @@ export default function FeeHistory() {
         </div>
       </div>
 
-      {/* ===== DETAIL MODAL ===== */}
       {selected && detail && (
-        <div className="rc-modal-overlay" onClick={() => setSelected(null)}>
-          <div className="rc-modal" onClick={e => e.stopPropagation()}>
-            <div className="rc-modal-header">
-              <h3>Chi tiết thu phí</h3>
-              <button className="rc-modal-close" onClick={() => setSelected(null)}>✕</button>
+        <div className="resident-modal-overlay" onClick={() => setSelected(null)}>
+          <div className="resident-modal" onClick={e => e.stopPropagation()}>
+            <div className="resident-modal-header">
+              <div>
+                <h3 className="resident-modal-title">Chi tiết thu phí</h3>
+                <p className="resident-modal-sub">ID: #{selected.id}</p>
+              </div>
+              <button className="modal-close-btn" type="button" onClick={() => setSelected(null)}>
+                ✕
+              </button>
             </div>
 
-            <div className="rc-modal-body">
-              <div className="rc-detail-grid">
-                <div><b>Hộ:</b> {detail.household?.householdCode}</div>
-                <div><b>Khoản thu:</b> {detail.feeType?.name}</div>
-                <div><b>Số tiền:</b> {money(detail.amount)} đ</div>
-                <div><b>Hình thức:</b> {detail.method}</div>
-                <div><b>Trạng thái:</b> {detail.status === 2 ? "Đã nộp" : detail.status === 1 ? "Nộp 1 phần" : "Chưa nộp"}</div>
-                <div><b>Người thu:</b> {detail.manager?.fullname}</div>
+            <div className="resident-modal-body">
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <div className="detail-label">Hộ</div>
+                  <div className="detail-value">{detail.household?.householdCode || "—"}</div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Khoản thu</div>
+                  <div className="detail-value">{detail.feeType?.name || "—"}</div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Số tiền</div>
+                  <div className="detail-value">{money(detail.amount)} đ</div>
+                </div>
+
+                <div className="detail-item">
+                  <div className="detail-label">Hình thức</div>
+                  <div className="detail-value">{detail.method || "—"}</div>
+                </div>
+
+                <div className="detail-item detail-wide">
+                  <div className="detail-label">Trạng thái</div>
+                  <div className="detail-value">
+                    <span className={`status-badge ${statusBadgeClass(detail.status)}`}>
+                      {detail.status === 2 ? "Đã nộp" : detail.status === 1 ? "Nộp 1 phần" : "Chưa nộp"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="detail-item detail-wide">
+                  <div className="detail-label">Người thu</div>
+                  <div className="detail-value">{detail.manager?.fullname || "—"}</div>
+                </div>
               </div>
             </div>
 
-            <div className="rc-modal-footer">
-              <button className="rc-btn secondary" onClick={() => setSelected(null)}>Đóng</button>
-              <button className="rc-btn ok" onClick={printInvoice}>
+            <div className="resident-modal-footer">
+              <button className="btn-secondary" type="button" onClick={() => setSelected(null)}>
+                Đóng
+              </button>
+              <button className="btn-primary" type="button" onClick={printInvoice}>
                 <FaPrint /> In hóa đơn
               </button>
             </div>

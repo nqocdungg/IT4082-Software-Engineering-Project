@@ -461,6 +461,23 @@
   gap: 10px;
 }
 
+.btn-primary-excel {
+    padding: 12px;
+    background: linear-gradient(135deg, #198e34, #0ea024);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
 .btn-secondary {
   background: #fff;
   color: #111827;

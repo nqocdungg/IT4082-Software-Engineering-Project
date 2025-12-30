@@ -263,13 +263,11 @@ export default function ResidentChangeCreate() {
   }, [ctNum])
 
   const toReadOnly = useMemo(() => {
-    // m muốn 0/1/3 chọn hộ là auto-fill TO
     if ([0, 1, 3].includes(ctNum)) return !!String(selectedHousehold?.address || "").trim()
     return false
   }, [ctNum, selectedHousehold?.address])
 
   const fromReadOnly = useMemo(() => {
-    // m muốn 2/4/7 chọn nhân khẩu là auto-fill FROM
     if ([2, 4, 7].includes(ctNum)) return autoFromLocked
     return false
   }, [ctNum, autoFromLocked])
@@ -415,10 +413,10 @@ export default function ResidentChangeCreate() {
   }
 
   return (
-    <div className="page-container rc-page">
-      <div className="card rc-table-card">
-        <div className="rc-table-toolbar">
-          <div className="rc-toolbar-row" style={{ justifyContent: "space-between" }}>
+    <div className="page-container residents-page">
+      <div className="card table-card">
+        <div className="table-toolbar">
+          <div className="toolbar-row" style={{ justifyContent: "space-between" }}>
             <div className="rc-page-head">
               <button type="button" className="rc-btn secondary" onClick={() => navigate(-1)}>
                 <FaArrowLeft /> Quay lại
@@ -481,7 +479,6 @@ export default function ResidentChangeCreate() {
                           setHouseholdOptions([])
                           setShowHouseholdSuggest(false)
 
-                          // ✅ 0/1/3: chọn hộ -> fill TO
                           if ([0, 1, 3].includes(ctNum)) {
                             const addr = String(h.address || "").trim()
                             if (addr) onCreateField("toAddress", addr)
@@ -533,7 +530,6 @@ export default function ResidentChangeCreate() {
                           setResidentOptions([])
                           setShowResidentSuggest(false)
 
-                          // ✅ 2/4/7: chọn nhân khẩu -> fill FROM
                           if ([2, 4, 7].includes(ctNum)) {
                             const detail = await getResidentDetail(r.id)
                             const addr = String(
@@ -753,7 +749,8 @@ export default function ResidentChangeCreate() {
                             <b>{m.fullname}</b>
                             {m.residentCCCD && ` • ${m.residentCCCD}`}
                             <span className="rc-sub-text">
-                              {m.gender === "M" ? "Nam" : m.gender === "F" ? "Nữ" : "—"} • {String(m.dob).slice(0, 10)}
+                              {m.gender === "M" ? "Nam" : m.gender === "F" ? "Nữ" : "—"} •{" "}
+                              {String(m.dob).slice(0, 10)}
                             </span>
                           </span>
 
@@ -797,7 +794,9 @@ export default function ResidentChangeCreate() {
                         <span className="rc-split-info">
                           <b>{m.fullname}</b>
                           {m.residentCCCD && ` • ${m.residentCCCD}`}
-                          <span className="rc-sub-text">{m.relationToOwner ? `Quan hệ: ${m.relationToOwner}` : ""}</span>
+                          <span className="rc-sub-text">
+                            {m.relationToOwner ? `Quan hệ: ${m.relationToOwner}` : ""}
+                          </span>
                         </span>
 
                         {newOwnerId === m.id && <span className="rc-tag">Chủ hộ mới</span>}

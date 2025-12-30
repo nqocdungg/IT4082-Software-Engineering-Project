@@ -25,8 +25,9 @@ export default function ResidentHero() {
       <div className="hero-overlay white">
         <h1>
           {displayedText}
-          <span className="cursor">|</span>
+          {displayedText.length < fullText.length && <span className="cursor">|</span>}
         </h1>
+
         <p>Nền tảng thông tin & dịch vụ dành cho cư dân</p>
       </div>
     </section>
