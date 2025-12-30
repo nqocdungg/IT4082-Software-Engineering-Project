@@ -119,134 +119,137 @@ export default function FeeHistory() {
   }
 
   return (
-    <div className="historyPage-wrapper">
+    <>
       <ResidentHeader />
+      <div className="historyPage-wrapper">
 
-      <h1 className="historyPage-page-title">Lịch sử thanh toán</h1>
 
-      <div className="historyPage-toolbar">
-        <div className="historyPage-filter-type">
-          {["all", "mandatory", "optional"].map((type) => (
-            <button
-              key={type}
-              className={typeFilter === type ? "active" : ""}
-              onClick={() => {
-                setTypeFilter(type)
+        <h1 className="historyPage-page-title">Lịch sử thanh toán</h1>
+
+        <div className="historyPage-toolbar">
+          <div className="historyPage-filter-type">
+            {["all", "mandatory", "optional"].map((type) => (
+              <button
+                key={type}
+                className={typeFilter === type ? "active" : ""}
+                onClick={() => {
+                  setTypeFilter(type)
+                  setCurrentPage(1)
+                }}
+              >
+                {type === "all" ? "Tất cả" : type === "mandatory" ? "Bắt buộc" : "Đóng góp"}
+              </button>
+            ))}
+          </div>
+
+          <div className="historyPage-search">
+            <input
+              type="text"
+              placeholder="Tìm theo tên khoản thu..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
                 setCurrentPage(1)
               }}
-            >
-              {type === "all" ? "Tất cả" : type === "mandatory" ? "Bắt buộc" : "Đóng góp"}
-            </button>
-          ))}
+            />
+          </div>
         </div>
 
-        <div className="historyPage-search">
-          <input
-            type="text"
-            placeholder="Tìm theo tên khoản thu..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setCurrentPage(1)
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="historyPage-table-card">
-        <div className="historyPage-table-wrapper">
-          <table className="historyPage-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Tên khoản thu</th>
-                <th>Loại</th>
-                <th>Số tiền</th>
-                <th>Thông tin</th>
-                <th>Trạng thái</th>
-                <th>Hóa đơn</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading ? (
+        <div className="historyPage-table-card">
+          <div className="historyPage-table-wrapper">
+            <table className="historyPage-table">
+              <thead>
                 <tr>
-                  <td colSpan={7} className="historyPage-empty-row">
-                    Đang tải...
-                  </td>
+                  <th>ID</th>
+                  <th>Tên khoản thu</th>
+                  <th>Loại</th>
+                  <th>Số tiền</th>
+                  <th>Thông tin</th>
+                  <th>Trạng thái</th>
+                  <th>Hóa đơn</th>
                 </tr>
-              ) : pagedFees.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="historyPage-empty-row">
-                    Không có khoản thu phù hợp
-                  </td>
-                </tr>
-              ) : (
-                pagedFees.map((f) => (
-                  <tr key={f.id}>
-                    <td>{f.id}</td>
-                    <td>{f.feeType?.name ?? "-"}</td>
-                    <td>
-                      <span className={f.feeType?.isMandatory ? "historyPage-type-mandatory" : "historyPage-type-optional"}>
-                        {f.feeType?.isMandatory ? "Bắt buộc" : "Đóng góp"}
-                      </span>
-                    </td>
-                    <td>{formatCurrency(f.amount)}</td>
+              </thead>
 
-                    <td>
-                      <div style={{ fontSize: 12 }}>
-                        <div>
-                          <strong>Nội dung:</strong> {f.feeType?.shortDescription || "—"}
-                        </div>
-
-                        {f.description && (
-                          <div style={{ color: "#6b7280", marginTop: 4 }}>
-                            <strong>Ghi chú:</strong> {f.description}
-                          </div>
-                        )}
-
-                        <div style={{ color: "#6b7280", marginTop: 4 }}>
-                          <strong>{f.feeType?.isMandatory ? "Ngày nộp:" : "Ngày đóng góp:"}</strong> {formatDate(f.createdAt)}
-                        </div>
-                      </div>
-                    </td>
-
-                    <td>
-                      <span className={getPaymentClass(f)}>{getPaymentStatus(f)}</span>
-                    </td>
-
-                    <td>
-                      <button
-                        className="pdfButton"
-                        onClick={() => downloadPdf(f.id)}
-                        disabled={f.status !== 2}
-                      >
-                        <FaFilePdf size={18} />
-                      </button>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="historyPage-empty-row">
+                      Đang tải...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : pagedFees.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="historyPage-empty-row">
+                      Không có khoản thu phù hợp
+                    </td>
+                  </tr>
+                ) : (
+                  pagedFees.map((f) => (
+                    <tr key={f.id}>
+                      <td>{f.id}</td>
+                      <td>{f.feeType?.name ?? "-"}</td>
+                      <td>
+                        <span className={f.feeType?.isMandatory ? "historyPage-type-mandatory" : "historyPage-type-optional"}>
+                          {f.feeType?.isMandatory ? "Bắt buộc" : "Đóng góp"}
+                        </span>
+                      </td>
+                      <td>{formatCurrency(f.amount)}</td>
 
-        <div className="historyPage-footer">
-          <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-            &lt;
-          </button>
+                      <td>
+                        <div style={{ fontSize: 12 }}>
+                          <div>
+                            <strong>Nội dung:</strong> {f.feeType?.shortDescription || "—"}
+                          </div>
 
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button key={i + 1} className={currentPage === i + 1 ? "active" : ""} onClick={() => setCurrentPage(i + 1)}>
-              {i + 1}
+                          {f.description && (
+                            <div style={{ color: "#6b7280", marginTop: 4 }}>
+                              <strong>Ghi chú:</strong> {f.description}
+                            </div>
+                          )}
+
+                          <div style={{ color: "#6b7280", marginTop: 4 }}>
+                            <strong>{f.feeType?.isMandatory ? "Ngày nộp:" : "Ngày đóng góp:"}</strong> {formatDate(f.createdAt)}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td>
+                        <span className={getPaymentClass(f)}>{getPaymentStatus(f)}</span>
+                      </td>
+
+                      <td>
+                        <button
+                          className="pdfButton"
+                          onClick={() => downloadPdf(f.id)}
+                          disabled={f.status !== 2}
+                        >
+                          <FaFilePdf size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="historyPage-footer">
+            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
+              &lt;
             </button>
-          ))}
 
-          <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-            &gt;
-          </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button key={i + 1} className={currentPage === i + 1 ? "active" : ""} onClick={() => setCurrentPage(i + 1)}>
+                {i + 1}
+              </button>
+            ))}
+
+            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+              &gt;
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

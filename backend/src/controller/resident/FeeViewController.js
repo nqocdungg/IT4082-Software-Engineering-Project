@@ -170,13 +170,13 @@ export const getPendingFees = async (req, res) => {
 
     const paidMandatory = mandatoryTypeIds.length
       ? await prisma.feeRecord.findMany({
-          where: {
-            householdId,
-            feeTypeId: { in: mandatoryTypeIds },
-            status: 2
-          },
-          select: { feeTypeId: true }
-        })
+        where: {
+          householdId,
+          feeTypeId: { in: mandatoryTypeIds },
+          status: 2
+        },
+        select: { feeTypeId: true }
+      })
       : []
 
     const paidSet = new Set(paidMandatory.map((r) => r.feeTypeId))
@@ -354,12 +354,14 @@ export const processPayment = async (req, res) => {
         return res.status(400).json({ message: "No valid mandatory fee types found." })
       }
 
-      const results = await prisma.$transaction(
-        types.map(async (t) => {
+      const results = await prisma.$transaction(async (tx) => {
+        const out = []
+
+        for (const t of types) {
           const unitPrice = Number(t.unitPrice ?? 0)
           const amount = unitPrice * residentsCount
 
-          const existing = await prisma.feeRecord.findFirst({
+          const existing = await tx.feeRecord.findFirst({
             where: { householdId, feeTypeId: t.id },
             orderBy: { createdAt: "desc" },
             select: { id: true, status: true }
@@ -367,10 +369,11 @@ export const processPayment = async (req, res) => {
 
           if (existing) {
             if (existing.status === 2) {
-              return { feeTypeId: t.id, action: "skip_paid" }
+              out.push({ feeTypeId: t.id, action: "skip_paid" })
+              continue
             }
 
-            await prisma.feeRecord.update({
+            await tx.feeRecord.update({
               where: { id: existing.id },
               data: {
                 amount,
@@ -383,10 +386,11 @@ export const processPayment = async (req, res) => {
               }
             })
 
-            return { feeTypeId: t.id, action: "update_to_paid" }
+            out.push({ feeTypeId: t.id, action: "update_to_paid" })
+            continue
           }
 
-          await prisma.feeRecord.create({
+          await tx.feeRecord.create({
             data: {
               amount,
               status: 2,
@@ -398,9 +402,12 @@ export const processPayment = async (req, res) => {
             }
           })
 
-          return { feeTypeId: t.id, action: "create_paid" }
-        })
-      )
+          out.push({ feeTypeId: t.id, action: "create_paid" })
+        }
+
+        return out
+      })
+
 
       const createdCount = results.filter((r) => r?.action === "create_paid").length
       const updatedCount = results.filter((r) => r?.action === "update_to_paid").length

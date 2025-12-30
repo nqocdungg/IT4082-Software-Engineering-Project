@@ -10,7 +10,8 @@ import {
   FaUserCheck,
   FaUserSlash,
   FaSkull,
-  FaCross
+  FaCross,
+  FaFileExcel
 } from "react-icons/fa"
 import { GiCoffin } from "react-icons/gi";
 import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
@@ -297,12 +298,12 @@ export default function ResidentManagement() {
             <div className="toolbar-right">
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-primary-excel"
                 onClick={handleExportExcel}
                 disabled={exporting}
                 style={{ marginRight: 10 }}
               >
-                {exporting ? "Đang xuất..." : "Tải Excel"}
+                <FaFileExcel />{exporting ? "Đang xuất..." : "Xuất Excel"}
               </button>
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />

@@ -1,97 +1,182 @@
-/* clickable row */
-.clickable-row {
+.fee-history-page {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  background: #f6f7fb;
+  position: relative;
+}
+
+.fee-history-page .stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.fee-history-page .table-toolbar {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eef0f6;
+  background: #fff;
+}
+
+.fee-history-page .toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fee-history-page .toolbar-left,
+.fee-history-page .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+@media (max-width: 980px) {
+  .fee-history-page .toolbar-search {
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 640px) {
+  .fee-history-page .toolbar-left,
+  .fee-history-page .toolbar-right {
+    width: 100%;
+  }
+
+  .fee-history-page .toolbar-search {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.fee-history-page .clickable-row {
   cursor: pointer;
 }
-.clickable-row:hover {
+
+.fee-history-page .clickable-row:hover {
   background: #f9fafb;
 }
 
-/* pills */
-.pill {
+
+
+
+
+
+.fee-history-page .pill {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.pill.online {
+
+.fee-history-page .pill.online {
   background: #e0f2fe;
   color: #0369a1;
 }
-.pill.offline {
-  background: #fef3c7;
+
+.fee-history-page .pill.offline {
+  background: #fffbeb;
   color: #92400e;
 }
 
-/* status */
-.status.s0 { color: #b91c1c; font-weight: 600; }
-.status.s1 { color: #d97706; font-weight: 600; }
-.status.s2 { color: #15803d; font-weight: 600; }
+.fee-history-page .status.s0 {
+  color: #b91c1c;
+  font-weight: 700;
+}
 
-/* ===== MODAL ===== */
-.modal-backdrop {
+.fee-history-page .status.s1 {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.fee-history-page .status.s2 {
+  color: #065f46;
+  font-weight: 700;
+}
+
+.fee-history-page .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
 }
 
-.modal {
+.fee-history-page .modal {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 14px;
   width: 100%;
-  max-width: 520px;
-  box-shadow: 0 20px 40px rgba(0,0,0,.2);
+  max-width: 560px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(17, 24, 39, 0.06);
 }
 
-.modal-header,
-.modal-footer {
+.fee-history-page .modal-header,
+.fee-history-page .modal-footer {
   padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e5e7eb;
 }
 
-.modal-footer {
-  border-top: 1px solid #e5e7eb;
-  border-bottom: none;
+.fee-history-page .modal-header {
+  border-bottom: 1px solid #eef0f6;
 }
 
-.modal-body {
+.fee-history-page .modal-body {
   padding: 16px;
 }
 
-.detail-grid {
+.fee-history-page .modal-footer {
+  border-top: 1px solid #eef0f6;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.fee-history-page .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px 16px;
 }
 
-.detail-grid label {
+.fee-history-page .detail-grid label {
   font-size: 12px;
   color: #6b7280;
-}
-
-.detail-grid .money {
   font-weight: 700;
-  color: #15803d;
 }
 
-.detail-grid .span-2 {
+.fee-history-page .detail-grid .money {
+  font-weight: 800;
+  color: #065f46;
+}
+
+.fee-history-page .detail-grid .span-2 {
   grid-column: span 2;
 }
 
-.note {
+.fee-history-page .note {
   background: #f9fafb;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid #eef0f6;
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+@media (max-width: 520px) {
+  .fee-history-page .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fee-history-page .detail-grid .span-2 {
+    grid-column: auto;
+  }
 }
