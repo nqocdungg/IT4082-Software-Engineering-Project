@@ -277,23 +277,17 @@ export default function FeePayment() {
 
               <div className="popup-info-item">
                 <span className="label">Từ ngày</span>
-                <span className="value">
-                  {popupFee.fromDate ? new Date(popupFee.fromDate).toLocaleDateString("vi-VN") : "—"}
-                </span>
+                <span className="value">{popupFee.fromDate ? new Date(popupFee.fromDate).toLocaleDateString("vi-VN") : "—"}</span>
               </div>
 
               <div className="popup-info-item">
                 <span className="label">Đến ngày</span>
-                <span className="value">
-                  {popupFee.toDate ? new Date(popupFee.toDate).toLocaleDateString("vi-VN") : "—"}
-                </span>
+                <span className="value">{popupFee.toDate ? new Date(popupFee.toDate).toLocaleDateString("vi-VN") : "—"}</span>
               </div>
 
               <div className="popup-info-item">
                 <span className="label">Đơn giá</span>
-                <span className="value highlight">
-                  {popupFee.type === "mandatory" ? formatCurrency(popupFee.unitPrice) : "Tự nguyện"}
-                </span>
+                <span className="value highlight">{popupFee.type === "mandatory" ? formatCurrency(popupFee.unitPrice) : "Tự nguyện"}</span>
               </div>
 
               {popupFee.type === "mandatory" && (
