@@ -13,6 +13,8 @@ import staffFeeRoutes from "./src/routes/staff/feeRoutes.js"
 import staffDashboardRoutes from "./src/routes/staff/dashboardRoutes.js"
 import staffResidentChangeRoutes from "./src/routes/staff/residentChangeRoutes.js"
 import staffFeeReportRoutes from "./src/routes/staff/feeReportRoutes.js"
+import staffFeeHistoryRoutes from "./src/routes/staff/feeHistoryRoutes.js"
+
 /* RESIDENT */
 import householdInfoRoutes from "./src/routes/resident/householdInfoRoutes.js"
 import feeViewRoutes from "./src/routes/resident/feeViewRoutes.js"
@@ -40,7 +42,9 @@ app.use("/api/households", staffHouseholdRoutes)
 app.use("/api/residents", staffResidentRoutes)
 app.use("/api/fees", staffFeeRoutes)
 app.use("/api/resident-changes", staffResidentChangeRoutes)
-app.use("/api/fees", staffFeeReportRoutes)
+app.use("/api/fee-reports", staffFeeReportRoutes)
+app.use("/api/fee-history", staffFeeHistoryRoutes)
+
 // RESIDENT
 app.use("/api/resident", householdInfoRoutes)
 app.use("/api", feeViewRoutes)
