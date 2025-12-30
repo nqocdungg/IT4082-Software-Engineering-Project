@@ -14,6 +14,7 @@ import StaffCreateResidentChange from "./pages/staff/CreateResidentChange.jsx";
 import StaffFeeReport from "./pages/staff/FeeReport.jsx";
 import StaffFeeReportDetail from "./pages/staff/FeeReportDetail.jsx"
 import StaffFeeHistory from "./pages/staff/FeeHistory.jsx"
+import StaffCreateNotification from "./pages/staff/CreateNotification";
 
 import ResidentHome from "./pages/resident/ResidentHome.jsx";
 import HouseholdInfo from "./pages/resident/HouseholdInfo.jsx";
@@ -22,6 +23,7 @@ import InvoiceInfo from "./pages/resident/InvoiceInfo.jsx";
 import InvoicePayment from "./pages/resident/InvoicePayment.jsx";
 import FeeHistory from "./pages/resident/InvoiceHistory.jsx";
 import Login from "./pages/Login";
+import ResidentNotifications from "./pages/resident/ResidentNotifications"
 
 import "./index.css";
 
@@ -54,18 +56,17 @@ function App() {
           <Route path ="/fees-report" element = {<StaffFeeReport/>}/>
           <Route path="/fees-report/:feeTypeId" element={<StaffFeeReportDetail />} />
           <Route path ="/fees-history" element = {<StaffFeeHistory/>}/>
+          <Route path="/notifications/create" element={<StaffCreateNotification />} />
         </Route>
 
         {/* HOUSEHOLD / RESIDENT */}
         <Route element={<ProtectedRoute roles={["HOUSEHOLD"]} />}>
           <Route path="/resident-home" element={<ResidentHome />} />
           <Route path="/resident/household/info" element={<HouseholdInfo />} />
-          <Route
-            path="/resident/payment-infor"
-            element={<InvoiceInfo />}
-          />{" "}
+          <Route path="/resident/payment-infor" element={<InvoiceInfo />} />{" "}
           <Route path="/resident/payment" element={<InvoicePayment />} />{" "}
           <Route path="/resident/history" element={<FeeHistory />} />
+          <Route path="/resident/notifications" element={<ResidentNotifications />} />
         </Route>
       </Routes>
     </BrowserRouter>

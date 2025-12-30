@@ -1,11 +1,14 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "../../assets/images/Logo.png";
 import "../../styles/resident/ResidentHeader.css";
+import axios from "axios";
 
 export default function ResidentHeader() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [totalUnread, setTotalUnread] = useState(0);
 
   const toggleDropdown = (menu) => {
     setOpenDropdown(openDropdown === menu ? null : menu);
@@ -17,6 +20,25 @@ export default function ResidentHeader() {
 
     navigate("/login");
   };
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await axios.get("http://localhost:5000/api/resident/notifications", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const unread = res.data.filter(n => !n.isRead).length;
+        setTotalUnread(unread);
+      } catch (error) {
+        console.error("Lỗi lấy số thông báo:", error);
+      }
+    };
+    fetchUnreadCount();
+  }, [location.pathname]);
+
+  const isActive = (path) => location.pathname.includes(path) ? "active" : "";
 
   return (
     <header className="resident-header">
@@ -37,18 +59,18 @@ export default function ResidentHeader() {
             </span>
           </div>
 
-          <div
-            className={`nav-item-resident ${
-              openDropdown === "notification" ? "active" : ""
-            }`}
-            onClick={() => toggleDropdown("notification")}
+          <Link 
+            to="/resident/notifications?tab=general" 
+            className={`nav-item-resident notification-wrapper ${isActive('/resident/notifications') ? 'active' : ''}`}
           >
-            <span>Thông báo</span>
-            <div className="dropdown">
-              <div>Thông báo chung</div>
-              <div>Nhắc phí & phản hồi</div>
-            </div>
-          </div>
+            <span className="nav-label">Thông báo</span>
+
+            {totalUnread > 0 && (
+              <span className="header-badge pulse-animation">
+                {totalUnread > 99 ? '99+' : totalUnread}
+              </span>
+            )}
+          </Link>
 
           <div
             className={`nav-item-resident ${

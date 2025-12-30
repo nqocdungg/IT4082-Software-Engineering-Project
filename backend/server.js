@@ -12,12 +12,21 @@ import staffResidentRoutes from "./src/routes/staff/residentRoutes.js"
 import staffFeeRoutes from "./src/routes/staff/feeRoutes.js"
 import staffDashboardRoutes from "./src/routes/staff/dashboardRoutes.js"
 import staffResidentChangeRoutes from "./src/routes/staff/residentChangeRoutes.js"
+
 import staffFeeReportRoutes from "./src/routes/staff/feeReportRoutes.js"
+<<<<<<< HEAD
 import staffFeeHistoryRoutes from "./src/routes/staff/feeHistoryRoutes.js"
+=======
+
+import staffNotificationRoutes from "./src/routes/staff/notificationRoutes.js";
+>>>>>>> origin/main
 
 /* RESIDENT */
 import householdInfoRoutes from "./src/routes/resident/householdInfoRoutes.js"
 import feeViewRoutes from "./src/routes/resident/feeViewRoutes.js"
+import residentNotificationRoutes from "./src/routes/resident/notificationRoutes.js";
+/* SERVICES */
+import { startCronJobs } from './src/services/cronService.js';
 
 dotenv.config()
 
@@ -33,6 +42,7 @@ app.use(cors({
 }))
 
 app.use(express.json())
+startCronJobs();
 
 app.use("/api/auth", authRoutes)
 
@@ -45,9 +55,14 @@ app.use("/api/resident-changes", staffResidentChangeRoutes)
 app.use("/api/fee-reports", staffFeeReportRoutes)
 app.use("/api/fee-history", staffFeeHistoryRoutes)
 
+app.use("/api/fees", staffFeeReportRoutes)
+
+app.use("/api/notifications", staffNotificationRoutes);
+
 // RESIDENT
 app.use("/api/resident", householdInfoRoutes)
 app.use("/api", feeViewRoutes)
+app.use("/api/resident/notifications", residentNotificationRoutes);
 
 
 const distPath = path.join(__dirname, "../frontend/dist")
@@ -60,3 +75,4 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
