@@ -73,6 +73,33 @@ export const createFee = async (req, res) => {
       },
     });
 
+    if (newFeeType.isMandatory && newFeeType.isActive) {
+      const householdUsers = await prisma.user.findMany({
+        where: { role: "HOUSEHOLD", isActive: true },
+        select: { id: true }
+      });
+
+      if (householdUsers.length > 0) {
+        const notification = await prisma.notification.create({
+          data: {
+            title: `🔔 Thông báo thu phí: ${newFeeType.name}`,
+            message: `Ban quản lý vừa triển khai khoản thu bắt buộc mới: "${newFeeType.name}". Đơn giá: ${newFeeType.unitPrice?.toLocaleString('vi-VN')} VNĐ/nhân khẩu. Vui lòng kiểm tra và đóng phí đúng hạn.`,
+            type: "FEE_ANNOUNCEMENT",
+            relatedId: newFeeType.id,
+          }
+        });
+
+        const recipients = householdUsers.map(u => ({
+          userId: u.id,
+          notificationId: notification.id,
+          isRead: false
+        }));
+
+        await prisma.notificationRecipient.createMany({ data: recipients });
+        console.log(`[AUTO-NOTI] Đã gửi thông báo phí mới tới ${householdUsers.length} hộ.`);
+      }
+    }
+
     res.status(201).json({
       message: "Fee created successfully",
       data: {
