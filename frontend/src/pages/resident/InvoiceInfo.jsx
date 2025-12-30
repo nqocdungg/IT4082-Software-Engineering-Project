@@ -1,81 +1,101 @@
-import React, { useEffect, useState } from "react";
-import ResidentHeader from "../../components/resident/ResidentHeader";
-import axios from "axios";
-import "../../styles/resident/InvoiceInfo.css";
-import {
-  FaClipboardList,
-  FaHandHoldingUsd,
-  FaCalendarAlt,
-  FaMoneyBillWave,
-} from "react-icons/fa";
+import React, { useEffect, useMemo, useState } from "react"
+import ResidentHeader from "../../components/resident/ResidentHeader"
+import axios from "axios"
+import "../../styles/resident/InvoiceInfo.css"
+import { FaClipboardList, FaHandHoldingUsd, FaCalendarAlt, FaMoneyBillWave } from "react-icons/fa"
 
 const formatCurrency = (value) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
-    value ?? 0
-  );
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value ?? 0)
 
 export default function FeePayment() {
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState({ mandatoryFees: [], contributionFees: [] });
-  const [selectedType, setSelectedType] = useState("all");
-  const [filterMonth, setFilterMonth] = useState("");
-  const [searchName, setSearchName] = useState("");
-  const [expandedId, setExpandedId] = useState(null);
-  const [popupFee, setPopupFee] = useState(null);
+  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState({ mandatoryFees: [], contributionFees: [] })
+  const [selectedType, setSelectedType] = useState("all")
+  const [filterMonth, setFilterMonth] = useState("")
+  const [searchName, setSearchName] = useState("")
+  const [expandedId, setExpandedId] = useState(null)
+  const [popupFee, setPopupFee] = useState(null)
 
   useEffect(() => {
     const fetchFees = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          "http://localhost:5000/api/household/fees/pending",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setData(res.data);
+        const token = localStorage.getItem("token")
+        const res = await axios.get("http://localhost:5000/api/household/fees/pending", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setData({
+          mandatoryFees: res.data?.mandatoryFees ?? [],
+          contributionFees: res.data?.contributionFees ?? []
+        })
       } catch (error) {
-        console.error("Lỗi load phí:", error);
+        console.error("Lỗi load phí:", error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchFees();
-  }, []);
+    }
+    fetchFees()
+  }, [])
 
-  const allFees = [
-    ...data.mandatoryFees.map((fee) => ({ ...fee, type: "mandatory" })),
-    ...data.contributionFees.map((fee) => ({ ...fee, type: "contribution" })),
-  ];
+  const allFees = useMemo(() => {
+    const mandatory = (data.mandatoryFees ?? []).map((fee) => ({ ...fee, type: "mandatory" }))
+    const contribution = (data.contributionFees ?? []).map((fee) => ({ ...fee, type: "contribution" }))
+    return [...mandatory, ...contribution]
+  }, [data])
 
-  const filteredFees = allFees.filter((fee) => {
-    if (selectedType !== "all" && fee.type !== selectedType) return false;
+  const filteredFees = useMemo(() => {
+    return allFees.filter((fee) => {
+      if (selectedType !== "all" && fee.type !== selectedType) return false
 
-    const dateSource =
-      fee.type === "mandatory" ? fee.feeType?.fromDate : fee.fromDate;
-    if (filterMonth && dateSource && !dateSource.startsWith(filterMonth))
-      return false;
+      const dateSource = fee.fromDate
+      if (filterMonth && dateSource) {
+        const d = new Date(dateSource)
+        if (!Number.isNaN(d.getTime())) {
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+          if (ym !== filterMonth) return false
+        }
+      }
 
-    const feeName = fee.type === "mandatory" ? fee.feeType?.name : fee.name;
-    if (
-      searchName &&
-      !feeName?.toLowerCase().includes(searchName.toLowerCase())
-    )
-      return false;
+      const feeName = fee.name
+      if (searchName && !String(feeName ?? "").toLowerCase().includes(searchName.toLowerCase())) return false
 
-    return true;
-  });
+      return true
+    })
+  }, [allFees, selectedType, filterMonth, searchName])
 
-  const toggleExpand = (id) => setExpandedId(expandedId === id ? null : id);
+  const feeKey = (fee) => `${fee.type}-${fee.id}`
+  const toggleExpand = (k) => setExpandedId(expandedId === k ? null : k)
 
-  // Xác định số tiền thực tế đã nộp
-  const getPaidAmount = (fee) =>
-    fee.type === "mandatory" ? fee.amount : fee.totalCommunityDonated ?? 0;
+  const getPaidAmount = (fee) => {
+    if (fee.type === "contribution") return fee.totalCommunityDonated ?? 0
+    return 0
+  }
 
-  // Trạng thái
-  const getStatusText = (fee) =>
-    getPaidAmount(fee) > 0 ? "Đã đóng" : "Chưa đóng";
-  const getStatusClass = (fee) =>
-    getPaidAmount(fee) > 0 ? "status-paid" : "status-0";
+  const getTotalAmount = (fee) => {
+    if (fee.type === "mandatory") return fee.totalAmount ?? 0
+    return fee.totalCommunityDonated ?? 0
+  }
+
+  const getStatusText = (fee) => {
+    if (fee.type === "mandatory") return "Chưa đóng"
+    return (fee.totalCommunityDonated ?? 0) > 0 ? "Đã đóng" : "Chưa đóng"
+  }
+
+  const getStatusClass = (fee) => {
+    if (fee.type === "mandatory") return "status-0"
+    return (fee.totalCommunityDonated ?? 0) > 0 ? "status-paid" : "status-0"
+  }
+
+  const closePopup = () => setPopupFee(null)
+
+  const togglePopupDesc = (e) => {
+    e?.stopPropagation?.()
+    setPopupFee((prev) => {
+      if (!prev) return prev
+      const nextShow = !prev.__showLong
+      return { ...prev, __showLong: nextShow }
+    })
+  }
 
   return (
     <>
@@ -84,36 +104,26 @@ export default function FeePayment() {
         <div className="fee-container">
           <h1 className="page-title">Thông tin các khoản thu</h1>
 
-          {/* FILTER */}
           <div className="filter-bar">
             <div className="filter-tabs">
-              <button
-                className={selectedType === "all" ? "active" : ""}
-                onClick={() => setSelectedType("all")}
-              >
+              <button className={selectedType === "all" ? "active" : ""} onClick={() => setSelectedType("all")}>
                 Tất cả
               </button>
               <button
-                className={
-                  selectedType === "mandatory" ? "active mandatory" : ""
-                }
+                className={selectedType === "mandatory" ? "active mandatory" : ""}
                 onClick={() => setSelectedType("mandatory")}
               >
                 Thu cố định
               </button>
               <button
-                className={
-                  selectedType === "contribution" ? "active contribution" : ""
-                }
+                className={selectedType === "contribution" ? "active contribution" : ""}
                 onClick={() => setSelectedType("contribution")}
               >
                 Đóng góp
               </button>
             </div>
-            <div
-              className="filter-actions"
-              style={{ display: "flex", gap: 12, alignItems: "center" }}
-            >
+
+            <div className="filter-actions" style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <input
                 type="month"
                 value={filterMonth}
@@ -130,193 +140,193 @@ export default function FeePayment() {
             </div>
           </div>
 
-          {/* LIST */}
           {loading ? (
             <p className="empty-text">Đang tải dữ liệu...</p>
           ) : filteredFees.length === 0 ? (
             <p className="empty-text">Không có khoản thu nào</p>
           ) : (
             <div className="fee-list">
-              {filteredFees.map((fee) => (
-                <div key={fee.id} className={`fee-card ${fee.type}`}>
-                  <div
-                    className="fee-main"
-                    onClick={() => toggleExpand(fee.id)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className={`fee-icon ${fee.type}`}>
-                      {fee.type === "mandatory" ? (
-                        <FaClipboardList />
-                      ) : (
-                        <FaHandHoldingUsd />
-                      )}
-                    </div>
-                    <div className="fee-info">
-                      <div className="fee-name">
-                        {fee.type === "mandatory"
-                          ? fee.feeType?.name
-                          : fee.name}
-                        <span
-                          className={`fee-tag ${
-                            fee.type === "mandatory" ? "mandatory" : "voluntary"
-                          }`}
-                        >
-                          {fee.type === "mandatory" ? "Bắt buộc" : "Đóng góp"}
-                        </span>
-                      </div>
-                      <div className="fee-desc">
-                        {fee.type === "mandatory"
-                          ? fee.feeType?.shortDescription || "—"
-                          : fee.shortDescription || "—"}
+              {filteredFees.map((fee) => {
+                const k = feeKey(fee)
+                const desc = fee.shortDescription || fee.longDescription || "Không có mô tả"
+                const fromText = fee.fromDate ? new Date(fee.fromDate).toLocaleDateString("vi-VN") : "—"
+                const toText = fee.toDate ? new Date(fee.toDate).toLocaleDateString("vi-VN") : null
+                const unitText = fee.type === "mandatory" ? formatCurrency(fee.unitPrice) : "Tự nguyện"
+                const totalText = fee.type === "mandatory" ? formatCurrency(fee.totalAmount) : formatCurrency(0)
+                const residentsText = fee.type === "mandatory" ? `(${fee.residentsCount ?? 0} nhân khẩu)` : ""
+
+                return (
+                  <div key={k} className={`fee-card ${fee.type}`}>
+                    <div className="fee-main" onClick={() => toggleExpand(k)} style={{ cursor: "pointer" }}>
+                      <div className={`fee-icon ${fee.type}`}>
+                        {fee.type === "mandatory" ? <FaClipboardList /> : <FaHandHoldingUsd />}
                       </div>
 
-                      <div className="fee-date">
-                        <div className="date-row">
-                          <span className="date-item">
-                            <FaCalendarAlt className="icon" />
-                            {fee.type === "mandatory"
-                              ? new Date(
-                                  fee.feeType?.fromDate
-                                ).toLocaleDateString("vi-VN")
-                              : fee.fromDate
-                              ? new Date(fee.fromDate).toLocaleDateString(
-                                  "vi-VN"
-                                )
-                              : "—"}
+                      <div className="fee-info">
+                        <div className="fee-name">
+                          {fee.name}
+                          <span className={`fee-tag ${fee.type === "mandatory" ? "mandatory" : "voluntary"}`}>
+                            {fee.type === "mandatory" ? "Bắt buộc" : "Đóng góp"}
                           </span>
-                          {fee.type === "mandatory" && fee.feeType?.toDate && (
+                        </div>
+
+                        <div className="fee-desc">{desc}</div>
+
+                        <div className="fee-date">
+                          <div className="date-row">
                             <span className="date-item">
                               <FaCalendarAlt className="icon" />
-                              {new Date(fee.feeType.toDate).toLocaleDateString(
-                                "vi-VN"
-                              )}
+                              {fromText}
                             </span>
-                          )}
-                          <span className="date-item">
-                            <FaMoneyBillWave className="icon" />
-                            {fee.type === "mandatory"
-                              ? formatCurrency(fee.feeType?.unitPrice)
-                              : "Tự nguyện"}
-                          </span>
+
+                            {toText && (
+                              <span className="date-item">
+                                <FaCalendarAlt className="icon" />
+                                {toText}
+                              </span>
+                            )}
+
+                            <span className="date-item">
+                              <FaMoneyBillWave className="icon" />
+                              {fee.type === "mandatory" ? `${unitText} / người ${residentsText}` : unitText}
+                            </span>
+
+                            {fee.type === "mandatory" && (
+                              <span className="date-item">
+                                <FaMoneyBillWave className="icon" />
+                                {totalText}
+                              </span>
+                            )}
+                          </div>
                         </div>
+
+                        {expandedId === k && (
+                          <div className="fee-actions">
+                            <button className="pay" onClick={() => alert(`Thanh toán khoản: ${fee.id}`)}>
+                              Thanh toán
+                            </button>
+                            <button
+                              className="detail"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setPopupFee({ ...fee, __showLong: false })
+                              }}
+                            >
+                              Xem chi tiết
+                            </button>
+                          </div>
+                        )}
                       </div>
+                    </div>
 
-                      {expandedId === fee.id && (
-                        <div className="fee-actions">
-                          <button
-                            className="pay"
-                            onClick={() => alert(`Thanh toán ${fee.id}`)}
-                          >
-                            Thanh toán
-                          </button>
-                          <button
-                            className="detail"
-                            onClick={() => setPopupFee(fee)}
-                          >
-                            Xem chi tiết
-                          </button>
-                        </div>
-                      )}
+                    <div className="fee-right">
+                      <div className="fee-paid">{formatCurrency(getTotalAmount(fee))}</div>
+                      <span className={`fee-status ${getStatusClass(fee)}`}>{getStatusText(fee)}</span>
                     </div>
                   </div>
-
-                  <div className="fee-right">
-                    <div className="fee-paid">
-                      {formatCurrency(getPaidAmount(fee))}
-                    </div>
-                    <span className={`fee-status ${getStatusClass(fee)}`}>
-                      {getStatusText(fee)}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* POPUP CHI TIẾT */}
       {popupFee && (
-        <div className="fee-popup" onClick={() => setPopupFee(null)}>
+        <div className="fee-popup" onClick={closePopup}>
           <div className="popup-content" onClick={(e) => e.stopPropagation()}>
             <h2>📋 Chi tiết khoản thu</h2>
+
             <div className="popup-info-list">
               <div className="popup-info-item">
                 <span className="label">Tên khoản thu</span>
-                <span className="value">
-                  {popupFee.type === "mandatory"
-                    ? popupFee.feeType?.name
-                    : popupFee.name}
-                </span>
+                <span className="value">{popupFee.name}</span>
               </div>
+
               <div className="popup-info-item">
                 <span className="label">Loại</span>
-                <span className="value">
-                  {popupFee.type === "mandatory"
-                    ? "Thu bắt buộc"
-                    : "Đóng góp tự nguyện"}
-                </span>
+                <span className="value">{popupFee.type === "mandatory" ? "Thu bắt buộc" : "Đóng góp tự nguyện"}</span>
               </div>
+
               <div className="popup-info-item full">
-                <span className="label">Mô tả chi tiết</span>
+                <span className="label">Mô tả</span>
+
                 <span className="value">
-                  {popupFee.type === "mandatory"
-                    ? popupFee.feeType?.longDescription || "Không có mô tả chi tiết"
-                    : popupFee.longDescription || "Không có mô tả chi tiết"}
+                  {popupFee.__showLong
+                    ? popupFee.longDescription || popupFee.shortDescription || "Không có mô tả"
+                    : popupFee.shortDescription || popupFee.longDescription || "Không có mô tả"}
                 </span>
+
+                {popupFee.longDescription && String(popupFee.longDescription).trim() && (
+                  <button
+                    type="button"
+                    onClick={togglePopupDesc}
+                    style={{
+                      marginTop: 8,
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      color: "#2563eb"
+                    }}
+                  >
+                    {popupFee.__showLong ? "Thu gọn" : "Xem chi tiết"}
+                  </button>
+                )}
               </div>
 
               <div className="popup-info-item">
                 <span className="label">Từ ngày</span>
                 <span className="value">
-                  {popupFee.type === "mandatory" && popupFee.feeType?.fromDate
-                    ? new Date(popupFee.feeType.fromDate).toLocaleDateString(
-                        "vi-VN"
-                      )
-                    : popupFee.fromDate
-                    ? new Date(popupFee.fromDate).toLocaleDateString("vi-VN")
-                    : "—"}
+                  {popupFee.fromDate ? new Date(popupFee.fromDate).toLocaleDateString("vi-VN") : "—"}
                 </span>
               </div>
+
               <div className="popup-info-item">
                 <span className="label">Đến ngày</span>
                 <span className="value">
-                  {popupFee.type === "mandatory" && popupFee.feeType?.toDate
-                    ? new Date(popupFee.feeType.toDate).toLocaleDateString(
-                        "vi-VN"
-                      )
-                    : popupFee.toDate
-                    ? new Date(popupFee.toDate).toLocaleDateString("vi-VN")
-                    : "—"}
+                  {popupFee.toDate ? new Date(popupFee.toDate).toLocaleDateString("vi-VN") : "—"}
                 </span>
               </div>
+
               <div className="popup-info-item">
                 <span className="label">Đơn giá</span>
                 <span className="value highlight">
-                  {popupFee.type === "mandatory"
-                    ? formatCurrency(popupFee.feeType?.unitPrice)
-                    : "Tự nguyện"}
+                  {popupFee.type === "mandatory" ? formatCurrency(popupFee.unitPrice) : "Tự nguyện"}
                 </span>
               </div>
+
+              {popupFee.type === "mandatory" && (
+                <>
+                  <div className="popup-info-item">
+                    <span className="label">Số nhân khẩu</span>
+                    <span className="value">{popupFee.residentsCount ?? 0}</span>
+                  </div>
+
+                  <div className="popup-info-item">
+                    <span className="label">Tổng tiền phải nộp</span>
+                    <span className="value highlight">{formatCurrency(popupFee.totalAmount ?? 0)}</span>
+                  </div>
+                </>
+              )}
+
               <div className="popup-info-item">
                 <span className="label">Số tiền đã đóng</span>
-                <span className="value">
-                  {formatCurrency(getPaidAmount(popupFee))}
-                </span>
+                <span className="value">{formatCurrency(getPaidAmount(popupFee))}</span>
               </div>
+
               <div className="popup-info-item">
                 <span className="label">Trạng thái</span>
-                <span className={`value status ${getStatusClass(popupFee)}`}>
-                  {getStatusText(popupFee)}
-                </span>
+                <span className={`value status ${getStatusClass(popupFee)}`}>{getStatusText(popupFee)}</span>
               </div>
             </div>
+
             <div className="popup-footer">
-              <button onClick={() => setPopupFee(null)}>Đóng</button>
+              <button onClick={closePopup}>Đóng</button>
             </div>
           </div>
         </div>
       )}
     </>
-  );
+  )
 }
