@@ -12,11 +12,11 @@ import staffResidentRoutes from "./src/routes/staff/residentRoutes.js"
 import staffFeeRoutes from "./src/routes/staff/feeRoutes.js"
 import staffDashboardRoutes from "./src/routes/staff/dashboardRoutes.js"
 import staffResidentChangeRoutes from "./src/routes/staff/residentChangeRoutes.js"
-<<<<<<< Updated upstream
+
 import staffFeeReportRoutes from "./src/routes/staff/feeReportRoutes.js"
-=======
+
 import staffNotificationRoutes from "./src/routes/staff/notificationRoutes.js";
->>>>>>> Stashed changes
+
 /* RESIDENT */
 import householdInfoRoutes from "./src/routes/resident/householdInfoRoutes.js"
 import feeViewRoutes from "./src/routes/resident/feeViewRoutes.js"
@@ -48,11 +48,11 @@ app.use("/api/households", staffHouseholdRoutes)
 app.use("/api/residents", staffResidentRoutes)
 app.use("/api/fees", staffFeeRoutes)
 app.use("/api/resident-changes", staffResidentChangeRoutes)
-<<<<<<< Updated upstream
+
 app.use("/api/fees", staffFeeReportRoutes)
-=======
+
 app.use("/api/notifications", staffNotificationRoutes);
->>>>>>> Stashed changes
+
 // RESIDENT
 app.use("/api/resident", householdInfoRoutes)
 app.use("/api", feeViewRoutes)
@@ -69,3 +69,4 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
