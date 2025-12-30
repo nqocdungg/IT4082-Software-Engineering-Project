@@ -1,0 +1,225 @@
+[33m0cbffca[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mngocdungg[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to 0cbffca88fe3ede420ec463e73e1ade454b23576
+[33m0cbffca[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mngocdungg[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{1}: reset: moving to origin/main
+[33m293b958[m[33m ([m[1;31morigin/ngocdungg[m[33m)[m HEAD@{2}: checkout: moving from ngocdungg to ngocdungg
+[33m293b958[m[33m ([m[1;31morigin/ngocdungg[m[33m)[m HEAD@{3}: commit (merge): Merge branch 'main' into ngocdungg
+[33m579790a[m HEAD@{4}: checkout: moving from main to ngocdungg
+[33m0cbffca[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mngocdungg[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{5}: pull origin main: Fast-forward
+[33m8697e51[m HEAD@{6}: checkout: moving from ngocdungg to main
+[33m579790a[m HEAD@{7}: commit: feat(finance): implement fee history page, export excel and invoice pdf
+[33mc612295[m HEAD@{8}: checkout: moving from main to ngocdungg
+[33m8697e51[m HEAD@{9}: checkout: moving from main to main
+[33m8697e51[m HEAD@{10}: checkout: moving from ngocdungg to main
+[33mc612295[m HEAD@{11}: checkout: moving from main to ngocdungg
+[33m8697e51[m HEAD@{12}: pull origin main: Fast-forward
+[33m3034f48[m HEAD@{13}: checkout: moving from ngocdungg to main
+[33mc612295[m HEAD@{14}: commit: feat(fees): refactor fee system with mandatory/contribution logic, reports, and payment tracking
+[33mc4107ef[m HEAD@{15}: commit: refactor(fee): align controllers and routes with new prisma schema
+[33m3034f48[m HEAD@{16}: merge main: Fast-forward
+[33ma57f495[m HEAD@{17}: checkout: moving from main to ngocdungg
+[33m3034f48[m HEAD@{18}: pull origin main: Fast-forward
+[33m277295d[m HEAD@{19}: checkout: moving from ngocdungg to main
+[33ma57f495[m HEAD@{20}: commit: chore(prisma): update schema, migrations and seed fee data
+[33m277295d[m HEAD@{21}: checkout: moving from main to ngocdungg
+[33m277295d[m HEAD@{22}: checkout: moving from ngocdungg to main
+[33m277295d[m HEAD@{23}: merge main: Fast-forward
+[33m8f0cd28[m HEAD@{24}: checkout: moving from main to ngocdungg
+[33m277295d[m HEAD@{25}: pull origin main: Fast-forward
+[33m874bbe4[m HEAD@{26}: checkout: moving from ngocdungg to main
+[33m8f0cd28[m HEAD@{27}: commit: update dashboard page UI
+[33m874bbe4[m HEAD@{28}: merge main: Fast-forward
+[33m8351778[m HEAD@{29}: checkout: moving from main to ngocdungg
+[33m874bbe4[m HEAD@{30}: pull origin main: Fast-forward
+[33m8351778[m HEAD@{31}: checkout: moving from ngocdungg to main
+[33m8351778[m HEAD@{32}: merge main: Fast-forward
+[33mebb2770[m HEAD@{33}: checkout: moving from main to ngocdungg
+[33m8351778[m HEAD@{34}: pull origin main: Fast-forward
+[33mebb2770[m HEAD@{35}: checkout: moving from ngocdungg to main
+[33mebb2770[m HEAD@{36}: merge main: Fast-forward
+[33ma386fe5[m HEAD@{37}: checkout: moving from main to ngocdungg
+[33mebb2770[m HEAD@{38}: pull origin main: Fast-forward
+[33ma386fe5[m HEAD@{39}: checkout: moving from ngocdungg to main
+[33ma386fe5[m HEAD@{40}: merge main: Fast-forward
+[33m48d4716[m HEAD@{41}: checkout: moving from main to ngocdungg
+[33ma386fe5[m HEAD@{42}: pull origin main: Fast-forward
+[33mebb61b6[m HEAD@{43}: checkout: moving from ngocdungg to main
+[33m48d4716[m HEAD@{44}: commit: Add Excel export for households and refine resident filtering
+[33mc6d5143[m HEAD@{45}: commit: refactor: unify date format to dd/mm/yyyy in UI
+[33mebb61b6[m HEAD@{46}: merge main: Fast-forward
+[33me032ffa[m HEAD@{47}: checkout: moving from main to ngocdungg
+[33mebb61b6[m HEAD@{48}: pull origin main: Fast-forward
+[33me032ffa[m HEAD@{49}: checkout: moving from ngocdungg to main
+[33me032ffa[m HEAD@{50}: merge main: Fast-forward
+[33mf95afd7[m HEAD@{51}: checkout: moving from main to ngocdungg
+[33me032ffa[m HEAD@{52}: reset: moving to origin/main
+[33m5b53508[m HEAD@{53}: checkout: moving from ngocdungg to main
+[33mf95afd7[m HEAD@{54}: commit: fix(dashboard): correct household metrics, trends logic and UI consistency
+[33m5b53508[m HEAD@{55}: checkout: moving from main to ngocdungg
+[33m5b53508[m HEAD@{56}: checkout: moving from ngocdungg to main
+[33m5b53508[m HEAD@{57}: merge main: Fast-forward
+[33m7ba37f8[m HEAD@{58}: checkout: moving from main to ngocdungg
+[33m5b53508[m HEAD@{59}: pull origin main: Fast-forward
+[33m5f86827[m HEAD@{60}: checkout: moving from ngocdungg to main
+[33m7ba37f8[m HEAD@{61}: commit: Update sidebar layout and typography
+[33m5f86827[m HEAD@{62}: merge main: Fast-forward
+[33m1d00ba1[m HEAD@{63}: checkout: moving from main to ngocdungg
+[33m5f86827[m HEAD@{64}: pull origin main: Fast-forward
+[33m1d00ba1[m HEAD@{65}: checkout: moving from ngocdungg to main
+[33m1d00ba1[m HEAD@{66}: merge main: Fast-forward
+[33m8d4ed04[m HEAD@{67}: checkout: moving from main to ngocdungg
+[33m1d00ba1[m HEAD@{68}: pull origin main: Fast-forward
+[33m8d4ed04[m HEAD@{69}: checkout: moving from ngocdungg to main
+[33m8d4ed04[m HEAD@{70}: merge main: Fast-forward
+[33mfdf24ee[m HEAD@{71}: checkout: moving from main to ngocdungg
+[33m8d4ed04[m HEAD@{72}: reset: moving to origin/main
+[33mfdf24ee[m HEAD@{73}: checkout: moving from ngocdungg to main
+[33mfdf24ee[m HEAD@{74}: merge main: Fast-forward
+[33m98d3d98[m HEAD@{75}: checkout: moving from main to ngocdungg
+[33mfdf24ee[m HEAD@{76}: pull origin main: Fast-forward
+[33m1db84f5[m HEAD@{77}: checkout: moving from ngocdungg to main
+[33m98d3d98[m HEAD@{78}: merge main: Merge made by the 'ort' strategy.
+[33m9f534c3[m HEAD@{79}: checkout: moving from main to ngocdungg
+[33m1db84f5[m HEAD@{80}: pull origin main: Fast-forward
+[33m936b26a[m HEAD@{81}: checkout: moving from ngocdungg to main
+[33m9f534c3[m HEAD@{82}: commit: feat(staff): update resident & household logic, resident change UI
+[33m03a3bf8[m HEAD@{83}: commit: refactor seed data
+[33m936b26a[m HEAD@{84}: merge main: Fast-forward
+[33m406e9c4[m HEAD@{85}: checkout: moving from main to ngocdungg
+[33m936b26a[m HEAD@{86}: pull origin main: Fast-forward
+[33m406e9c4[m HEAD@{87}: checkout: moving from ngocdungg to main
+[33m406e9c4[m HEAD@{88}: checkout: moving from main to ngocdungg
+[33m406e9c4[m HEAD@{89}: checkout: moving from ngocdungg to main
+[33m406e9c4[m HEAD@{90}: merge main: Fast-forward
+[33mb14a782[m HEAD@{91}: checkout: moving from main to ngocdungg
+[33m406e9c4[m HEAD@{92}: pull origin main: Fast-forward
+[33mb14a782[m HEAD@{93}: checkout: moving from main to main
+[33mb14a782[m HEAD@{94}: checkout: moving from ngocdungg to main
+[33mb14a782[m HEAD@{95}: merge main: Fast-forward
+[33m106fc36[m HEAD@{96}: checkout: moving from main to ngocdungg
+[33mb14a782[m HEAD@{97}: pull origin main: Fast-forward
+[33m106fc36[m HEAD@{98}: checkout: moving from ngocdungg to main
+[33m106fc36[m HEAD@{99}: merge main: Fast-forward
+[33m1b41542[m HEAD@{100}: checkout: moving from main to ngocdungg
+[33m106fc36[m HEAD@{101}: pull origin main: Fast-forward
+[33m09d89b7[m HEAD@{102}: checkout: moving from ngocdungg to main
+[33m1b41542[m HEAD@{103}: checkout: moving from ngocdungg to ngocdungg
+[33m1b41542[m HEAD@{104}: merge main: Merge made by the 'ort' strategy.
+[33m0fc6e49[m HEAD@{105}: checkout: moving from main to ngocdungg
+[33m09d89b7[m HEAD@{106}: pull origin main: Fast-forward
+[33m30d056a[m HEAD@{107}: checkout: moving from main to main
+[33m30d056a[m HEAD@{108}: checkout: moving from ngocdungg to main
+[33m0fc6e49[m HEAD@{109}: commit: feat(household): auto-generate household code and redesign create household form
+[33ma0982d5[m HEAD@{110}: merge main: Merge made by the 'ort' strategy.
+[33mc50d4c6[m HEAD@{111}: checkout: moving from main to ngocdungg
+[33m30d056a[m HEAD@{112}: pull origin main: Fast-forward
+[33m41351fb[m HEAD@{113}: checkout: moving from ngocdungg to main
+[33mc50d4c6[m HEAD@{114}: commit: change add household form design
+[33m41351fb[m HEAD@{115}: checkout: moving from main to ngocdungg
+[33m41351fb[m HEAD@{116}: checkout: moving from ngocdungg to main
+[33m41351fb[m HEAD@{117}: checkout: moving from main to ngocdungg
+[33m41351fb[m HEAD@{118}: checkout: moving from ngocdungg to main
+[33m41351fb[m HEAD@{119}: merge main: Fast-forward
+[33m9490c59[m HEAD@{120}: checkout: moving from main to ngocdungg
+[33m41351fb[m HEAD@{121}: pull origin main: Fast-forward
+[33m16d5684[m HEAD@{122}: checkout: moving from ngocdungg to main
+[33m9490c59[m HEAD@{123}: checkout: moving from main to ngocdungg
+[33m16d5684[m HEAD@{124}: pull origin main: Fast-forward
+[33m4b7240e[m HEAD@{125}: checkout: moving from ngocdungg to main
+[33m9490c59[m HEAD@{126}: commit: fix sidebar and header bug
+[33m1062fcd[m HEAD@{127}: commit: fix merge bug
+[33m369b9e5[m HEAD@{128}: merge main: Merge made by the 'ort' strategy.
+[33mc9d4a53[m HEAD@{129}: checkout: moving from main to ngocdungg
+[33m4b7240e[m HEAD@{130}: pull origin main: Fast-forward
+[33m9dac66d[m HEAD@{131}: checkout: moving from ngocdungg to main
+[33mc9d4a53[m HEAD@{132}: merge main: Merge made by the 'ort' strategy.
+[33m2640530[m HEAD@{133}: checkout: moving from main to ngocdungg
+[33m9dac66d[m HEAD@{134}: pull origin main: Fast-forward
+[33m5ccc72d[m HEAD@{135}: checkout: moving from ngocdungg to main
+[33m2640530[m HEAD@{136}: commit: fix fee controller to the new prisma
+[33m48021d4[m HEAD@{137}: commit: restructure folders
+[33m5ccc72d[m HEAD@{138}: merge main: Fast-forward
+[33maa72db4[m HEAD@{139}: checkout: moving from main to ngocdungg
+[33m5ccc72d[m HEAD@{140}: pull origin main: Fast-forward
+[33m8136352[m HEAD@{141}: checkout: moving from ngocdungg to main
+[33maa72db4[m HEAD@{142}: commit: fix syntax error
+[33md647dd3[m HEAD@{143}: commit: finalize household, resident, resident change workflow and seed data
+[33m8136352[m HEAD@{144}: merge main: Fast-forward
+[33meb44f1e[m HEAD@{145}: checkout: moving from main to ngocdungg
+[33m8136352[m HEAD@{146}: pull origin main: Fast-forward
+[33meb44f1e[m HEAD@{147}: checkout: moving from ngocdungg to main
+[33meb44f1e[m HEAD@{148}: merge main: Fast-forward
+[33m5bf34d1[m HEAD@{149}: checkout: moving from main to ngocdungg
+[33meb44f1e[m HEAD@{150}: checkout: moving from main to main
+[33meb44f1e[m HEAD@{151}: pull: Fast-forward
+[33m9a7f3ac[m HEAD@{152}: checkout: moving from ngocdungg to main
+[33m5bf34d1[m HEAD@{153}: reset: moving to HEAD
+[33m5bf34d1[m HEAD@{154}: pull origin main: Fast-forward
+[33m8646265[m HEAD@{155}: commit: gift for tgiang
+[33m9a7f3ac[m HEAD@{156}: merge main: Fast-forward
+[33ma4f6ee1[m HEAD@{157}: checkout: moving from main to ngocdungg
+[33m9a7f3ac[m HEAD@{158}: pull origin main: Fast-forward
+[33m91a6548[m HEAD@{159}: checkout: moving from ngocdungg to main
+[33ma4f6ee1[m HEAD@{160}: commit: fix bug dashboard controller
+[33mdbd5ca4[m HEAD@{161}: commit: implement dashboard controller and routes
+[33mbe148a0[m HEAD@{162}: commit: fix layout
+[33m91a6548[m HEAD@{163}: checkout: moving from main to ngocdungg
+[33m91a6548[m HEAD@{164}: checkout: moving from ngocdungg to main
+[33m91a6548[m HEAD@{165}: checkout: moving from main to ngocdungg
+[33m91a6548[m HEAD@{166}: checkout: moving from ngocdungg to main
+[33m91a6548[m HEAD@{167}: merge main: Fast-forward
+[33mde76f97[m HEAD@{168}: checkout: moving from main to ngocdungg
+[33m91a6548[m HEAD@{169}: pull origin main: Fast-forward
+[33mde76f97[m HEAD@{170}: checkout: moving from ngocdungg to main
+[33mde76f97[m HEAD@{171}: checkout: moving from main to ngocdungg
+[33mde76f97[m HEAD@{172}: checkout: moving from ngocdungg to main
+[33mde76f97[m HEAD@{173}: merge main: Fast-forward
+[33m992b2f5[m HEAD@{174}: checkout: moving from main to ngocdungg
+[33mde76f97[m HEAD@{175}: pull origin main: Fast-forward
+[33mcd8b07e[m HEAD@{176}: checkout: moving from ngocdungg to main
+[33m992b2f5[m HEAD@{177}: commit: adjust residents page UI and update households page
+[33mcd8b07e[m HEAD@{178}: merge main: Fast-forward
+[33mbe4d336[m HEAD@{179}: checkout: moving from main to ngocdungg
+[33mcd8b07e[m HEAD@{180}: pull origin main: Fast-forward
+[33mf72bc48[m HEAD@{181}: checkout: moving from ngocdungg to main
+[33mbe4d336[m HEAD@{182}: commit: residents page
+[33md58b326[m HEAD@{183}: commit: fix prisma
+[33mf72bc48[m HEAD@{184}: merge main: Fast-forward
+[33m3a03165[m HEAD@{185}: checkout: moving from main to ngocdungg
+[33mf72bc48[m HEAD@{186}: pull origin main: Fast-forward
+[33m4183227[m HEAD@{187}: checkout: moving from ngocdungg to main
+[33m3a03165[m HEAD@{188}: commit: update
+[33m4183227[m HEAD@{189}: merge main: Fast-forward
+[33m4db6851[m HEAD@{190}: checkout: moving from main to ngocdungg
+[33m4183227[m HEAD@{191}: pull origin main: Fast-forward
+[33m4db6851[m HEAD@{192}: checkout: moving from ngocdungg to main
+[33m4db6851[m HEAD@{193}: merge main: Fast-forward
+[33m9b5c2a4[m HEAD@{194}: checkout: moving from main to ngocdungg
+[33m4db6851[m HEAD@{195}: pull origin main: Fast-forward
+[33m799a031[m HEAD@{196}: checkout: moving from ngocdungg to main
+[33m9b5c2a4[m HEAD@{197}: commit: implement resident-view-page function
+[33m799a031[m HEAD@{198}: merge main: Fast-forward
+[33mbd64e03[m HEAD@{199}: checkout: moving from main to ngocdungg
+[33m799a031[m HEAD@{200}: pull origin main: Fast-forward
+[33m135ecda[m HEAD@{201}: checkout: moving from ngocdungg to main
+[33mbd64e03[m HEAD@{202}: commit: update data
+[33m9bfc750[m HEAD@{203}: commit: fix be folder setup
+[33m135ecda[m HEAD@{204}: merge main: Fast-forward
+[33mfcf2cce[m HEAD@{205}: checkout: moving from main to ngocdungg
+[33m135ecda[m HEAD@{206}: pull origin main: Fast-forward
+[33mfcf2cce[m HEAD@{207}: checkout: moving from ngocdungg to main
+[33mfcf2cce[m HEAD@{208}: merge main: Fast-forward
+[33mdc78f74[m HEAD@{209}: checkout: moving from main to ngocdungg
+[33mfcf2cce[m HEAD@{210}: pull origin main: Fast-forward
+[33mf744ebc[m HEAD@{211}: checkout: moving from ngocdungg to main
+[33mdc78f74[m HEAD@{212}: checkout: moving from ngocdungg to ngocdungg
+[33mdc78f74[m HEAD@{213}: checkout: moving from ngocdungg to ngocdungg
+[33mdc78f74[m HEAD@{214}: commit: login page
+[33mec152f3[m HEAD@{215}: commit: login
+[33m3de037a[m HEAD@{216}: commit: login
+[33mf744ebc[m HEAD@{217}: merge main: Fast-forward
+[33m4ac56fb[m HEAD@{218}: checkout: moving from main to ngocdungg
+[33mf744ebc[m HEAD@{219}: pull origin main: Fast-forward
+[33m4ac56fb[m HEAD@{220}: checkout: moving from ngocdungg to main
+[33m4ac56fb[m HEAD@{221}: checkout: moving from ngocdungg to ngocdungg
+[33m4ac56fb[m HEAD@{222}: checkout: moving from main to ngocdungg
+[33m4ac56fb[m HEAD@{223}: pull origin main: Fast-forward
+[33m24986ae[m HEAD@{224}: commit (initial): Project Setup
