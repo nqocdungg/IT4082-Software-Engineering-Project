@@ -246,7 +246,6 @@ export default function FeeReport() {
                   <option value="0">Chưa nộp (0)</option>
                   <option value="1">Nộp 1 phần (1)</option>
                   <option value="2">Đã nộp (2)</option>
-                  <option value="3">Online (3)</option>
                 </select>
               </div>
 

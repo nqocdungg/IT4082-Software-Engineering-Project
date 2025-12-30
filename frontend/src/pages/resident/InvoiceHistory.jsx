@@ -173,9 +173,17 @@ export default function FeeHistory() {
                     <td>{formatCurrency(f.amount)}</td>
                     <td>
                       <div style={{ fontSize: 12 }}>
-                        <div>
-                          <strong>Mô tả:</strong> {f.description || "—"}
-                        </div>
+                    <div>
+                      <strong>Nội dung:</strong>{" "}
+                      {f.feeType?.shortDescription || "—"}
+                    </div>
+
+                    {f.description && (
+                      <div style={{ color: "#6b7280", marginTop: 4 }}>
+                        <strong>Ghi chú:</strong> {f.description}
+                      </div>
+                    )}
+
                         <div style={{ color: "#6b7280", marginTop: 4 }}>
                           <strong>
                             {f.feeType?.isMandatory
