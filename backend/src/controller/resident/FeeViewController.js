@@ -20,7 +20,16 @@ export const getPendingFees = async (req, res) => {
         status: { in: [0, 1] }, 
         feeType: { isMandatory: true }
       },
-      include: { feeType: true },
+      include: { feeType: {
+        select: {
+          id: true,
+          name: true, 
+          shortDescription: true,
+          longDescription: true, 
+          isMandatory: true, 
+          unitPrice: true
+        }
+      } },
       orderBy: { createdAt: "desc" }
     })
 
@@ -83,7 +92,15 @@ export const getFeeHistory = async (req, res) => {
         status: 2
       },
       include: {
-        feeType: true
+        feeType: {
+          select: {
+            id: true,
+            name: true,
+            shortDescription: true,
+            longDescription: true,
+            isMandatory: true
+          }
+        }
       },
       orderBy: { updatedAt: "desc" }
     })
@@ -110,6 +127,7 @@ export const getFeeHistory = async (req, res) => {
 }
 
 export const processPayment = async (req, res) => {
+  const paymentMethod = "ONLINE";
   try {
     const userId = req.user.id;
     const { type, feeRecordIds, donations } = req.body;
@@ -131,10 +149,12 @@ export const processPayment = async (req, res) => {
       const updateResult = await prisma.feeRecord.updateMany({
         where: {
           id: { in: feeRecordIds },
-          householdId: user.householdId
+          householdId: user.householdId, 
+          status: { in: [0, 1] }
         },
         data: {
           status: 2,
+          method: paymentMethod,
           updatedAt: new Date()
         }
       });
@@ -156,9 +176,10 @@ export const processPayment = async (req, res) => {
             data: {
               amount: parseFloat(donation.amount),
               status: 2,
+              method: "ONLINE",
               householdId: user.householdId,
               feeTypeId: donation.feeTypeId,
-              description: "Online donation via app",
+              description: "Đóng góp tự nguyện qua ứng dụng cư dân",
               managerId: userId
             }
           });

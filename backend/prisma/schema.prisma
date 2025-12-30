@@ -23,6 +23,8 @@ model User {
   managedChanges ResidentChange[] @relation("UserManageChange")
   managedFees    FeeRecord[]      @relation("UserManageFee")
 
+  receivedNotifications NotificationRecipient[]
+
   householdId Int?   @unique
   household   Household? @relation("HouseholdAccount", fields: [householdId], references: [id])
 }
@@ -202,4 +204,29 @@ model FeeRecord {
   @@index([createdAt])
   @@index([method])
 
+}
+
+// THÔNG BÁO
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(200)
+  message   String   @db.Text
+  type      String   // "FEE_REMINDER", "ANNOUNCEMENT", "PAYMENT_SUCCESS"
+  relatedId Int?     // ID của đối tượng liên quan (ID hóa đơn, ID bài viết...)
+  createdAt DateTime @default(now())
+  recipients NotificationRecipient[]
+}
+
+model NotificationRecipient {
+  id             Int          @id @default(autoincrement())
+  isRead         Boolean      @default(false)
+  readAt         DateTime?    // Thời điểm đọc
+  userId         Int
+  user           User         @relation(fields: [userId], references: [id])
+  notificationId Int
+  notification   Notification @relation(fields: [notificationId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
 }
