@@ -12,7 +12,8 @@ import {
   FiUser,
   FiShield,
   FiActivity,
-  FiLogOut
+  FiLogOut,
+  FiBell
 } from "react-icons/fi"
 import logo from "../../assets/images/new-logo.png"
 
@@ -38,6 +39,12 @@ const menuGroups = [
       { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" },
       { icon: FiFileText, label: "Báo cáo - Thống kê", path: "/fees-report" },
       { icon: FiDollarSign, label: "Hóa đơn", disabled: true }
+    ]
+  },
+  {
+    title: "TIỆN ÍCH",
+    items: [
+      { icon: FiBell, label: "Gửi thông báo", path: "/notifications/create" }
     ]
   },
   {
