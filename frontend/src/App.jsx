@@ -24,6 +24,7 @@ import InvoicePayment from "./pages/resident/InvoicePayment.jsx";
 import FeeHistory from "./pages/resident/InvoiceHistory.jsx";
 import Login from "./pages/Login";
 import ResidentNotifications from "./pages/resident/ResidentNotifications"
+import ResidentHelp from "./pages/resident/ResidentHelp.jsx";
 
 import "./index.css";
 
@@ -67,6 +68,7 @@ function App() {
           <Route path="/resident/payment" element={<InvoicePayment />} />{" "}
           <Route path="/resident/history" element={<FeeHistory />} />
           <Route path="/resident/notifications" element={<ResidentNotifications />} />
+          <Route path="/resident/help" element={<ResidentHelp />} />
         </Route>
       </Routes>
     </BrowserRouter>

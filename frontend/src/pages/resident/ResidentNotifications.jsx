@@ -63,8 +63,12 @@ export default function ResidentNotifications() {
   };
 
   const isPersonalMessage = (item) => {
-    const title = item.title || "";
-    return title.includes("Nhắc nhở đóng phí") || title.includes("Chúc mừng sinh nhật");
+    if (item.type === "FEE_REMINDER" || item.type === "FEE_ANNOUNCEMENT" || item.type === "PAYMENT_SUCCESS") {
+      return true;
+    }
+    
+    const title = (item.title || "").toLowerCase();
+    return title.includes("phí") || title.includes("sinh nhật");
   };
 
   const processedData = useMemo(() => {
@@ -87,8 +91,12 @@ export default function ResidentNotifications() {
   }, [notifications, activeTab, filterStatus]);
 
   const getTheme = (item) => {
-    if (item.title?.includes("Nhắc nhở đóng phí")) 
-      return { class: "gold", icon: <FiDollarSign />, label: "Nhắc phí" };
+    if (item.type === "FEE_REMINDER" || item.title?.includes("Nhắc nhở đóng phí")) 
+      return { class: "gold", icon: <FiDollarSign />, label: "Nhắc nợ" };
+
+    if (item.type === "FEE_ANNOUNCEMENT" || item.title?.includes("Thông báo thu phí")) 
+      return { class: "purple", icon: <FiDollarSign />, label: "Phí mới" };
+
     if (item.title?.includes("Chúc mừng sinh nhật")) 
       return { class: "pink", icon: <FiGift />, label: "Lời chúc" };
 
@@ -131,14 +139,14 @@ export default function ResidentNotifications() {
             {item.message}
           </p>
 
-          {theme.label === "Nhắc phí" && (
+          {(theme.label === "Nhắc nợ" || theme.label === "Phí mới") && (
              <div className="card-actions">
                <button className="btn-action-pay" onClick={(e) => {
                  e.stopPropagation();
                  markRead(item.id, item.isRead);
                  navigate('/resident/payment');
                }}>
-                 Thanh toán ngay
+                 Xem chi tiết & Đóng phí
                </button>
              </div>
           )}

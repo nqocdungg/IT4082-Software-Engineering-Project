@@ -109,6 +109,13 @@ export default function ResidentHeader() {
               <Link to="/resident/household/info">Thông tin hộ khẩu</Link>
             </div>
           </div>
+          <div className={`nav-item-resident ${isActive('/resident/help') ? 'active' : ''}`}>
+             <span>
+               <Link to="/resident/help" className="nav-link">
+                 Trợ giúp
+               </Link>
+             </span>
+          </div>
         </nav>
 
         <div className="user-box">
