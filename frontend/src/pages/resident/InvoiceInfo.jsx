@@ -67,23 +67,23 @@ export default function FeePayment() {
   const toggleExpand = (k) => setExpandedId(expandedId === k ? null : k)
 
   const getPaidAmount = (fee) => {
-    if (fee.type === "contribution") return fee.totalCommunityDonated ?? 0
+    if (fee.type === "contribution") return Number(fee.myPaidAmount ?? 0)
     return 0
   }
 
   const getTotalAmount = (fee) => {
-    if (fee.type === "mandatory") return fee.totalAmount ?? 0
-    return fee.totalCommunityDonated ?? 0
+    if (fee.type === "mandatory") return Number(fee.totalAmount ?? 0)
+    return Number(fee.myPaidAmount ?? 0)
   }
 
   const getStatusText = (fee) => {
     if (fee.type === "mandatory") return "Chưa đóng"
-    return (fee.totalCommunityDonated ?? 0) > 0 ? "Đã đóng" : "Chưa đóng"
+    return fee.paidByHousehold ? "Đã đóng góp" : "Chưa đóng góp"
   }
 
   const getStatusClass = (fee) => {
     if (fee.type === "mandatory") return "status-0"
-    return (fee.totalCommunityDonated ?? 0) > 0 ? "status-paid" : "status-0"
+    return fee.paidByHousehold ? "status-paid" : "status-0"
   }
 
   const closePopup = () => setPopupFee(null)
@@ -124,12 +124,7 @@ export default function FeePayment() {
             </div>
 
             <div className="filter-actions" style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <input
-                type="month"
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-                style={{ padding: 4 }}
-              />
+              <input type="month" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} style={{ padding: 4 }} />
               <input
                 type="text"
                 placeholder="Tìm theo tên khoản thu..."
@@ -151,9 +146,21 @@ export default function FeePayment() {
                 const desc = fee.shortDescription || fee.longDescription || "Không có mô tả"
                 const fromText = fee.fromDate ? new Date(fee.fromDate).toLocaleDateString("vi-VN") : "—"
                 const toText = fee.toDate ? new Date(fee.toDate).toLocaleDateString("vi-VN") : null
+
                 const unitText = fee.type === "mandatory" ? formatCurrency(fee.unitPrice) : "Tự nguyện"
-                const totalText = fee.type === "mandatory" ? formatCurrency(fee.totalAmount) : formatCurrency(0)
                 const residentsText = fee.type === "mandatory" ? `(${fee.residentsCount ?? 0} nhân khẩu)` : ""
+
+                const totalText =
+                  fee.type === "mandatory"
+                    ? formatCurrency(fee.totalAmount)
+                    : formatCurrency(fee.myPaidAmount ?? 0)
+
+                const communityText =
+                  fee.type === "contribution"
+                    ? `Toàn dân đã góp: ${formatCurrency(fee.totalCommunityDonated ?? 0)}`
+                    : null
+
+                const disablePay = fee.type === "contribution" && fee.paidByHousehold
 
                 return (
                   <div key={k} className={`fee-card ${fee.type}`}>
@@ -168,9 +175,17 @@ export default function FeePayment() {
                           <span className={`fee-tag ${fee.type === "mandatory" ? "mandatory" : "voluntary"}`}>
                             {fee.type === "mandatory" ? "Bắt buộc" : "Đóng góp"}
                           </span>
+                          {fee.type === "contribution" && fee.paidByHousehold && (
+                            <span className="fee-tag voluntary" style={{ marginLeft: 8 }}>
+                              Đã đóng góp
+                            </span>
+                          )}
                         </div>
 
-                        <div className="fee-desc">{desc}</div>
+                        <div className="fee-desc">
+                          {desc}
+                          {communityText ? ` • ${communityText}` : ""}
+                        </div>
 
                         <div className="fee-date">
                           <div className="date-row">
@@ -191,19 +206,22 @@ export default function FeePayment() {
                               {fee.type === "mandatory" ? `${unitText} / người ${residentsText}` : unitText}
                             </span>
 
-                            {fee.type === "mandatory" && (
-                              <span className="date-item">
-                                <FaMoneyBillWave className="icon" />
-                                {totalText}
-                              </span>
-                            )}
+                            <span className="date-item">
+                              <FaMoneyBillWave className="icon" />
+                              {totalText}
+                            </span>
                           </div>
                         </div>
 
                         {expandedId === k && (
                           <div className="fee-actions">
-                            <button className="pay" onClick={() => alert(`Thanh toán khoản: ${fee.id}`)}>
-                              Thanh toán
+                            <button
+                              className="pay"
+                              disabled={disablePay}
+                              onClick={() => alert(`Thanh toán khoản: ${fee.id}`)}
+                              style={disablePay ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
+                            >
+                              {disablePay ? "Đã đóng góp" : "Thanh toán"}
                             </button>
                             <button
                               className="detail"
@@ -304,10 +322,18 @@ export default function FeePayment() {
                 </>
               )}
 
-              <div className="popup-info-item">
-                <span className="label">Số tiền đã đóng</span>
-                <span className="value">{formatCurrency(getPaidAmount(popupFee))}</span>
-              </div>
+              {popupFee.type === "contribution" && (
+                <>
+                  <div className="popup-info-item">
+                    <span className="label">Nhà bạn đã góp</span>
+                    <span className="value">{formatCurrency(popupFee.myPaidAmount ?? 0)}</span>
+                  </div>
+                  <div className="popup-info-item">
+                    <span className="label">Toàn dân đã góp</span>
+                    <span className="value">{formatCurrency(popupFee.totalCommunityDonated ?? 0)}</span>
+                  </div>
+                </>
+              )}
 
               <div className="popup-info-item">
                 <span className="label">Trạng thái</span>

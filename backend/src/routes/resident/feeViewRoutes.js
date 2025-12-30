@@ -2,7 +2,8 @@ import express from "express"
 import {
   getPendingFees,
   getFeeHistory,
-  processPayment
+  processPayment,
+  downloadInvoicePdf
 } from "../../controller/resident/FeeViewController.js"
 
 import verifyToken from "../../middleware/authMiddleware.js"
@@ -17,5 +18,7 @@ router.get("/household/fees/pending", allowRoles("HOUSEHOLD"), getPendingFees)
 router.get("/household/fees/history", allowRoles("HOUSEHOLD"), getFeeHistory)
 
 router.post("/household/pay", allowRoles("HOUSEHOLD"), processPayment)
+
+router.get("/household/fees/invoice/:feeRecordId/pdf", allowRoles("HOUSEHOLD"), downloadInvoicePdf)
 
 export default router

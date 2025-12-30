@@ -1,153 +1,132 @@
-import React, { useState, useEffect } from "react";
-import ResidentHeader from "../../components/resident/ResidentHeader";
-import axios from "axios";
-import { QRCodeCanvas } from "qrcode.react";
-import { Wallet, CheckCircle, Loader2, Heart, ShieldAlert } from "lucide-react";
-import "../../styles/resident/InvoicePayment.css";
+import React, { useEffect, useMemo, useState } from "react"
+import ResidentHeader from "../../components/resident/ResidentHeader"
+import axios from "axios"
+import { QRCodeCanvas } from "qrcode.react"
+import { Wallet, CheckCircle, Loader2, Heart, ShieldAlert } from "lucide-react"
+import "../../styles/resident/InvoicePayment.css"
 
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
-    amount
-  );
+  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount ?? 0)
 
 export default function FeePayment() {
-  const [loading, setLoading] = useState(false);
-  const [mandatoryFees, setMandatoryFees] = useState([]);
-  const [contributionFees, setContributionFees] = useState([]);
-  const [donationInputs, setDonationInputs] = useState({});
+  const [loading, setLoading] = useState(false)
+  const [mandatoryFees, setMandatoryFees] = useState([])
+  const [contributionFees, setContributionFees] = useState([])
+  const [donationInputs, setDonationInputs] = useState({})
 
   const [paymentModal, setPaymentModal] = useState({
     isOpen: false,
     type: null,
     amount: 0,
-    step: 0,
-  });
+    step: 0
+  })
+
+  const fetchPending = async () => {
+    setLoading(true)
+    try {
+      const token = localStorage.getItem("token")
+      const res = await axios.get("http://localhost:5000/api/household/fees/pending", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setMandatoryFees(res.data?.mandatoryFees ?? [])
+      setContributionFees(res.data?.contributionFees ?? [])
+    } catch (error) {
+      console.error(error)
+      setMandatoryFees([])
+      setContributionFees([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          "http://localhost:5000/api/household/fees/pending",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setMandatoryFees(res.data.mandatoryFees || []);
-        setContributionFees(res.data.contributionFees || []);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+    fetchPending()
+  }, [])
 
   const handleDonationChange = (id, value) => {
-    const numValue = parseInt(value.replace(/[^0-9]/g, ""), 10) || 0;
+    const numValue = parseInt(String(value).replace(/[^0-9]/g, ""), 10) || 0
     setDonationInputs((prev) => ({
       ...prev,
-      [id]: numValue,
-    }));
-  };
+      [id]: numValue
+    }))
+  }
 
-  const totalDonationInput = Object.values(donationInputs).reduce(
-    (a, b) => a + b,
-    0
-  );
-  const totalMandatory = mandatoryFees.reduce(
-    (sum, item) => sum + item.amount,
-    0
-  );
+  const totalDonationInput = useMemo(() => {
+    return Object.values(donationInputs).reduce((a, b) => a + (Number(b) || 0), 0)
+  }, [donationInputs])
+
+  const totalMandatory = useMemo(() => {
+    return (mandatoryFees ?? []).reduce((sum, item) => sum + Number(item?.totalAmount ?? 0), 0)
+  }, [mandatoryFees])
 
   const startPayment = (type) => {
-    const amount = type === "MANDATORY" ? totalMandatory : totalDonationInput;
-
+    const amount = type === "MANDATORY" ? totalMandatory : totalDonationInput
     if (amount <= 0) {
-      alert("Vui lòng nhập số tiền cần thanh toán!");
-      return;
+      alert("Vui lòng nhập số tiền cần thanh toán!")
+      return
     }
-
     setPaymentModal({
       isOpen: true,
       type,
       amount,
-      step: 0,
-    });
-  };
+      step: 0
+    })
+  }
 
   useEffect(() => {
-    let timer;
+    let timer
+    if (!paymentModal.isOpen) return
 
-    if (paymentModal.isOpen && paymentModal.step === 0) {
+    if (paymentModal.step === 0) {
       timer = setTimeout(() => {
-        setPaymentModal((prev) => ({ ...prev, step: 1 }));
-      }, 2000);
+        setPaymentModal((prev) => ({ ...prev, step: 1 }))
+      }, 2000)
     }
 
-    if (paymentModal.isOpen && paymentModal.step === 1) {
+    if (paymentModal.step === 1) {
       const executePayment = async () => {
         try {
-          const token = localStorage.getItem("token");
-
-          let payload = { type: paymentModal.type };
+          const token = localStorage.getItem("token")
+          const payload = { type: paymentModal.type }
 
           if (paymentModal.type === "MANDATORY") {
-            payload.feeRecordIds = mandatoryFees.map((f) => f.id);
+            payload.feeTypeIds = (mandatoryFees ?? []).map((f) => f.id).filter(Boolean)
           } else {
-            const donations = [];
+            const donations = []
             for (const [id, amount] of Object.entries(donationInputs)) {
-              if (amount > 0)
-                donations.push({ feeTypeId: parseInt(id), amount });
+              const feeTypeId = parseInt(id, 10)
+              const v = Number(amount) || 0
+              if (feeTypeId && v > 0) donations.push({ feeTypeId, amount: v })
             }
-            payload.donations = donations;
+            payload.donations = donations
           }
 
           await axios.post("http://localhost:5000/api/household/pay", payload, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+            headers: { Authorization: `Bearer ${token}` }
+          })
 
-          timer = setTimeout(() => {
-            setPaymentModal((prev) => ({ ...prev, step: 2 }));
-            handleUpdateAfterPayment();
-          }, 1000);
+          timer = setTimeout(async () => {
+            setPaymentModal((prev) => ({ ...prev, step: 2 }))
+            setDonationInputs({})
+            await fetchPending()
+          }, 600)
         } catch (error) {
-          console.error("Lỗi thanh toán:", error);
-          alert("Giao dịch thất bại! Vui lòng thử lại sau.");
-          setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 });
+          console.error("Lỗi thanh toán:", error)
+          console.log("SERVER SAID:", error?.response?.data)
+          alert("Giao dịch thất bại! Vui lòng thử lại sau.")
+          setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 })
         }
-      };
+      }
 
-      executePayment();
+      executePayment()
     }
 
-    return () => clearTimeout(timer);
-  }, [paymentModal.step, paymentModal.isOpen]);
-
-  const handleUpdateAfterPayment = () => {
-    if (paymentModal.type === "MANDATORY") {
-      setMandatoryFees([]);
-    } else {
-      const updatedContributions = contributionFees.map((fee) => {
-        const donated = donationInputs[fee.id] || 0;
-        if (donated > 0) {
-          return {
-            ...fee,
-            totalCommunityDonated: (fee.totalCommunityDonated || 0) + donated,
-          };
-        }
-        return fee;
-      });
-      setContributionFees(updatedContributions);
-      setDonationInputs({});
-    }
-  };
+    return () => clearTimeout(timer)
+  }, [paymentModal.isOpen, paymentModal.step])
 
   const closePaymentModal = () => {
-    setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 });
-  };
+    setPaymentModal({ isOpen: false, type: null, amount: 0, step: 0 })
+  }
 
   return (
     <div>
@@ -159,17 +138,17 @@ export default function FeePayment() {
           <p>Đang tải...</p>
         ) : (
           <div className="payment-grid-layout">
+            {/* ================= MANDATORY ================= */}
             <div className="payment-column">
               <div className="column-header">
                 <h3>
-                  <ShieldAlert size={20} className="icon-mandatory" /> Phí Dịch
-                  Vụ
+                  <ShieldAlert size={20} className="icon-mandatory" /> Phí Dịch Vụ
                 </h3>
                 <span className="status-badge badge-mandatory">Bắt buộc</span>
               </div>
 
               <div className="table-container">
-                {mandatoryFees.length > 0 ? (
+                {(mandatoryFees ?? []).length > 0 ? (
                   <table className="mini-table">
                     <thead>
                       <tr>
@@ -179,42 +158,32 @@ export default function FeePayment() {
                       </tr>
                     </thead>
                     <tbody>
-                      {mandatoryFees.map((fee) => (
-                        <tr key={fee.id}>
+                      {(mandatoryFees ?? []).map((fee) => (
+                        <tr key={fee?.id ?? Math.random()}>
                           <td>
-                            <div className="fee-name">{fee.feeType.name}</div>
-                              <div className="fee-desc">
-                                {fee.feeType?.shortDescription || "Thu định kỳ"}
-                              </div>
-
+                            <div className="fee-name">{fee?.name ?? "—"}</div>
+                            <div className="fee-desc">{fee?.shortDescription || fee?.longDescription || "Thu định kỳ"}</div>
+                            <div className="fee-desc">
+                              {Number(fee?.residentsCount ?? 0) > 0
+                                ? `${formatCurrency(fee?.unitPrice)} / người • ${fee.residentsCount} nhân khẩu`
+                                : `${formatCurrency(fee?.unitPrice)} / người`}
+                            </div>
                           </td>
-                          <td>
-                            {fee.feeType.toDate
-                              ? new Date(fee.feeType.toDate).toLocaleDateString(
-                                  "vi-VN"
-                                )
-                              : "—"}
-                          </td>
-                          <td className="text-right fee-amount">
-                            {formatCurrency(fee.amount)}
-                          </td>
+                          <td>{fee?.toDate ? new Date(fee.toDate).toLocaleDateString("vi-VN") : "—"}</td>
+                          <td className="text-right fee-amount">{formatCurrency(fee?.totalAmount ?? 0)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 ) : (
-                  <div className="empty-state">
-                    Bạn đã hoàn thành tất cả khoản phí bắt buộc!
-                  </div>
+                  <div className="empty-state">Bạn đã hoàn thành tất cả khoản phí bắt buộc!</div>
                 )}
               </div>
 
               <div className="column-footer">
                 <div className="total-row">
                   <span>Tổng cần nộp:</span>
-                  <span className="total-amount mandatory">
-                    {formatCurrency(totalMandatory)}
-                  </span>
+                  <span className="total-amount mandatory">{formatCurrency(totalMandatory)}</span>
                 </div>
                 <button
                   className="pay-btn btn-mandatory"
@@ -226,6 +195,7 @@ export default function FeePayment() {
               </div>
             </div>
 
+            {/* ================= CONTRIBUTION ================= */}
             <div className="payment-column">
               <div className="column-header">
                 <h3>
@@ -240,45 +210,47 @@ export default function FeePayment() {
                     <tr>
                       <th style={{ width: "35%" }}>Quỹ vận động</th>
                       <th style={{ width: "25%" }}>Thời gian</th>
-                      <th style={{ width: "40%", textAlign: "right" }}>
-                        Ủng hộ (VNĐ)
-                      </th>
+                      <th style={{ width: "40%", textAlign: "right" }}>Ủng hộ (VNĐ)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {contributionFees.map((fee) => (
-                      <tr key={fee.id}>
-                        <td>
-                          <div className="fee-name">{fee.name}</div>
-                          <div className="fee-community">
-                            Toàn dân đã góp:{" "}
-                            <span style={{ color: "#059669", fontWeight: 700 }}>
-                              {formatCurrency(fee.totalCommunityDonated || 0)}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          {fee.toDate
-                            ? new Date(fee.toDate).toLocaleDateString("vi-VN")
-                            : "Không hạn"}
-                        </td>
-                        <td className="text-right">
-                          <input
-                            type="text"
-                            className="donation-input"
-                            placeholder="Nhập số tiền..."
-                            value={
-                              donationInputs[fee.id]
-                                ? donationInputs[fee.id].toLocaleString("vi-VN")
-                                : ""
-                            }
-                            onChange={(e) =>
-                              handleDonationChange(fee.id, e.target.value)
-                            }
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {(contributionFees ?? []).map((fee) => {
+                      const paid = !!fee?.paidByHousehold
+                      return (
+                        <tr key={fee?.id ?? Math.random()}>
+                          <td>
+                            <div className="fee-name">{fee?.name ?? "—"}</div>
+
+                            <div className="fee-community">
+                              Toàn dân đã góp:{" "}
+                              <span style={{ color: "#059669", fontWeight: 700 }}>
+                                {formatCurrency(fee?.totalCommunityDonated ?? 0)}
+                              </span>
+                            </div>
+
+                            <div className="fee-community">
+                              Nhà bạn đã góp:{" "}
+                              <span style={{ color: paid ? "#16a34a" : "#6b7280", fontWeight: 700 }}>
+                                {formatCurrency(fee?.myPaidAmount ?? 0)}
+                              </span>
+                              {paid ? " ✅" : ""}
+                            </div>
+                          </td>
+
+                          <td>{fee?.toDate ? new Date(fee.toDate).toLocaleDateString("vi-VN") : "Không hạn"}</td>
+
+                          <td className="text-right">
+                            <input
+                              type="text"
+                              className="donation-input"
+                              placeholder="Nhập số tiền muốn ủng hộ thêm..."
+                              value={donationInputs[fee?.id] ? Number(donationInputs[fee.id]).toLocaleString("vi-VN") : ""}
+                              onChange={(e) => handleDonationChange(fee?.id, e.target.value)}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -286,9 +258,7 @@ export default function FeePayment() {
               <div className="column-footer">
                 <div className="total-row">
                   <span>Tổng tiền ủng hộ:</span>
-                  <span className="total-amount voluntary">
-                    {formatCurrency(totalDonationInput)}
-                  </span>
+                  <span className="total-amount voluntary">{formatCurrency(totalDonationInput)}</span>
                 </div>
                 <button
                   className="pay-btn btn-voluntary"
@@ -310,15 +280,9 @@ export default function FeePayment() {
               <div className="modal-step fade-in">
                 <h3>Quét mã để thanh toán</h3>
                 <div className="qr-box">
-                  <QRCodeCanvas
-                    value={`PAYMENT:${paymentModal.type}:${paymentModal.amount}`}
-                    size={200}
-                    level={"H"}
-                  />
+                  <QRCodeCanvas value={`PAYMENT:${paymentModal.type}:${paymentModal.amount}`} size={200} level={"H"} />
                 </div>
-                <p className="modal-amount">
-                  {formatCurrency(paymentModal.amount)}
-                </p>
+                <p className="modal-amount">{formatCurrency(paymentModal.amount)}</p>
                 <p className="modal-note">Hệ thống đang chờ xác nhận...</p>
               </div>
             )}
@@ -349,5 +313,5 @@ export default function FeePayment() {
         </div>
       )}
     </div>
-  );
+  )
 }
