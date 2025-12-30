@@ -1,423 +1,635 @@
 import prisma from "../../../prisma/prismaClient.js"
 import ExcelJS from "exceljs"
 
-function parseDateOnly(s) {
-  if (!s) return null
-  const d = new Date(s)
-  if (Number.isNaN(d.getTime())) return null
-  return d
-}
-
-function endOfDay(d) {
-  const x = new Date(d)
-  x.setHours(23, 59, 59, 999)
-  return x
-}
-
-function dateRangeWhere(from, to) {
-  const where = {}
-  const f = parseDateOnly(from)
-  const t = parseDateOnly(to)
-
-  if (f && t) where.createdAt = { gte: f, lte: endOfDay(t) }
-  else if (f) where.createdAt = { gte: f }
-  else if (t) where.createdAt = { lte: endOfDay(t) }
-
-  return where
-}
-
-function mandatoryWhere(mandatory) {
-  if (!mandatory || mandatory === "ALL") return {}
-  if (mandatory === "MANDATORY") return { feeType: { isMandatory: true } }
-  if (mandatory === "OPTIONAL") return { feeType: { isMandatory: false } }
-  return {}
-}
-
-function statusWhere(status) {
-  if (status === undefined || status === null || status === "" || status === "ALL") return {}
-  return { status: Number(status) }
-}
-
-function fmtDate(d) {
-  if (!d) return ""
-  const x = new Date(d)
-  if (Number.isNaN(x.getTime())) return ""
-  const dd = String(x.getDate()).padStart(2, "0")
-  const mm = String(x.getMonth() + 1).padStart(2, "0")
-  const yyyy = x.getFullYear()
-  return `${dd}/${mm}/${yyyy}`
-}
-
-function money(v) {
-  const n = Number(v || 0)
-  return Math.round(n * 100) / 100
-}
-
-function setHeaderRow(ws, rowIndex = 1) {
-  const r = ws.getRow(rowIndex)
-  r.font = { bold: true }
-  r.alignment = { vertical: "middle", horizontal: "center", wrapText: true }
-  r.height = 22
-}
-
-function setMoneyFmt(cell) {
-  cell.numFmt = "#,##0.00"
-}
-
-export const reportSummary = async (req, res) => {
-  try {
-    const { from, to, mandatory = "ALL", status = "ALL" } = req.query
-
-    const where = {
-      ...dateRangeWhere(from, to),
-      ...mandatoryWhere(mandatory),
-      ...statusWhere(status)
+function buildDateRange({ year, fromDate, toDate }) {
+  if (fromDate && toDate) {
+    return {
+      gte: new Date(fromDate),
+      lte: new Date(toDate),
     }
+  }
 
-    const [count, agg, onlineAgg, offlineAgg] = await Promise.all([
-      prisma.feeRecord.count({ where }),
-      prisma.feeRecord.aggregate({ where, _sum: { amount: true } }),
-      prisma.feeRecord.aggregate({
-        where: { ...where, method: "ONLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
-      }),
-      prisma.feeRecord.aggregate({
-        where: { ...where, method: "OFFLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
-      })
-    ])
+  if (year) {
+    return {
+      gte: new Date(`${year}-01-01`),
+      lte: new Date(`${year}-12-31`),
+    }
+  }
 
+  return undefined
+}
 
-    return res.json({
-      data: {
-        totalTransactions: count,
-        totalCollected: agg._sum.amount || 0,
-        online: {
-          transactions: onlineAgg._count._all || 0,
-          collected: onlineAgg._sum.amount || 0
-        },
-        offline: {
-          transactions: offlineAgg._count._all || 0,
-          collected: offlineAgg._sum.amount || 0
-        }
-      }
-    })
-  } catch (e) {
-    console.error("reportSummary error:", e)
-    return res.status(500).json({ message: "Lỗi báo cáo tổng quan" })
+function buildMonthRange(month) {
+  if (!month) return undefined
+
+  const start = new Date(`${month}-01`)
+  const end = new Date(start)
+  end.setMonth(end.getMonth() + 1)
+
+  return {
+    gte: start,
+    lt: end,
   }
 }
 
-export const reportByFee = async (req, res) => {
-  try {
-    const { from, to, mandatory = "ALL" } = req.query
 
-    const where = {
-      ...dateRangeWhere(from, to),
-      ...mandatoryWhere(mandatory)
+/**
+ * =========================
+ * 1. OVERVIEW
+ * =========================
+ * GET /api/staff/fee-report/overview
+ */
+export const getFeeReportOverview = async (req, res) => {
+  try {
+    const { month, year, fromDate, toDate } = req.query
+
+    // 1. Xây dựng khoảng thời gian (ưu tiên month)
+    let dateRange
+    if (month) {
+      dateRange = buildMonthRange(month)
+    } else {
+      dateRange = buildDateRange({ year, fromDate, toDate })
+    }
+    if (!dateRange) {
+      return res.status(400).json({
+        message: "month or year is required",
+      })
     }
 
-    const rows = await prisma.feeRecord.groupBy({
-      by: ["feeTypeId"],
+
+    const where = {}
+    if (dateRange) where.createdAt = dateRange
+
+    // 2. Lấy fee records
+    const records = await prisma.feeRecord.findMany({
       where,
-      _sum: { amount: true },
-      _count: { _all: true }
+      select: {
+        amount: true,
+        status: true,
+        feeType: { select: { isMandatory: true } },
+      },
     })
 
-    const feeTypeIds = rows.map(r => r.feeTypeId)
-    if (feeTypeIds.length === 0) return res.json({ data: [] })
+    let totalRequired = 0                 // chỉ bắt buộc
+    let totalCollected = 0                // tất cả đã thu
+    let collectedMandatory = 0            // đã thu của bắt buộc (để tính completion/debt)
+
+    records.forEach((r) => {
+      // Tổng đã thu: tính cả bắt buộc + đóng góp
+      if (r.status === 2) totalCollected += r.amount
+
+      // Phải thu / nợ / completion: chỉ bắt buộc
+      if (r.feeType.isMandatory) {
+        totalRequired += r.amount
+        if (r.status === 2) collectedMandatory += r.amount
+      }
+    })
+
+    const totalDebt = totalRequired - collectedMandatory
+    const completionRate =
+      totalRequired > 0
+        ? Number(((collectedMandatory / totalRequired) * 100).toFixed(2))
+        : 0
+
+    res.json({
+      totalRequired,
+      totalCollected,     // ✅ tất cả đã thu
+      totalDebt,
+      completionRate,     // ✅ tỷ lệ hoàn thành phí bắt buộc
+    })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: "Failed to get fee report overview" })
+  }
+}
+
+
+/**
+ * =========================
+ * 2. MONTHLY STATISTICS
+ * =========================
+ * GET /api/staff/fee-report/monthly
+ */
+export const getMonthlyFeeReport = async (req, res) => {
+  try {
+    const { year } = req.query
+    if (!year) {
+      return res.status(400).json({ message: "year is required" })
+    }
+
+    const start = new Date(`${year}-01-01`)
+    const end = new Date(`${year}-12-31`)
+
+    const records = await prisma.feeRecord.findMany({
+      where: {
+        createdAt: { gte: start, lte: end },
+        status: 2,
+      },
+      include: {
+        feeType: {
+          select: { isMandatory: true },
+        },
+      },
+    })
+
+    const result = Array.from({ length: 12 }, (_, i) => ({
+      month: `T${i + 1}`,
+      fixedFee: 0,
+      voluntaryFee: 0,
+    }))
+
+    records.forEach((r) => {
+      const m = new Date(r.createdAt).getMonth()
+      if (r.feeType.isMandatory) {
+        result[m].fixedFee += r.amount
+      } else {
+        result[m].voluntaryFee += r.amount
+      }
+    })
+
+    res.json(result)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: "Failed to get monthly fee report" })
+  }
+}
+
+/**
+ * =========================
+ * 3. BY FEE TYPE
+ * =========================
+ * GET /api/staff/fee-report/by-fee-type
+ */
+export const getFeeReportByFeeType = async (req, res) => {
+  try {
+    const { month } = req.query
+    if (!month) {
+      return res.status(400).json({ message: "month is required (YYYY-MM)" })
+    }
+
+    const dateRange = buildMonthRange(month)
 
     const feeTypes = await prisma.feeType.findMany({
-      where: { id: { in: feeTypeIds } },
-      select: { id: true, name: true, isMandatory: true, unitPrice: true, fromDate: true, toDate: true, isActive: true }
+      where: { isActive: true },
     })
-    const feeMap = new Map(feeTypes.map(f => [f.id, f]))
 
-    const [onlineRows, offlineRows] = await Promise.all([
-      prisma.feeRecord.groupBy({
-        by: ["feeTypeId"],
-        where: { ...where, method: "ONLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
-      }),
-      prisma.feeRecord.groupBy({
-        by: ["feeTypeId"],
-        where: { ...where, method: "OFFLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
+    const rows = []
+
+    for (const ft of feeTypes) {
+      const records = await prisma.feeRecord.findMany({
+        where: {
+          feeTypeId: ft.id,
+          createdAt: dateRange,
+        },
+        select: {
+          amount: true,
+          status: true,
+          householdId: true,
+        },
       })
-    ])
 
-    const onlineMap = new Map(onlineRows.map(r => [r.feeTypeId, r]))
-    const offlineMap = new Map(offlineRows.map(r => [r.feeTypeId, r]))
+      if (records.length === 0) continue
 
-    const data = rows
-      .map(r => {
-        const fee = feeMap.get(r.feeTypeId)
-        const on = onlineMap.get(r.feeTypeId)
-        const off = offlineMap.get(r.feeTypeId)
+      const householdsWithFee = new Set(
+        records.map((r) => r.householdId)
+      ).size
 
-        return {
-          feeTypeId: r.feeTypeId,
-          feeName: fee?.name || "Unknown",
-          isMandatory: !!fee?.isMandatory,
-          isActive: !!fee?.isActive,
-          unitPrice: fee?.unitPrice ?? null,
-          fromDate: fee?.fromDate ?? null,
-          toDate: fee?.toDate ?? null,
-          totalCollected: r._sum.amount || 0,
-          transactions: r._count._all || 0,
-          onlineCollected: on?._sum?.amount || 0,
-          onlineTransactions: on?._count?._all || 0,
-          offlineCollected: off?._sum?.amount || 0,
-          offlineTransactions: off?._count?._all || 0
+      let totalCollected = 0
+      const paidHouseholdSet = new Set()
+
+      records.forEach((r) => {
+        if (r.status === 2) {
+          totalCollected += r.amount
+          paidHouseholdSet.add(r.householdId)
         }
       })
-      .sort((a, b) => b.totalCollected - a.totalCollected)
 
-    return res.json({ data })
-  } catch (e) {
-    console.error("reportByFee error:", e)
-    return res.status(500).json({ message: "Lỗi báo cáo theo khoản thu" })
+      rows.push({
+        name: ft.name,
+        totalHouseholds: householdsWithFee,
+        paidHouseholds: paidHouseholdSet.size,
+        totalCollected,
+        completionRate:
+          householdsWithFee > 0
+            ? Math.round(
+                (paidHouseholdSet.size / householdsWithFee) * 100
+              )
+            : 0,
+      })
+    }
+
+    // ===== SORT & MERGE =====
+    rows.sort((a, b) => b.totalCollected - a.totalCollected)
+
+    const top6 = rows.slice(0, 6)
+    const others = rows.slice(6)
+
+    if (others.length > 0) {
+      const other = others.reduce(
+        (acc, cur) => {
+          acc.totalCollected += cur.totalCollected
+          acc.totalHouseholds += cur.totalHouseholds
+          acc.paidHouseholds += cur.paidHouseholds
+          return acc
+        },
+        {
+          name: "Các loại phí khác",
+          totalCollected: 0,
+          totalHouseholds: 0,
+          paidHouseholds: 0,
+        }
+      )
+
+      other.completionRate =
+        other.totalHouseholds > 0
+          ? Math.round(
+              (other.paidHouseholds / other.totalHouseholds) * 100
+            )
+          : 0
+
+      top6.push(other)
+    }
+
+    res.json(top6 || [])
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: "Failed to get fee report by fee type" })
   }
 }
 
-export const reportOutstandingByFee = async (req, res) => {
+/**
+ * =========================
+ * 4. HOUSEHOLD PAYMENT STATUS
+ * =========================
+ * GET /api/fee-report/household-status
+ *
+ * Nghiệp vụ:
+ * - Một hộ được coi là HOÀN THÀNH khi:
+ *   + Đã đóng ĐỦ TẤT CẢ các khoản PHÍ BẮT BUỘC đang active trong tháng
+ */
+export const getHouseholdPaymentStatus = async (req, res) => {
   try {
-    const feeTypeId = Number(req.query.feeTypeId)
-    if (!feeTypeId) return res.status(400).json({ message: "feeTypeId không hợp lệ" })
+    const { month } = req.query
+    if (!month) {
+      return res.status(400).json({ message: "month is required (YYYY-MM)" })
+    }
 
-    const fee = await prisma.feeType.findUnique({
-      where: { id: feeTypeId },
-      select: { id: true, name: true, isMandatory: true, unitPrice: true }
+    const start = new Date(`${month}-01`)
+    const end = new Date(start)
+    end.setMonth(end.getMonth() + 1)
+
+    // 1. Lấy danh sách phí bắt buộc
+    const mandatoryFees = await prisma.feeType.findMany({
+      where: {
+        isMandatory: true,
+        isActive: true,
+      },
+      select: { id: true },
     })
-    if (!fee) return res.status(404).json({ message: "Không tìm thấy khoản thu" })
-    if (!fee.isMandatory) return res.status(400).json({ message: "Khoản thu này không phải bắt buộc" })
-    if (fee.unitPrice == null) return res.status(400).json({ message: "Khoản thu bắt buộc cần unitPrice" })
 
+    const mandatoryFeeIds = mandatoryFees.map((f) => f.id)
+
+    // 2. Lấy danh sách hộ đang hoạt động
     const households = await prisma.household.findMany({
       where: { status: 1 },
-      select: {
-        id: true,
-        householdCode: true,
-        address: true,
-        residents: { where: { status: 0 }, select: { id: true } }
-      }
+      select: { id: true },
     })
 
-    const paidRows = await prisma.feeRecord.groupBy({
-      by: ["householdId"],
-      where: { feeTypeId },
-      _sum: { amount: true }
-    })
-    const paidMap = new Map(paidRows.map(r => [r.householdId, r._sum.amount || 0]))
+    let completed = 0
+    let incomplete = 0
+    let notPaid = 0
 
-    const data = households
-      .map(h => {
-        const persons = h.residents.length
-        const expected = persons * fee.unitPrice
-        const paid = paidMap.get(h.id) || 0
-        const remaining = Math.max(0, expected - paid)
-
-        return {
+    // 3. Kiểm tra từng hộ
+    for (const h of households) {
+      const records = await prisma.feeRecord.findMany({
+        where: {
           householdId: h.id,
-          householdCode: h.householdCode,
-          address: h.address,
-          persons,
-          expected,
-          paid,
-          remaining,
-          status: remaining <= 0 ? 2 : paid > 0 ? 1 : 0
+          feeTypeId: { in: mandatoryFeeIds },
+          createdAt: { gte: start, lt: end },
+        },
+        select: {
+          feeTypeId: true,
+          status: true,
+        },
+      })
+
+      // Chưa đóng khoản bắt buộc nào
+      if (records.length === 0) {
+        notPaid++
+        continue
+      }
+
+      const paidMandatoryFeeIds = new Set(
+        records.filter((r) => r.status === 2).map((r) => r.feeTypeId)
+      )
+
+      // Đóng đủ tất cả phí bắt buộc
+      if (paidMandatoryFeeIds.size === mandatoryFeeIds.length) {
+        completed++
+      } else {
+        incomplete++
+      }
+    }
+
+    res.json({
+      totalHouseholds: households.length,
+      completed,
+      incomplete,
+      notPaid,
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: "Failed to get household payment status" })
+  }
+}
+
+
+/* =========================
+    5. COMPARISON
+   ========================= */
+// GET /api/staff/fee-report/comparison
+export const getFeeReportComparison = async (req, res) => {
+  try {
+    const { type, current } = req.query
+    if (!type || !current) {
+      return res.status(400).json({ message: "type and current are required" })
+    }
+
+    let currentRange, previousRange
+
+    if (type === "month") {
+      const cur = new Date(`${current}-01`)
+      const prev = new Date(cur)
+      prev.setMonth(prev.getMonth() - 1)
+
+      currentRange = {
+        gte: cur,
+        lt: new Date(cur.getFullYear(), cur.getMonth() + 1, 1),
+      }
+      previousRange = {
+        gte: prev,
+        lt: new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
+      }
+    } else {
+      currentRange = buildDateRange({ year: current })
+      previousRange = buildDateRange({ year: Number(current) - 1 })
+    }
+
+    const calc = async (range) => {
+      const records = await prisma.feeRecord.findMany({
+        where: { createdAt: range },
+        include: { feeType: { select: { isMandatory: true } } },
+      })
+
+      let totalCollectedAll = 0
+      let requiredMandatory = 0
+      let collectedMandatory = 0
+
+      records.forEach((r) => {
+        if (r.status === 2) totalCollectedAll += r.amount
+
+        if (r.feeType.isMandatory) {
+          requiredMandatory += r.amount
+          if (r.status === 2) collectedMandatory += r.amount
         }
       })
-      .filter(x => x.remaining > 0)
-      .sort((a, b) => b.remaining - a.remaining)
 
-    return res.json({
-      data: {
-        feeType: fee,
-        households: data
+      return {
+        collectedAll: totalCollectedAll,
+        completionMandatory:
+          requiredMandatory > 0
+            ? Math.round((collectedMandatory / requiredMandatory) * 100)
+            : 0,
       }
+    }
+
+
+    const currentData = await calc(currentRange)
+    const previousData = await calc(previousRange)
+
+    res.json({
+      totalCollected: {
+        current: currentData.collectedAll,
+        previous: previousData.collectedAll,
+        change:
+          previousData.collectedAll === 0
+            ? null
+            : Number(
+                (
+                  ((currentData.collectedAll - previousData.collectedAll) /
+                    previousData.collectedAll) *
+                  100
+                ).toFixed(1)
+              ),
+      },
+      completionRate: {
+        current: currentData.completionMandatory,
+        previous: previousData.completionMandatory,
+        change: currentData.completionMandatory - previousData.completionMandatory,
+      },
     })
-  } catch (e) {
-    console.error("reportOutstandingByFee error:", e)
-    return res.status(500).json({ message: "Lỗi truy soát hộ còn thiếu" })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: "Failed to get fee report comparison" })
   }
 }
 
 export const exportFeeReportExcel = async (req, res) => {
   try {
-    const { from, to, mandatory = "ALL", status = "ALL", search = "" } = req.query
+    const { month, year } = req.query
 
-    const baseWhere = {
-      ...dateRangeWhere(from, to),
-      ...mandatoryWhere(mandatory)
-    }
-
-    if (String(search || "").trim()) {
-      const q = String(search).trim()
-      baseWhere.feeType = {
-        ...(baseWhere.feeType || {}),
-        name: { contains: q, mode: "insensitive" }
+    // 1. Build date range
+    let dateRange
+    if (month) {
+      const start = new Date(`${month}-01`)
+      const end = new Date(start)
+      end.setMonth(end.getMonth() + 1)
+      dateRange = { gte: start, lt: end }
+    } else if (year) {
+      dateRange = {
+        gte: new Date(`${year}-01-01`),
+        lte: new Date(`${year}-12-31`),
       }
     }
-
-    const summaryWhere = {
-      ...baseWhere,
-      ...statusWhere(status)
+    if (!dateRange) {
+      return res.status(400).json({
+        message: "month or year is required",
+      })
     }
 
-    const [summaryCount, summaryAgg, onlineAgg, offlineAgg] = await Promise.all([
-      prisma.feeRecord.count({ where: summaryWhere }),
-      prisma.feeRecord.aggregate({ where: summaryWhere, _sum: { amount: true } }),
-      prisma.feeRecord.aggregate({
-        where: { ...summaryWhere, method: "ONLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
-      }),
-      prisma.feeRecord.aggregate({
-        where: { ...summaryWhere, method: "OFFLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
-      })
-    ])
 
-    const byFeeRows = await prisma.feeRecord.groupBy({
-      by: ["feeTypeId"],
-      where: baseWhere,
-      _sum: { amount: true },
-      _count: { _all: true }
+    /* ======================
+       2. OVERVIEW
+       ====================== */
+    const overviewRecords = await prisma.feeRecord.findMany({
+      where: { createdAt: dateRange },
+      select: {
+        amount: true,
+        status: true,
+        feeType: { select: { isMandatory: true } },
+      },
     })
 
-    const feeTypeIds = byFeeRows.map(r => r.feeTypeId)
-    const feeTypes = feeTypeIds.length
-      ? await prisma.feeType.findMany({
-          where: { id: { in: feeTypeIds } },
-          select: { id: true, name: true, isMandatory: true, unitPrice: true, fromDate: true, toDate: true, isActive: true, shortDescription: true, longDescription: true }
-        })
-      : []
+    let totalRequired = 0
+    let totalCollected = 0
+    let collectedMandatory = 0
 
-    const feeMap = new Map(feeTypes.map(f => [f.id, f]))
+    overviewRecords.forEach((r) => {
+      if (r.status === 2) totalCollected += r.amount
 
-    const [onlineRows, offlineRows] = await Promise.all([
-      prisma.feeRecord.groupBy({
-        by: ["feeTypeId"],
-        where: { ...baseWhere, method: "ONLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
-      }),
-      prisma.feeRecord.groupBy({
-        by: ["feeTypeId"],
-        where: { ...baseWhere, method: "OFFLINE" },
-        _sum: { amount: true },
-        _count: { _all: true }
+      if (r.feeType.isMandatory) {
+        totalRequired += r.amount
+        if (r.status === 2) collectedMandatory += r.amount
+      }
+    })
+
+    const totalDebt = totalRequired - collectedMandatory
+    const completionRate =
+      totalRequired > 0 ? Math.round((collectedMandatory / totalRequired) * 100) : 0
+
+
+    /* ======================
+       3. HOUSEHOLD STATUS
+       ====================== */
+    const mandatoryFees = await prisma.feeType.findMany({
+      where: { isMandatory: true, isActive: true },
+      select: { id: true },
+    })
+
+    const mandatoryIds = mandatoryFees.map((f) => f.id)
+
+    const households = await prisma.household.findMany({
+      where: { status: 1 },
+      select: { id: true },
+    })
+
+    let completed = 0
+    let incomplete = 0
+    let notPaid = 0
+
+    for (const h of households) {
+      const records = await prisma.feeRecord.findMany({
+        where: {
+          householdId: h.id,
+          feeTypeId: { in: mandatoryIds },
+          createdAt: dateRange,
+        },
+        select: { feeTypeId: true, status: true },
       })
-    ])
 
-    const onlineMap = new Map(onlineRows.map(r => [r.feeTypeId, r]))
-    const offlineMap = new Map(offlineRows.map(r => [r.feeTypeId, r]))
+      if (records.length === 0) {
+        notPaid++
+        continue
+      }
 
-    const byFeeData = byFeeRows
-      .map(r => {
-        const fee = feeMap.get(r.feeTypeId)
-        const on = onlineMap.get(r.feeTypeId)
-        const off = offlineMap.get(r.feeTypeId)
+      const paidSet = new Set(
+        records.filter((r) => r.status === 2).map((r) => r.feeTypeId)
+      )
 
-        return {
-          feeTypeId: r.feeTypeId,
-          feeName: fee?.name || "Unknown",
-          type: fee?.isMandatory ? "Bắt buộc" : "Tự nguyện",
-          active: fee?.isActive ? "Đang áp dụng" : "Đã khóa",
-          unitPrice: fee?.unitPrice ?? null,
-          fromDate: fee?.fromDate ?? null,
-          toDate: fee?.toDate ?? null,
-          totalCollected: r._sum.amount || 0,
-          transactions: r._count._all || 0,
-          onlineCollected: on?._sum?.amount || 0,
-          onlineTransactions: on?._count?._all || 0,
-          offlineCollected: off?._sum?.amount || 0,
-          offlineTransactions: off?._count?._all || 0
+      if (paidSet.size === mandatoryIds.length) completed++
+      else incomplete++
+    }
+
+    /* ======================
+       4. FEE TYPE (TOP 6 + OTHER)
+       ====================== */
+    const feeTypes = await prisma.feeType.findMany({
+      where: { isActive: true },
+    })
+
+    const feeStats = []
+
+    for (const ft of feeTypes) {
+      const records = await prisma.feeRecord.findMany({
+        where: { feeTypeId: ft.id, createdAt: dateRange },
+        select: { amount: true, status: true, householdId: true },
+      })
+
+      if (records.length === 0) continue
+
+      let totalCollected = 0
+      const householdSet = new Set()
+
+      records.forEach((r) => {
+        if (r.status === 2) {
+          totalCollected += r.amount
+          householdSet.add(r.householdId)
         }
       })
-      .sort((a, b) => b.totalCollected - a.totalCollected)
 
-    const wb = new ExcelJS.Workbook()
-    wb.creator = "RMS Fee Report"
-    wb.created = new Date()
-
-    const ws1 = wb.addWorksheet("Summary", { views: [{ state: "frozen", ySplit: 1 }] })
-    ws1.columns = [
-      { header: "Chỉ số", key: "k", width: 28 },
-      { header: "Giá trị", key: "v", width: 30 }
-    ]
-    setHeaderRow(ws1, 1)
-
-    const totalCollected = summaryAgg._sum.amount || 0
-    ws1.addRow({ k: "Từ ngày", v: from ? fmtDate(from) : "" })
-    ws1.addRow({ k: "Đến ngày", v: to ? fmtDate(to) : "" })
-    ws1.addRow({ k: "Loại khoản thu", v: mandatory })
-    ws1.addRow({ k: "Trạng thái giao dịch", v: status })
-    ws1.addRow({ k: "Tổng giao dịch", v: summaryCount })
-    ws1.addRow({ k: "Tổng đã thu", v: money(totalCollected) })
-    ws1.addRow({ k: "Online - giao dịch", v: onlineAgg._count._all || 0 })
-    ws1.addRow({ k: "Online - đã thu", v: money(onlineAgg._sum.amount || 0) })
-    ws1.addRow({ k: "Offline - giao dịch", v: offlineAgg._count._all || 0 })
-    ws1.addRow({ k: "Offline - đã thu", v: money(offlineAgg._sum.amount || 0) })
-
-    ;[6, 8, 10].forEach(r => setMoneyFmt(ws1.getCell(`B${r}`)))
-
-    const ws2 = wb.addWorksheet("By Fee", { views: [{ state: "frozen", ySplit: 1 }] })
-    ws2.columns = [
-      { header: "FeeTypeId", key: "feeTypeId", width: 10 },
-      { header: "Khoản thu", key: "feeName", width: 28 },
-      { header: "Loại", key: "type", width: 12 },
-      { header: "Mô tả", key: "shortDescription", width: 40 },
-      { header: "Trạng thái", key: "active", width: 14 },
-      { header: "Đơn giá", key: "unitPrice", width: 14 },
-      { header: "Từ ngày", key: "fromDate", width: 12 },
-      { header: "Đến ngày", key: "toDate", width: 12 },
-      { header: "Tổng thu", key: "totalCollected", width: 16 },
-      { header: "Giao dịch", key: "transactions", width: 10 },
-      { header: "Online thu", key: "onlineCollected", width: 14 },
-      { header: "Online gd", key: "onlineTransactions", width: 10 },
-      { header: "Offline thu", key: "offlineCollected", width: 14 },
-      { header: "Offline gd", key: "offlineTransactions", width: 10 }
-    ]
-    setHeaderRow(ws2, 1)
-
-    byFeeData.forEach(r => {
-      const row = ws2.addRow({
-        feeTypeId: r.feeTypeId,
-        feeName: r.feeName,
-        type: r.type,
-        active: r.active,
-        unitPrice: r.unitPrice == null ? "" : money(r.unitPrice),
-        fromDate: r.fromDate ? fmtDate(r.fromDate) : "",
-        toDate: r.toDate ? fmtDate(r.toDate) : "",
-        totalCollected: money(r.totalCollected),
-        transactions: r.transactions,
-        onlineCollected: money(r.onlineCollected),
-        onlineTransactions: r.onlineTransactions,
-        offlineCollected: money(r.offlineCollected),
-        offlineTransactions: r.offlineTransactions
+      feeStats.push({
+        name: ft.name,
+        households: householdSet.size,
+        totalCollected,
       })
+    }
 
-      setMoneyFmt(ws2.getCell(`E${row.number}`))
-      setMoneyFmt(ws2.getCell(`H${row.number}`))
-      setMoneyFmt(ws2.getCell(`J${row.number}`))
-      setMoneyFmt(ws2.getCell(`L${row.number}`))
+    feeStats.sort((a, b) => b.totalCollected - a.totalCollected)
+
+    const top6 = feeStats.slice(0, 6)
+    const others = feeStats.slice(6)
+
+    if (others.length > 0) {
+      top6.push({
+        name: "Khác",
+        households: others.reduce((s, i) => s + i.households, 0),
+        totalCollected: others.reduce((s, i) => s + i.totalCollected, 0),
+      })
+    }
+
+    /* ======================
+       5. EXCEL
+       ====================== */
+    const wb = new ExcelJS.Workbook()
+
+    /* Sheet 1: Tổng quan */
+    const ws1 = wb.addWorksheet("Tổng quan")
+
+    ws1.addRows([
+      ["Thời gian", month || year],
+      ["Tổng phải thu", totalRequired],
+      ["Tổng đã thu", totalCollected],
+      ["Tổng còn nợ", totalDebt],
+      ["Tỷ lệ hoàn thành (%)", completionRate],
+      [],
+      ["Tổng số hộ", households.length],
+      ["Hộ hoàn thành", completed],
+      ["Hộ chưa hoàn thành", incomplete],
+      ["Hộ chưa đóng", notPaid],
+    ])
+
+    /* Sheet 2: Chi tiết */
+    const ws2 = wb.addWorksheet("Chi tiết theo loại phí")
+    ws2.addRow([
+      "Khoản thu",
+      "Số hộ đã đóng",
+      "Tổng tiền thu được",
+    ])
+
+    top6.forEach((f) => {
+      ws2.addRow([f.name, f.households, f.totalCollected])
     })
 
-    const filename = `fee_report_${Date.now()}.xlsx`
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`)
+    /* Response */
+const timeLabel = month || year || "all"
 
-    const buffer = await wb.xlsx.writeBuffer()
-    return res.send(Buffer.from(buffer))
-  } catch (e) {
-    console.error("exportFeeReportExcel error:", e)
-    return res.status(500).json({ message: "Không thể xuất file Excel" })
+res.setHeader(
+  "Content-Disposition",
+  `attachment; filename=bao-cao-tai-chinh-${timeLabel}.xlsx`
+)
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    await wb.xlsx.write(res)
+    res.end()
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: "Export failed" })
   }
 }

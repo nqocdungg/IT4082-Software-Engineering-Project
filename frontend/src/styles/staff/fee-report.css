@@ -1,0 +1,550 @@
+/* Fee Report Main Container */
+.fee-report {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.fee-report-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Header */
+.report-header {
+  margin-bottom: 2rem;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-text h1 {
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.header-text p {
+  color: #6b7280;
+  margin: 0;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.export-btn:hover {
+  background-color: #2563eb;
+}
+
+/* Section */
+.report-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+/* Card */
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.card-header h2 {
+  margin: 0;
+}
+
+.card-title {
+  margin-bottom: 1.5rem;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filter-select:hover {
+  border-color: #9ca3af;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Overview Grid */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.overview-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.card-label {
+  color: #6b7280;
+  margin: 0 0 0.5rem 0;
+}
+
+.card-value {
+  color: #111827;
+  margin: 0;
+}
+
+.card-value-primary {
+  color: #3b82f6;
+}
+
+.card-comparison {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.comparison-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.comparison-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mini-card {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.mini-card.active {
+  background: #e0ecff;
+  color: #2563eb;
+}
+
+.comparison-change {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+
+/* Chart Container */
+.chart-container {
+  margin-top: 1rem;
+  height: 320px;
+}
+
+/* Fee Stats Grid */
+.fee-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .fee-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Table */
+.table-container {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table thead {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  color: #374151;
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.total-row {
+  background-color: #f9fafb;
+}
+
+.total-row td {
+  font-weight: 600;
+}
+
+/* Progress Bar */
+.progress-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.progress-bar {
+  width: 100%;
+  max-width: 120px;
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #3b82f6;
+  transition: width 0.3s;
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+}
+
+.status-badge.success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Household Stats Grid */
+.household-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .household-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.household-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summary-card {
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.summary-card.total {
+  background-color: #f9fafb;
+}
+
+.summary-label {
+  color: #6b7280;
+  margin: 0 0 0.5rem 0;
+}
+
+.summary-value {
+  color: #3b82f6;
+  margin: 0;
+}
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-count {
+  color: #374151;
+}
+
+.status-percent {
+  color: #6b7280;
+}
+
+/* Comparison Grid */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .comparison-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.comparison-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.comparison-item h3 {
+  color: #6b7280;
+  margin: 0;
+}
+
+.comparison-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.comparison-value {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.comparison-value.current {
+  background-color: #dbeafe;
+}
+
+.comparison-value.previous {
+  background-color: #f9fafb;
+}
+
+.value-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 0.25rem 0;
+}
+
+.value-amount {
+  color: #3b82f6;
+  margin: 0;
+}
+
+.comparison-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.comparison-change.positive {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.comparison-change.negative {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.change-percent {
+  font-weight: 600;
+}
+
+.change-label {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .fee-report-container {
+    padding: 1rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .export-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filters {
+    width: 100%;
+  }
+
+  .filter-select {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Fee type grid: table + pie */
+.fee-type-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.fee-type-pie {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pie-legend {
+  list-style: none;
+  padding: 0;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.pie-legend li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 6px 0;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.legend-name {
+  flex: 1;
+  margin-left: 8px;
+}
+
+.legend-value {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .fee-type-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -37,8 +37,8 @@ const menuGroups = [
     title: "TÀI CHÍNH",
     items: [
       { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" },
-      { icon: FiDollarSign, label: "Lịch sử thu phí", path: "fees-history" },
-      { icon: FiFileText, label: "Báo cáo - Thống kê", path: "/fees-report" }
+      { icon: FiDollarSign, label: "Lịch sử thu phí", path: "fee-history" },
+      { icon: FiFileText, label: "Báo cáo - Thống kê", path: "/fee-report" }
     ]
   },
   {
@@ -54,6 +54,7 @@ const menuGroups = [
     ]
   }
 ]
+
 
 export default function SideBar() {
   const location = useLocation()
