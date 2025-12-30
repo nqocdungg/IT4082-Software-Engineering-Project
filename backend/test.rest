@@ -103,3 +103,77 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6I
   ]
 }
 
+###############################################
+# LOGIN – ACCOUNTANT (ROLE THU PHÍ)
+###############################################
+
+### Login accountant
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ke_toan",
+  "password": "ketoan@123"
+}
+
+###############################################
+# SET TOKEN (copy từ response)
+###############################################
+# @token = <PASTE_TOKEN_HERE>
+
+###############################################
+# FEE REPORT – OVERVIEW
+###############################################
+
+### Overview by month
+GET http://localhost:5000/api/fee-report/overview?month=2025-12
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkFDQ09VTlRBTlQiLCJmdWxsbmFtZSI6Ikvhur4gVE_DgU4iLCJpYXQiOjE3NjcxMzYwODgsImV4cCI6MTc2NzIyMjQ4OH0.1jT_Ggsur2AhTDVTrcENWN997JyHyZUqQoP9b0wWQaw
+
+###############################################
+# MONTHLY STATISTICS
+###############################################
+
+### Monthly report by year
+GET http://localhost:5000/api/fee-report/monthly?year=2024
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkFDQ09VTlRBTlQiLCJmdWxsbmFtZSI6Ikvhur4gVE_DgU4iLCJpYXQiOjE3NjcxMzYwODgsImV4cCI6MTc2NzIyMjQ4OH0.1jT_Ggsur2AhTDVTrcENWN997JyHyZUqQoP9b0wWQaw
+
+###############################################
+# BY FEE TYPE
+###############################################
+
+### Fee report by fee type
+GET http://localhost:5000/api/fee-report/by-fee-type?month=2024-12
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkFDQ09VTlRBTlQiLCJmdWxsbmFtZSI6Ikvhur4gVE_DgU4iLCJpYXQiOjE3NjcxMzYwODgsImV4cCI6MTc2NzIyMjQ4OH0.1jT_Ggsur2AhTDVTrcENWN997JyHyZUqQoP9b0wWQaw
+
+###############################################
+# HOUSEHOLD PAYMENT STATUS
+###############################################
+
+### Household payment status
+GET http://localhost:5000/api/fee-report/household-status?month=2024-12
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkFDQ09VTlRBTlQiLCJmdWxsbmFtZSI6Ikvhur4gVE_DgU4iLCJpYXQiOjE3NjcxMzYwODgsImV4cCI6MTc2NzIyMjQ4OH0.1jT_Ggsur2AhTDVTrcENWN997JyHyZUqQoP9b0wWQaw
+
+###############################################
+# COMPARISON – MONTH
+###############################################
+
+### Compare month
+GET http://localhost:5000/api/fee-report/comparison?type=month&current=2024-12
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkFDQ09VTlRBTlQiLCJmdWxsbmFtZSI6Ikvhur4gVE_DgU4iLCJpYXQiOjE3NjcxMzYwODgsImV4cCI6MTc2NzIyMjQ4OH0.1jT_Ggsur2AhTDVTrcENWN997JyHyZUqQoP9b0wWQaw
+
+###############################################
+# COMPARISON – YEAR
+###############################################
+
+### Compare year
+GET http://localhost:5000/api/fee-report/comparison?type=year&current=2024
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkFDQ09VTlRBTlQiLCJmdWxsbmFtZSI6Ikvhur4gVE_DgU4iLCJpYXQiOjE3NjcxMzYwODgsImV4cCI6MTc2NzIyMjQ4OH0.1jT_Ggsur2AhTDVTrcENWN997JyHyZUqQoP9b0wWQaw
+
+###############################################
+# EXPORT EXCEL
+###############################################
+
+### Export fee report
+GET http://localhost:5000/api/fee-report/export?month=2024-12
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6IkFDQ09VTlRBTlQiLCJmdWxsbmFtZSI6Ikvhur4gVE_DgU4iLCJpYXQiOjE3NjcxMzYwODgsImV4cCI6MTc2NzIyMjQ4OH0.1jT_Ggsur2AhTDVTrcENWN997JyHyZUqQoP9b0wWQaw
+

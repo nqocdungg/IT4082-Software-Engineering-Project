@@ -1,406 +1,449 @@
-// src/pages/staff/FeeReport.jsx
-import React, { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import axios from "axios"
-import { useNavigate } from "react-router-dom"
 import {
-  FaChartLine,
-  FaCoins,
-  FaGlobe,
-  FaWallet,
-  FaSearch,
-  FaTimes,
-  FaChevronLeft,
-  FaChevronRight,
-  FaEye
-} from "react-icons/fa"
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts"
 
-import "../../styles/staff/layout.css"
-import "../../styles/staff/fees-report.css"
-import { formatDateDMY } from "../../utils/date"
+import "../../styles/staff/fee-report.css"
 
 const API_BASE = "http://localhost:5000/api"
 
-const API_PATHS = {
-  summary: `${API_BASE}/fees/report/summary`,
-  byFee: `${API_BASE}/fees/report/by-fee`,
-  exportExcel: `${API_BASE}/fees/report/export-excel`
-}
-
 function authHeaders() {
-  const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
+  const token =
+    localStorage.getItem("token") || localStorage.getItem("accessToken")
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 function money(v) {
-  return new Intl.NumberFormat("vi-VN").format(Number(v || 0))
+  return Number(v || 0).toLocaleString("vi-VN")
+}
+
+function getCurrentYear() {
+  return new Date().getFullYear().toString()
+}
+
+function getCurrentMonth() {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  return `${d.getFullYear()}-${m}`
 }
 
 export default function FeeReport() {
-  const navigate = useNavigate()
-
-  const [search, setSearch] = useState("")
-  const [mandatoryFilter, setMandatoryFilter] = useState("ALL")
-  const [statusFilter, setStatusFilter] = useState("ALL")
-
-  const [summary, setSummary] = useState(null)
-  const [byFee, setByFee] = useState([])
   const [loading, setLoading] = useState(false)
-  const [errMsg, setErrMsg] = useState("")
 
-  const [page, setPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(5)
+  // ===== Filters =====
+  const [year, setYear] = useState(getCurrentYear())
+  const [month, setMonth] = useState(getCurrentMonth())
+  const [comparisonType, setComparisonType] = useState("month")
 
-  async function fetchReport() {
-    setLoading(true)
-    setErrMsg("")
+async function handleExport() {
+  if (loading) return
+
+  try {
+    const res = await axios.get(
+      `${API_BASE}/fee-report/export`,
+      {
+        params: { month },
+        headers: authHeaders(),
+        responseType: "blob",
+      }
+    )
+
+    const blob = new Blob([res.data])
+    const url = window.URL.createObjectURL(blob)
+
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `bao-cao-tai-chinh-${month}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+
+    a.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error("Export failed:", err)
+    alert("Không thể xuất báo cáo. Vui lòng kiểm tra quyền truy cập.")
+  }
+}
+
+  // ===== Data =====
+  const [overview, setOverview] = useState(null)
+  const [monthly, setMonthly] = useState([])
+  const [feeTypes, setFeeTypes] = useState([])
+  const [householdStatus, setHouseholdStatus] = useState(null)
+  const [comparison, setComparison] = useState(null)
+
+  // ===== Pie =====
+  const pieColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
+
+  const pieData = Array.isArray(feeTypes)
+    ? feeTypes.map((f) => ({
+        name: f.name,
+        value: Number(f.totalCollected),
+      }))
+    : []
+
+
+
+  const totalPieValue = pieData.reduce((s, i) => s + i.value, 0)
+
+  useEffect(() => {
+    fetchMainData()
+    // eslint-disable-next-line
+  }, [month, year, comparisonType])
+
+
+  async function fetchMainData() {
     try {
-      const params = {
-        mandatory: mandatoryFilter || "ALL",
-        status: statusFilter || "ALL"
+      setLoading(true)
+
+      const [ov, m, ft, hh, cp] = await Promise.all([
+        axios.get(`${API_BASE}/fee-report/overview`, {
+          params: { month },
+          headers: authHeaders(),
+        }),
+        axios.get(`${API_BASE}/fee-report/monthly`, {
+          params: { year },
+          headers: authHeaders(),
+        }),
+        axios.get(`${API_BASE}/fee-report/by-fee-type`, {
+          params: { month },
+          headers: authHeaders(),
+        }),
+        axios.get(`${API_BASE}/fee-report/household-status`, {
+          params: { month },
+          headers: authHeaders(),
+        }),
+        axios.get(`${API_BASE}/fee-report/comparison`, {
+          params: {
+            type: comparisonType,
+            current: comparisonType === "month" ? month : year,
+          },
+          headers: authHeaders(),
+        }),
+      ])
+      setOverview(ov.data)
+      setFeeTypes(Array.isArray(ft.data) ? ft.data : [])
+      setMonthly(Array.isArray(m.data) ? m.data : [])
+
+
+      setHouseholdStatus(hh.data)
+      if (
+        cp.data &&
+        cp.data.totalCollected &&
+        cp.data.completionRate
+      ) {
+        setComparison(cp.data)
+      } else {
+        setComparison(null)
       }
 
-      const [sRes, bRes] = await Promise.all([
-        axios.get(API_PATHS.summary, { params, headers: authHeaders() }),
-        axios.get(API_PATHS.byFee, {
-          params: { mandatory: params.mandatory },
-          headers: authHeaders()
-        })
-      ])
-
-      setSummary(sRes.data?.data || null)
-      setByFee(Array.isArray(bRes.data?.data) ? bRes.data.data : [])
-      setPage(1)
-    } catch (e) {
-      console.error("fetchReport error:", e)
-      setSummary(null)
-      setByFee([])
-      setErrMsg(e?.response?.data?.message || "Không tải được báo cáo")
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchReport()
-  }, [mandatoryFilter, statusFilter])
-
-  function resetFilters() {
-    setSearch("")
-    setMandatoryFilter("ALL")
-    setStatusFilter("ALL")
-  }
-
-  const cards = useMemo(() => {
-    const s = summary || {
-      totalTransactions: 0,
-      totalCollected: 0,
-      online: { transactions: 0, collected: 0 },
-      offline: { transactions: 0, collected: 0 }
-    }
-
-    return [
-      {
-        label: "Tổng giao dịch",
-        value: s.totalTransactions || 0,
-        sub: "Số lần thu",
-        tone: "blue",
-        icon: <FaChartLine />
-      },
-      {
-        label: "Tổng đã thu",
-        value: `${money(s.totalCollected)} đ`,
-        sub: "Online + Offline",
-        tone: "green",
-        icon: <FaCoins />
-      },
-      {
-        label: "Online",
-        value: `${money(s.online?.collected)} đ`,
-        sub: `${s.online?.transactions || 0} giao dịch`,
-        tone: "amber",
-        icon: <FaGlobe />
-      },
-      {
-        label: "Offline",
-        value: `${money(s.offline?.collected)} đ`,
-        sub: `${s.offline?.transactions || 0} giao dịch`,
-        tone: "slate",
-        icon: <FaWallet />
-      }
-    ]
-  }, [summary])
-
-  const filteredByFee = useMemo(() => {
-    const list = Array.isArray(byFee) ? byFee : []
-    const q = search.trim().toLowerCase()
-
-    return list.filter(r => {
-      const matchSearch = !q || (r.feeName || "").toLowerCase().includes(q)
-      const matchMandatory =
-        mandatoryFilter === "ALL" ||
-        (mandatoryFilter === "MANDATORY" && !!r.isMandatory) ||
-        (mandatoryFilter === "OPTIONAL" && !r.isMandatory)
-      return matchSearch && matchMandatory
-    })
-  }, [byFee, search, mandatoryFilter])
-
-  useEffect(() => {
-    setPage(1)
-  }, [search, mandatoryFilter, statusFilter, rowsPerPage])
-
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil((filteredByFee?.length || 0) / rowsPerPage))
-  }, [filteredByFee, rowsPerPage])
-
-  useEffect(() => {
-    if (page > totalPages) setPage(1)
-  }, [totalPages, page])
-
-  const pageRows = useMemo(() => {
-    const start = (page - 1) * rowsPerPage
-    return (filteredByFee || []).slice(start, start + rowsPerPage)
-  }, [filteredByFee, page, rowsPerPage])
-
-  const rangeText = useMemo(() => {
-    const total = filteredByFee?.length || 0
-    if (!total) return `0 - 0 trên tổng số 0 bản ghi`
-    const start = (page - 1) * rowsPerPage + 1
-    const end = Math.min(page * rowsPerPage, total)
-    return `${start} - ${end} trên tổng số ${total} bản ghi`
-  }, [filteredByFee, page, rowsPerPage])
-
-  const handleExportExcel = async () => {
-    try {
-      const params = new URLSearchParams()
-
-      if (mandatoryFilter && mandatoryFilter !== "ALL") params.append("mandatory", mandatoryFilter)
-      if (statusFilter && statusFilter !== "ALL") params.append("status", statusFilter)
-      if (search.trim()) params.append("search", search.trim())
-
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
-      const url = `${API_PATHS.exportExcel}?${params.toString()}`
-
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-
-      const ct = res.headers.get("content-type") || ""
-
-      // ✅ nếu BE trả JSON lỗi → đọc message và alert, không download
-      if (!res.ok || ct.includes("application/json")) {
-        let msg = "Không thể xuất file Excel"
-        try {
-          const j = await res.json()
-          msg = j?.message || j?.error || msg
-        } catch { }
-        alert(msg)
-        return
-      }
-
-      const blob = await res.blob()
-
-      const cd = res.headers.get("content-disposition") || ""
-      const m = cd.match(/filename="([^"]+)"/i)
-      const filename = m?.[1] || "fee_report.xlsx"
-
-      const link = document.createElement("a")
-      link.href = window.URL.createObjectURL(blob)
-      link.download = filename
-      link.click()
-      window.URL.revokeObjectURL(link.href)
-    } catch (err) {
-      console.error(err)
-      alert("Không thể xuất file Excel")
-    }
-  }
-
 
   return (
-    <div className="page-container revenues-page fee-report-page">
-      <div className="stats-strip fee-report-stats">
-        {cards.map(c => (
-          <div key={c.label} className={`mini-card tone-${c.tone}`}>
-            <div className="mini-ico">{c.icon}</div>
-            <div className="mini-meta">
-              <div className="mini-value">{c.value}</div>
-              <div className="mini-label">{c.label}</div>
-              <div className="sub-text">{c.sub}</div>
+    <div className="fee-report">
+      <div className="fee-report-container">
+        {/* HEADER */}
+        <div className="report-header">
+          <div className="header-content">
+            <div className="header-text">
+              <h1>Báo cáo – Thống kê Tài chính</h1>
+              <p>Tổng hợp và phân tích tình hình thu phí trong khu dân cư</p>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card table-card">
-        <div className="table-toolbar">
-          <div className="toolbar-row">
-            <div className="toolbar-left">
-              <div className="toolbar-select">
-                <select
-                  value={statusFilter}
-                  onChange={e => {
-                    setPage(1)
-                    setStatusFilter(e.target.value)
-                  }}
-                >
-                  <option value="ALL">Tất cả trạng thái giao dịch</option>
-                  <option value="0">Chưa nộp (0)</option>
-                  <option value="1">Nộp 1 phần (1)</option>
-                  <option value="2">Đã nộp (2)</option>
-                </select>
-              </div>
-
-              <div className="toolbar-select">
-                <select
-                  value={mandatoryFilter}
-                  onChange={e => {
-                    setPage(1)
-                    setMandatoryFilter(e.target.value)
-                  }}
-                >
-                  <option value="ALL">Tất cả loại khoản thu</option>
-                  <option value="MANDATORY">Bắt buộc</option>
-                  <option value="OPTIONAL">Tự nguyện</option>
-                </select>
-              </div>
-
-              {(search.trim() || mandatoryFilter !== "ALL" || statusFilter !== "ALL") && (
-                <button className="btn-ghost compact" onClick={resetFilters} title="Xóa bộ lọc">
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-
-            <div className="toolbar-right">
-              <button className="btn-secondary" onClick={handleExportExcel}>
-                Xuất Excel
-              </button>
-
-              <div className="toolbar-search">
-                <FaSearch className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Tìm theo tên khoản thu..."
-                  value={search}
-                  onChange={e => {
-                    setPage(1)
-                    setSearch(e.target.value)
-                  }}
-                />
-              </div>
-
-              {errMsg ? (
-                <span className="sub-text" style={{ color: "#b91c1c", fontWeight: 800 }}>
-                  {errMsg}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="table-wrapper">
-          <table className="resident-table revenues-table">
-            <thead>
-              <tr>
-                <th>Khoản thu</th>
-                <th>Loại</th>
-                <th>Thời gian áp dụng</th>
-                <th>Tổng thu</th>
-                <th>Giao dịch</th>
-                <th>Online</th>
-                <th>Offline</th>
-                <th style={{ width: 130 }}>Truy soát</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {pageRows.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="empty-row">
-                    {loading ? "Đang tải dữ liệu..." : "Không có dữ liệu báo cáo"}
-                  </td>
-                </tr>
-              ) : (
-                pageRows.map(r => (
-                  <tr key={r.feeTypeId}>
-                    <td className="col-name">
-                      <div className="fee-name">{r.feeName}</div>
-                      <div className="sub-text">Đơn giá: {r.unitPrice == null ? "—" : `${money(r.unitPrice)} đ`}</div>
-                    </td>
-
-                    <td>
-                      <span className={r.isMandatory ? "fee-tag fee-tag-mandatory" : "fee-tag fee-tag-optional"}>
-                        {r.isMandatory ? "Bắt buộc" : "Tự nguyện"}
-                      </span>
-                    </td>
-
-                    <td className="col-date">
-                      <span className={r.fromDate || r.toDate ? "fee-date-range" : "fee-date-range fee-date-none"}>
-                        {r.fromDate || r.toDate
-                          ? `${r.fromDate ? formatDateDMY(r.fromDate) : "—"} – ${r.toDate ? formatDateDMY(r.toDate) : "—"}`
-                          : "Không thời hạn"}
-                      </span>
-                      <div className="sub-text">{r.isActive ? "Đang áp dụng" : "Đã khóa"}</div>
-                    </td>
-
-                    <td className="money-cell">{money(r.totalCollected)} đ</td>
-                    <td>{r.transactions}</td>
-
-                    <td className="money-cell">
-                      {money(r.onlineCollected)} đ
-                      <div className="sub-text">{r.onlineTransactions} gd</div>
-                    </td>
-
-                    <td className="money-cell">
-                      {money(r.offlineCollected)} đ
-                      <div className="sub-text">{r.offlineTransactions} gd</div>
-                    </td>
-
-                    <td>
-                      <div className="row-actions">
-                        <button
-                          type="button"
-                          title={r.isMandatory ? "Xem hộ còn thiếu" : "Chỉ truy soát khoản bắt buộc"}
-                          disabled={!r.isMandatory}
-                          onClick={() => navigate(`/fees-report/${r.feeTypeId}`)}
-                        >
-                          <FaEye />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="table-footer">
-          <div className="footer-left">
-            <span className="footer-muted">Số bản ghi</span>
-            <select
-              value={rowsPerPage}
-              onChange={e => {
-                setPage(1)
-                setRowsPerPage(Number(e.target.value))
+            <button
+              className="export-btn"
+              onClick={handleExport}
+              disabled={loading}
+              style={{
+                opacity: loading ? 0.6 : 1,
+                cursor: loading ? "not-allowed" : "pointer",
               }}
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-            </select>
-          </div>
+              {loading ? "Đang xử lý..." : "Xuất báo cáo"}
+            </button>
 
-          <div className="footer-right">
-            <span className="footer-muted">{rangeText}</span>
-            <div className="pager">
-              <button type="button" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                <FaChevronLeft />
-              </button>
-              <button type="button" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
-                <FaChevronRight />
-              </button>
-            </div>
           </div>
         </div>
+
+        {loading && <div>Đang tải dữ liệu...</div>}
+
+        {/* ===== OVERVIEW ===== */}
+        {!loading && overview && (
+
+          <section className="report-section">
+            <h2 className="section-title">Tổng quan</h2>
+
+            <div className="overview-grid">
+              <div className="overview-card">
+                <p className="card-label">Tổng số tiền phải thu</p>
+                <p className="card-value">{money(overview.totalRequired)} đ</p>
+              </div>
+
+              <div className="overview-card">
+                <p className="card-label">Đã thu</p>
+                <p className="card-value card-value-primary">
+                  {money(overview.totalCollected)} đ
+                </p>
+              </div>
+
+              <div className="overview-card">
+                <p className="card-label">Còn nợ</p>
+                <p className="card-value">{money(overview.totalDebt)} đ</p>
+              </div>
+
+              <div className="overview-card">
+                <p className="card-label">Tỷ lệ hoàn thành</p>
+                <p className="card-value card-value-primary">
+                  {overview.completionRate}%
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ===== MONTHLY BAR ===== */}
+        <section className="report-section">
+          <div className="card">
+            <div className="card-header">
+              <h2>Thu phí theo thời gian</h2>
+              <select
+                className="filter-select"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+              >
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+              </select>
+            </div>
+
+            <div className="chart-container" style={{ height: 320 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthly}>
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="fixedFee" name="Thu bắt buộc" fill="#3b82f6" />
+                  <Bar
+                    dataKey="voluntaryFee"
+                    name="Đóng góp"
+                    fill="#10b981"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== FEE TYPE ===== */}
+        <section className="report-section">
+          <div className="card">
+            <h2 className="card-title">Thống kê theo loại phí</h2>
+
+            <div className="fee-type-grid">
+              {/* TABLE */}
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Khoản thu</th>
+                      <th className="text-center">Hộ đã đóng</th>
+                      <th className="text-right">Tổng thu</th>
+                      <th className="text-center">Tỷ lệ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.isArray(feeTypes) && feeTypes.map((f, index) => (
+                      <tr key={`${f.name}-${index}`}>
+                        <td>{f.name}</td>
+                        <td className="text-center">
+                          {f.paidHouseholds}/{f.totalHouseholds}
+                        </td>
+                        <td className="text-right">
+                          {money(f.totalCollected)} đ
+                        </td>
+                        <td className="text-center">
+                          <div className="progress-cell">
+                            <div className="progress-bar">
+                              <div
+                                className="progress-fill"
+                                style={{
+                                      width: `${Math.min(100, Math.max(0, f.completionRate))}%`
+                                    }}
+
+                              />
+                            </div>
+                            <span className="progress-text">
+                              {f.completionRate}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* PIE */}
+              <div className="fee-type-pie">
+                {pieData.length > 0 ? (
+                <PieChart width={260} height={260}>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={75}
+                    outerRadius={105}
+                    dataKey="value"
+                    paddingAngle={2}
+                    animationDuration={800}
+                  >
+                    {pieData.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={pieColors[i % pieColors.length]}
+                      />
+                    ))}
+                  </Pie>
+
+                  <text
+                    x="50%"
+                    y="48%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="20"
+                    fontWeight="600"
+                  >
+                    {(totalPieValue / 1_000_000).toFixed(0)} Tr
+                  </text>
+                  <text
+                    x="50%"
+                    y="58%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="12"
+                    fill="#6b7280"
+                  >
+                    Tổng thu
+                  </text>
+                </PieChart>
+                ) : (
+  <div className="pie-empty">Chưa có dữ liệu</div>
+)}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== HOUSEHOLD ===== */}
+        {householdStatus && (
+          <section className="report-section">
+            <div className="card">
+              <h2 className="card-title">Tình trạng thanh toán hộ dân</h2>
+
+              <div className="household-stats-grid">
+                <div className="status-item">
+                  <span className="status-badge success">Hoàn thành</span>
+                  <span>{householdStatus.completed} hộ</span>
+                </div>
+
+                <div className="status-item">
+                  <span className="status-badge warning">Chưa đủ</span>
+                  <span>{householdStatus.incomplete} hộ</span>
+                </div>
+
+                <div className="status-item">
+                  <span className="status-badge danger">Chưa đóng</span>
+                  <span>{householdStatus.notPaid} hộ</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {comparison?.totalCollected?.current !== undefined && (
+          <section className="report-section">
+            <div className="card comparison-card">
+              <div className="comparison-header">
+                <h2>So sánh – Đối chiếu</h2>
+
+                <select
+                  value={comparisonType}
+                  onChange={(e) => setComparisonType(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="month">Tháng này ↔ Tháng trước</option>
+                  <option value="year">Năm nay ↔ Năm trước</option>
+                </select>
+              </div>
+
+              <div className="comparison-grid">
+                {/* ===== TOTAL COLLECTED ===== */}
+                <div className="comparison-block">
+                  <p className="comparison-title">Tổng thu</p>
+
+                  <div className="comparison-cards">
+                    <div className="mini-card active">
+                      <span>Tháng này</span>
+                      <strong>{money(comparison.totalCollected.current)} đ</strong>
+                    </div>
+                    <div className="mini-card">
+                      <span>Tháng trước</span>
+                      <strong>{money(comparison.totalCollected.previous)} đ</strong>
+                    </div>
+                  </div>
+
+                  <div className="comparison-change positive">
+                    {comparison.totalCollected.change === null
+                      ? "— Không có dữ liệu kỳ trước"
+                      : `▲ +${comparison.totalCollected.change}% so với kỳ trước`}
+                  </div>
+
+                </div>
+
+                {/* ===== COMPLETION RATE ===== */}
+                <div className="comparison-block">
+                  <p className="comparison-title">Tỷ lệ hoàn thành</p>
+
+                  <div className="comparison-cards">
+                    <div className="mini-card active">
+                      <span>Tháng này</span>
+                      <strong>{comparison.completionRate.current}%</strong>
+                    </div>
+                    <div className="mini-card">
+                      <span>Tháng trước</span>
+                      <strong>{comparison.completionRate.previous}%</strong>
+                    </div>
+                  </div>
+
+                  <div className="comparison-change positive">
+                    {comparison.completionRate.change === 0
+                      ? "— Không thay đổi"
+                      : `${comparison.completionRate.change > 0 ? "▲ +" : "▼ "}${comparison.completionRate.change}% so với kỳ trước`}
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
       </div>
     </div>
   )
