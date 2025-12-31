@@ -32,6 +32,12 @@ function buildMonthRange(month) {
   }
 }
 
+function getCurrentMonthRange() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  return { start, end }
+}
 
 /**
  * =========================
@@ -76,12 +82,12 @@ export const getFeeReportOverview = async (req, res) => {
 
     records.forEach((r) => {
       // Tổng đã thu: tính cả bắt buộc + đóng góp
-      if (r.status === 2) totalCollected += r.amount
+      if (r.status === 2) totalCollected += Number(r.amount)
 
       // Phải thu / nợ / completion: chỉ bắt buộc
       if (r.feeType.isMandatory) {
-        totalRequired += r.amount
-        if (r.status === 2) collectedMandatory += r.amount
+        totalRequired += Number(r.amount)
+        if (r.status === 2) collectedMandatory += Number(r.amount)
       }
     })
 
@@ -142,9 +148,9 @@ export const getMonthlyFeeReport = async (req, res) => {
     records.forEach((r) => {
       const m = new Date(r.createdAt).getMonth()
       if (r.feeType.isMandatory) {
-        result[m].fixedFee += r.amount
+        result[m].fixedFee += Number(r.amount)
       } else {
-        result[m].voluntaryFee += r.amount
+        result[m].voluntaryFee += Number(r.amount)
       }
     })
 
@@ -163,24 +169,34 @@ export const getMonthlyFeeReport = async (req, res) => {
  */
 export const getFeeReportByFeeType = async (req, res) => {
   try {
-    const { month } = req.query
-    if (!month) {
-      return res.status(400).json({ message: "month is required (YYYY-MM)" })
-    }
+    const { start, end } = getCurrentMonthRange()
 
-    const dateRange = buildMonthRange(month)
+    const dateRange = { gte: start, lt: end }
 
+    // 0) Tổng số hộ đang hoạt động (mẫu số CHUNG cho mọi loại phí)
+    const activeHouseholds = await prisma.household.findMany({
+      where: { status: 1 },
+      select: { id: true },
+    })
+    const activeIds = activeHouseholds.map((h) => h.id)
+    const totalActiveHouseholds = activeIds.length
+
+    // 1) Lấy tất cả loại phí đang active
     const feeTypes = await prisma.feeType.findMany({
       where: { isActive: true },
+      select: { id: true, name: true },
     })
 
     const rows = []
 
+    // 2) Thống kê từng loại phí
     for (const ft of feeTypes) {
+      // Lấy records thuộc các hộ đang hoạt động + trong tháng
       const records = await prisma.feeRecord.findMany({
         where: {
           feeTypeId: ft.id,
           createdAt: dateRange,
+          householdId: { in: activeIds }, // ✅ chỉ tính hộ đang hoạt động
         },
         select: {
           amount: true,
@@ -189,75 +205,97 @@ export const getFeeReportByFeeType = async (req, res) => {
         },
       })
 
-      if (records.length === 0) continue
+      if (records.length === 0) {
+        rows.push({
+          feeTypeId: ft.id,
+          name: ft.name,
+          totalHouseholds: totalActiveHouseholds,
+          paidHouseholds: 0,
+          totalCollected: 0,
+          completionRate: 0,
+          _paidHouseholdIds: new Set(),
+        })
+        continue
+      }
 
-      const householdsWithFee = new Set(
-        records.map((r) => r.householdId)
-      ).size
 
+      // Số hộ đã đóng (status=2) của feeType này (trên tập hộ active)
+      const paidHouseholdIds = new Set()
       let totalCollected = 0
-      const paidHouseholdSet = new Set()
 
       records.forEach((r) => {
         if (r.status === 2) {
-          totalCollected += r.amount
-          paidHouseholdSet.add(r.householdId)
+          totalCollected += Number(r.amount)
+          paidHouseholdIds.add(r.householdId)
         }
       })
 
+      const paidHouseholds = paidHouseholdIds.size
+      const completionRate =
+        totalActiveHouseholds > 0
+          ? Math.round((paidHouseholds / totalActiveHouseholds) * 100)
+          : 0
+
       rows.push({
+        feeTypeId: ft.id,
         name: ft.name,
-        totalHouseholds: householdsWithFee,
-        paidHouseholds: paidHouseholdSet.size,
+        totalHouseholds: totalActiveHouseholds,
+        paidHouseholds,
+
         totalCollected,
-        completionRate:
-          householdsWithFee > 0
-            ? Math.round(
-                (paidHouseholdSet.size / householdsWithFee) * 100
-              )
-            : 0,
+        completionRate,
+
+        _paidHouseholdIds: paidHouseholdIds,
       })
     }
 
-    // ===== SORT & MERGE =====
-    rows.sort((a, b) => b.totalCollected - a.totalCollected)
+    // 3) Sort theo tổng tiền thu
+    rows.sort((a, b) => {
+      if (b.totalCollected !== a.totalCollected)
+        return b.totalCollected - a.totalCollected
+      return b.paidHouseholds - a.paidHouseholds
+    })
 
+
+    // 4) Top 6 + Others
     const top6 = rows.slice(0, 6)
     const others = rows.slice(6)
 
     if (others.length > 0) {
-      const other = others.reduce(
-        (acc, cur) => {
-          acc.totalCollected += cur.totalCollected
-          acc.totalHouseholds += cur.totalHouseholds
-          acc.paidHouseholds += cur.paidHouseholds
-          return acc
-        },
-        {
-          name: "Các loại phí khác",
-          totalCollected: 0,
-          totalHouseholds: 0,
-          paidHouseholds: 0,
-        }
-      )
+      const otherPaid = new Set()
+      let otherTotalCollected = 0
 
-      other.completionRate =
-        other.totalHouseholds > 0
-          ? Math.round(
-              (other.paidHouseholds / other.totalHouseholds) * 100
-            )
-          : 0
+      others.forEach((item) => {
+        otherTotalCollected += item.totalCollected
+        item._paidHouseholdIds.forEach((id) => otherPaid.add(id))
+      })
 
-      top6.push(other)
+      const otherPaidCount = otherPaid.size
+      top6.push({
+        name: "Các loại phí khác",
+        totalHouseholds: totalActiveHouseholds, // ✅ vẫn là tổng hộ active
+        paidHouseholds: otherPaidCount,
+        totalCollected: otherTotalCollected,
+        completionRate:
+          totalActiveHouseholds > 0
+            ? Math.round((otherPaidCount / totalActiveHouseholds) * 100)
+            : 0,
+      })
     }
 
-    res.json(top6 || [])
+    // 5) Dọn field nội bộ
+    top6.forEach((item) => {
+      delete item._paidHouseholdIds
+    })
 
+    res.json(top6)
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: "Failed to get fee report by fee type" })
   }
 }
+
+
 
 /**
  * =========================
@@ -271,79 +309,68 @@ export const getFeeReportByFeeType = async (req, res) => {
  */
 export const getHouseholdPaymentStatus = async (req, res) => {
   try {
-    const { month } = req.query
-    if (!month) {
-      return res.status(400).json({ message: "month is required (YYYY-MM)" })
-    }
+    const { feeTypeId } = req.query
+    const { start, end } = getCurrentMonthRange()
 
-    const start = new Date(`${month}-01`)
-    const end = new Date(start)
-    end.setMonth(end.getMonth() + 1)
-
-    // 1. Lấy danh sách phí bắt buộc
-    const mandatoryFees = await prisma.feeType.findMany({
-      where: {
-        isMandatory: true,
-        isActive: true,
-      },
-      select: { id: true },
-    })
-
-    const mandatoryFeeIds = mandatoryFees.map((f) => f.id)
-
-    // 2. Lấy danh sách hộ đang hoạt động
+    // 1. Lấy các hộ đang hoạt động
     const households = await prisma.household.findMany({
       where: { status: 1 },
       select: { id: true },
     })
 
+    const householdIds = households.map(h => h.id)
+    const totalHouseholds = householdIds.length
+
+    // 2. Lấy fee records trong tháng hiện tại
+    const records = await prisma.feeRecord.findMany({
+      where: {
+        householdId: { in: householdIds },
+        createdAt: { gte: start, lt: end },
+        ...(feeTypeId && feeTypeId !== "ALL"
+          ? { feeTypeId: Number(feeTypeId) }
+          : {}),
+      },
+      select: {
+        householdId: true,
+        status: true,
+      },
+    })
+
+    // 3. Gom status theo hộ
+    const statusMap = new Map()
+    householdIds.forEach(id => statusMap.set(id, []))
+    records.forEach(r => statusMap.get(r.householdId).push(r.status))
+
     let completed = 0
     let incomplete = 0
     let notPaid = 0
 
-    // 3. Kiểm tra từng hộ
-    for (const h of households) {
-      const records = await prisma.feeRecord.findMany({
-        where: {
-          householdId: h.id,
-          feeTypeId: { in: mandatoryFeeIds },
-          createdAt: { gte: start, lt: end },
-        },
-        select: {
-          feeTypeId: true,
-          status: true,
-        },
-      })
-
-      // Chưa đóng khoản bắt buộc nào
-      if (records.length === 0) {
+    statusMap.forEach(statuses => {
+      if (statuses.length === 0) {
         notPaid++
-        continue
-      }
-
-      const paidMandatoryFeeIds = new Set(
-        records.filter((r) => r.status === 2).map((r) => r.feeTypeId)
-      )
-
-      // Đóng đủ tất cả phí bắt buộc
-      if (paidMandatoryFeeIds.size === mandatoryFeeIds.length) {
+      } else if (statuses.every(s => s === 2)) {
         completed++
-      } else {
+      } else if (statuses.some(s => s === 2)) {
         incomplete++
+      } else {
+        notPaid++
       }
-    }
+    })
 
     res.json({
-      totalHouseholds: households.length,
+      totalHouseholds,
       completed,
       incomplete,
       notPaid,
     })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ message: "Failed to get household payment status" })
+    res.status(500).json({
+      message: "Failed to get household payment status",
+    })
   }
 }
+
 
 
 /* =========================
@@ -388,11 +415,11 @@ export const getFeeReportComparison = async (req, res) => {
       let collectedMandatory = 0
 
       records.forEach((r) => {
-        if (r.status === 2) totalCollectedAll += r.amount
+        if (r.status === 2) totalCollectedAll += Number(r.amount)
 
         if (r.feeType.isMandatory) {
-          requiredMandatory += r.amount
-          if (r.status === 2) collectedMandatory += r.amount
+          requiredMandatory += Number(r.amount)
+          if (r.status === 2) collectedMandatory += Number(r.amount)
         }
       })
 
@@ -478,11 +505,11 @@ export const exportFeeReportExcel = async (req, res) => {
     let collectedMandatory = 0
 
     overviewRecords.forEach((r) => {
-      if (r.status === 2) totalCollected += r.amount
+      if (r.status === 2) totalCollected += Number(r.amount)
 
       if (r.feeType.isMandatory) {
-        totalRequired += r.amount
-        if (r.status === 2) collectedMandatory += r.amount
+        totalRequired += Number(r.amount)
+        if (r.status === 2) collectedMandatory += Number(r.amount)
       }
     })
 
@@ -534,51 +561,79 @@ export const exportFeeReportExcel = async (req, res) => {
     }
 
     /* ======================
-       4. FEE TYPE (TOP 6 + OTHER)
-       ====================== */
+      4. FEE TYPE (TOP 6 + OTHER) – THEO THÁNG HIỆN TẠI
+      ====================== */
+    const { start, end } = getCurrentMonthRange()
+
+    const activeHouseholds = await prisma.household.findMany({
+      where: { status: 1 },
+      select: { id: true },
+    })
+    const activeIds = activeHouseholds.map(h => h.id)
+    const totalActiveHouseholds = activeIds.length
+
     const feeTypes = await prisma.feeType.findMany({
       where: { isActive: true },
+      select: { id: true, name: true },
     })
 
-    const feeStats = []
+    const rows = []
 
     for (const ft of feeTypes) {
       const records = await prisma.feeRecord.findMany({
-        where: { feeTypeId: ft.id, createdAt: dateRange },
+        where: {
+          feeTypeId: ft.id,
+          householdId: { in: activeIds },
+          createdAt: { gte: start, lt: end },
+        },
         select: { amount: true, status: true, householdId: true },
       })
 
-      if (records.length === 0) continue
-
+      const paidHouseholdIds = new Set()
       let totalCollected = 0
-      const householdSet = new Set()
 
-      records.forEach((r) => {
+      records.forEach(r => {
         if (r.status === 2) {
-          totalCollected += r.amount
-          householdSet.add(r.householdId)
+          totalCollected += Number(r.amount)
+          paidHouseholdIds.add(r.householdId)
         }
       })
 
-      feeStats.push({
+      rows.push({
         name: ft.name,
-        households: householdSet.size,
+        totalHouseholds: totalActiveHouseholds,
+        paidHouseholds: paidHouseholdIds.size,
         totalCollected,
+        _paidHouseholdIds: paidHouseholdIds,
       })
     }
 
-    feeStats.sort((a, b) => b.totalCollected - a.totalCollected)
+    rows.sort((a, b) => b.totalCollected - a.totalCollected)
 
-    const top6 = feeStats.slice(0, 6)
-    const others = feeStats.slice(6)
+    const top6 = rows.slice(0, 6)
+    const others = rows.slice(6)
 
     if (others.length > 0) {
+      const otherPaid = new Set()
+      let otherTotalCollected = 0
+
+      others.forEach(i => {
+        otherTotalCollected += i.totalCollected
+        i._paidHouseholdIds.forEach(id => otherPaid.add(id))
+      })
+
       top6.push({
-        name: "Khác",
-        households: others.reduce((s, i) => s + i.households, 0),
-        totalCollected: others.reduce((s, i) => s + i.totalCollected, 0),
+        name: "Các loại phí khác",
+        totalHouseholds: totalActiveHouseholds,
+        paidHouseholds: otherPaid.size,
+        completionRate:
+          totalActiveHouseholds > 0
+            ? Math.round((otherPaid.size / totalActiveHouseholds) * 100)
+            : 0,
+        totalCollected: otherTotalCollected,
       })
     }
+
 
     /* ======================
        5. EXCEL
@@ -605,13 +660,23 @@ export const exportFeeReportExcel = async (req, res) => {
     const ws2 = wb.addWorksheet("Chi tiết theo loại phí")
     ws2.addRow([
       "Khoản thu",
-      "Số hộ đã đóng",
-      "Tổng tiền thu được",
+      "Hộ đã đóng",
+      "Tổng số hộ",
+      "Tỷ lệ (%)",
+      "Tổng tiền thu",
     ])
 
+
     top6.forEach((f) => {
-      ws2.addRow([f.name, f.households, f.totalCollected])
+      ws2.addRow([
+        f.name,
+        f.paidHouseholds,
+        f.totalHouseholds,
+        f.completionRate,
+        f.totalCollected,
+      ])
     })
+
 
     /* Response */
 const timeLabel = month || year || "all"
