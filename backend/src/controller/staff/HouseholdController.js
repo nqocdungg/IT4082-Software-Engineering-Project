@@ -1,9 +1,6 @@
 import prisma from "../../../prisma/prismaClient.js"
 import ExcelJS from "exceljs"
 
-/* =========================
- * Helpers
- * ========================= */
 function toPositiveInt(raw) {
   const n = Number.parseInt(String(raw ?? ""), 10)
   return Number.isFinite(n) && n > 0 ? n : null
@@ -21,14 +18,6 @@ async function generateUniqueHouseholdCode(tx) {
   }
 }
 
-/* =====================================================
- * GET /api/households
- * Query:
- *  - search: string
- *  - status: ALL | 0 | 1
- *  - page: number
- *  - limit: number
- * ===================================================== */
 export const getAllHouseholds = async (req, res) => {
   try {
     const search = String(req.query.search ?? "").trim()
@@ -99,9 +88,6 @@ export const getAllHouseholds = async (req, res) => {
   }
 }
 
-/* =====================================================
- * GET /api/households/search?q=...
- * ===================================================== */
 export const searchHouseholds = async (req, res) => {
   try {
     const q = String(req.query.q || "").trim()
@@ -125,9 +111,6 @@ export const searchHouseholds = async (req, res) => {
   }
 }
 
-/* =====================================================
- * GET /api/households/:id/members
- * ===================================================== */
 export const getHouseholdMembers = async (req, res) => {
   try {
     const id = toPositiveInt(req.params.id)
@@ -154,14 +137,9 @@ export const getHouseholdMembers = async (req, res) => {
   }
 }
 
-/* =====================================================
- * GET /api/households/:id
- * ===================================================== */
 export const getHouseholdById = async (req, res) => {
   try {
     const id = toPositiveInt(req.params.id)
-
-    console.log("[GET /households/:id] url=", req.originalUrl, "rawId=", req.params.id, "parsedId=", id)
 
     if (!id) {
       return res.status(400).json({ success: false, message: "Invalid household id" })
@@ -189,9 +167,6 @@ export const getHouseholdById = async (req, res) => {
   }
 }
 
-/* =====================================================
- * GET /api/households/generate-code
- * ===================================================== */
 export const generateHouseholdCode = async (req, res) => {
   try {
     const code = await prisma.$transaction(tx => generateUniqueHouseholdCode(tx))
@@ -201,9 +176,6 @@ export const generateHouseholdCode = async (req, res) => {
   }
 }
 
-/* =====================================================
- * POST /api/households
- * ===================================================== */
 export const createHousehold = async (req, res) => {
   const { address, owner, members = [] } = req.body
 
@@ -291,9 +263,28 @@ export const createHousehold = async (req, res) => {
   }
 }
 
-/* =====================================================
- * PUT /api/households/:id/status
- * ===================================================== */
+export const updateHouseholdAddress = async (req, res) => {
+  const householdId = toPositiveInt(req.params.id)
+  const address = String(req.body?.address ?? "").trim()
+
+  if (!householdId) {
+    return res.status(400).json({ success: false, message: "Invalid household id" })
+  }
+  if (!address) {
+    return res.status(400).json({ success: false, message: "Address is required" })
+  }
+
+  try {
+    const updated = await prisma.household.update({
+      where: { id: householdId },
+      data: { address }
+    })
+    return res.status(200).json({ success: true, data: updated })
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message })
+  }
+}
+
 export const changeHouseholdStatus = async (req, res) => {
   const householdId = toPositiveInt(req.params.id)
   const nextStatus = Number(req.body?.status)
@@ -381,9 +372,7 @@ export const exportHouseholdsExcel = async (req, res) => {
     ]
 
     households.forEach(h => {
-      const membersCount = (h.residents || []).filter(r =>
-        [0, 1, 2].includes(Number(r.status))
-      ).length
+      const membersCount = (h.residents || []).filter(r => [0, 1, 2].includes(Number(r.status))).length
 
       ws.addRow({
         householdCode: h.householdCode,
@@ -395,14 +384,8 @@ export const exportHouseholdsExcel = async (req, res) => {
       })
     })
 
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=households.xlsx"
-    )
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    res.setHeader("Content-Disposition", "attachment; filename=households.xlsx")
 
     await wb.xlsx.write(res)
     res.end()

@@ -11,9 +11,12 @@ import {
   FaUserSlash,
   FaSkull,
   FaCross,
-  FaFileExcel
+  FaFileExcel,
+  FaEdit,
+  FaSave,
+  FaTimes
 } from "react-icons/fa"
-import { GiCoffin } from "react-icons/gi";
+import { GiCoffin } from "react-icons/gi"
 import { HiOutlineLogin, HiOutlineLogout } from "react-icons/hi"
 
 import "../../styles/staff/residents.css"
@@ -70,7 +73,6 @@ function computeStats(list) {
   return s
 }
 
-// debounce nhỏ cho ô search (đỡ spam API)
 function useDebouncedValue(value, delay = 350) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -80,12 +82,21 @@ function useDebouncedValue(value, delay = 350) {
   return debounced
 }
 
+function toISODateInput(v) {
+  if (!v) return ""
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return ""
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  const dd = String(d.getDate()).padStart(2, "0")
+  return `${yyyy}-${mm}-${dd}`
+}
+
 export default function ResidentManagement() {
   const [residents, setResidents] = useState([])
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [genderFilter, setGenderFilter] = useState("ALL")
-
   const [householdIdFilter, setHouseholdIdFilter] = useState("")
 
   const [selectedResident, setSelectedResident] = useState(null)
@@ -116,7 +127,7 @@ export default function ResidentManagement() {
       const params = {}
 
       if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
-      if (genderFilter !== "ALL") params.gender = genderFilter 
+      if (genderFilter !== "ALL") params.gender = genderFilter
       if (statusFilter !== "ALL") params.status = statusFilter
       if (String(householdIdFilter).trim()) params.householdId = String(householdIdFilter).trim()
 
@@ -156,17 +167,22 @@ export default function ResidentManagement() {
   }, [residents.length, currentPage, rowsPerPage])
 
   const householdDisplay = r => {
-    // backend trả householdCode + address (có thể null)
     if (r.householdId == null && !r.householdCode) return "—"
     if (r.householdCode) return `${r.householdCode}`
     return `HK #${r.householdId}`
   }
 
-  const closeDetail = () => setSelectedResident(null)
+  const closeDetail = () => {
+    setSelectedResident(null)
+    setEditMode(false)
+    setEditForm(null)
+  }
 
   const handleOpenDetail = async resident => {
     setSelectedResident(resident)
     setLoadingDetail(true)
+    setEditMode(false)
+    setEditForm(null)
     try {
       const res = await axios.get(`${API_BASE}/residents/${resident.id}`, {
         headers: authHeaders()
@@ -223,7 +239,6 @@ export default function ResidentManagement() {
     try {
       await axios.delete(`${API_BASE}/residents/${id}`, { headers: authHeaders() })
 
-      // xoá ở local + update stats + nếu đang mở detail thì đóng
       setResidents(prev => {
         const next = prev.filter(r => r.id !== id)
         setStats(computeStats(next))
@@ -242,6 +257,73 @@ export default function ResidentManagement() {
     { label: "Đã chuyển đi", value: stats.daChuyenDi, icon: <HiOutlineLogout />, tone: "rose" },
     { label: "Đã qua đời", value: stats.daQuaDoi, icon: <GiCoffin />, tone: "slate" }
   ]
+
+  const [editMode, setEditMode] = useState(false)
+  const [editForm, setEditForm] = useState(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  const startEdit = () => {
+    if (!selectedResident) return
+    setEditMode(true)
+    setEditForm({
+      fullname: selectedResident.fullname ?? "",
+      dob: toISODateInput(selectedResident.dob),
+      gender: selectedResident.gender ?? "M",
+      residentCCCD: selectedResident.residentCCCD ?? "",
+      relationToOwner: selectedResident.relationToOwner ?? "",
+      ethnicity: selectedResident.ethnicity ?? "",
+      religion: selectedResident.religion ?? "",
+      nationality: selectedResident.nationality ?? "",
+      hometown: selectedResident.hometown ?? "",
+      occupation: selectedResident.occupation ?? "",
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditMode(false)
+    setEditForm(null)
+  }
+
+  const patchForm = (k, v) => setEditForm(prev => ({ ...(prev || {}), [k]: v }))
+
+  const reloadDetail = async id => {
+    const res = await axios.get(`${API_BASE}/residents/${id}`, { headers: authHeaders() })
+    setSelectedResident(res.data.data)
+  }
+
+  async function saveEdit() {
+    if (!selectedResident || !editForm || savingEdit) return
+    setSavingEdit(true)
+    try {
+      const payload = {
+        residentCCCD: editForm.residentCCCD || null,
+        fullname: editForm.fullname || null,
+        dob: editForm.dob ? new Date(editForm.dob).toISOString() : null,
+        gender: editForm.gender || null,
+        ethnicity: editForm.ethnicity || null,
+        religion: editForm.religion || null,
+        nationality: editForm.nationality || null,
+        hometown: editForm.hometown || null,
+        occupation: editForm.occupation || null,
+        relationToOwner: editForm.relationToOwner || null
+      }
+
+      await axios.put(`${API_BASE}/residents/${selectedResident.id}`, payload, {
+        headers: authHeaders()
+      })
+
+      await reloadDetail(selectedResident.id)
+      await fetchResidents()
+
+      setEditMode(false)
+      setEditForm(null)
+    } catch (e) {
+      console.error(e)
+      alert("Cập nhật nhân khẩu thất bại")
+    } finally {
+      setSavingEdit(false)
+    }
+  }
 
   return (
     <div className="page-container residents-page">
@@ -291,8 +373,6 @@ export default function ResidentManagement() {
                   <option value="Nữ">Nữ</option>
                 </select>
               </div>
-
-
             </div>
 
             <div className="toolbar-right">
@@ -303,8 +383,10 @@ export default function ResidentManagement() {
                 disabled={exporting}
                 style={{ marginRight: 10 }}
               >
-                <FaFileExcel />{exporting ? "Đang xuất..." : "Xuất Excel"}
+                <FaFileExcel />
+                {exporting ? "Đang xuất..." : "Xuất Excel"}
               </button>
+
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
@@ -350,9 +432,7 @@ export default function ResidentManagement() {
 
                   return (
                     <tr key={r.id} className="clickable-row" onClick={() => handleOpenDetail(r)}>
-                      <td className="full_name">
-                        {r.fullname}
-                      </td>
+                      <td className="full_name">{r.fullname}</td>
 
                       <td>{r.gender === "M" ? "Nam" : "Nữ"}</td>
 
@@ -412,11 +492,7 @@ export default function ResidentManagement() {
             <span className="footer-muted">{rangeText}</span>
 
             <div className="pager">
-              <button
-                type="button"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
-              >
+              <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
                 <FaChevronLeft />
               </button>
               <button
@@ -436,7 +512,9 @@ export default function ResidentManagement() {
           <div className="resident-modal" onClick={e => e.stopPropagation()}>
             <div className="resident-modal-header">
               <div>
-                <h3 className="resident-modal-title">Chi tiết nhân khẩu</h3>
+                <h3 className="resident-modal-title">
+                  {editMode ? "Sửa thông tin nhân khẩu" : "Chi tiết nhân khẩu"}
+                </h3>
                 <p className="resident-modal-sub">ID: #{selectedResident.id}</p>
               </div>
 
@@ -452,32 +530,85 @@ export default function ResidentManagement() {
                 <div className="detail-grid">
                   <div className="detail-item">
                     <div className="detail-label">Họ và tên</div>
-                    <div className="detail-value">{selectedResident.fullname}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.fullname ?? ""}
+                          onChange={e => patchForm("fullname", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.fullname
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Ngày sinh / Tuổi</div>
                     <div className="detail-value">
-                      {formatDateDMY(selectedResident.dob)}{" "}
-                      <span className="sub-text">({calcAge(selectedResident.dob)} tuổi)</span>
+                      {editMode ? (
+                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                          <input
+                            type="date"
+                            value={editForm?.dob ?? ""}
+                            onChange={e => patchForm("dob", e.target.value)}
+                          />
+                          <span className="sub-text">({calcAge(editForm?.dob)} tuổi)</span>
+                        </div>
+                      ) : (
+                        <>
+                          {formatDateDMY(selectedResident.dob)}{" "}
+                          <span className="sub-text">({calcAge(selectedResident.dob)} tuổi)</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Giới tính</div>
                     <div className="detail-value">
-                      {selectedResident.gender === "M" ? "Nam" : "Nữ"}
+                      {editMode ? (
+                        <select
+                          value={editForm?.gender ?? "M"}
+                          onChange={e => patchForm("gender", e.target.value)}
+                        >
+                          <option value="M">Nam</option>
+                          <option value="F">Nữ</option>
+                        </select>
+                      ) : (
+                        selectedResident.gender === "M" ? "Nam" : "Nữ"
+                      )}
                     </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">CCCD</div>
-                    <div className="detail-value">{selectedResident.residentCCCD || "—"}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.residentCCCD ?? ""}
+                          onChange={e => patchForm("residentCCCD", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.residentCCCD || "—"
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Quan hệ chủ hộ</div>
-                    <div className="detail-value">{selectedResident.relationToOwner || "—"}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.relationToOwner ?? ""}
+                          onChange={e => patchForm("relationToOwner", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.relationToOwner || "—"
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item">
@@ -488,66 +619,114 @@ export default function ResidentManagement() {
                         : selectedResident.householdId != null
                           ? `HK #${selectedResident.householdId}`
                           : "—"}
-                      {!!selectedResident.address && (
-                        <div className="sub-text">{selectedResident.address}</div>
-                      )}
+                      {!!selectedResident.address && <div className="sub-text">{selectedResident.address}</div>}
                     </div>
                   </div>
 
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Tình trạng cư trú</div>
                     <div className="detail-value">
-                      <span
-                        className={`status-badge ${getResidencyStatusInfo(selectedResident.status).className
-                          }`}
-                      >
+                      <span className={`status-badge ${getResidencyStatusInfo(selectedResident.status).className}`}>
                         {getResidencyStatusInfo(selectedResident.status).label}
                       </span>
+                      {editMode && <div className="sub-text">Tình trạng cư trú không thể chỉnh sửa tại đây.</div>}
                     </div>
                   </div>
 
-                  {/* ✅ Field mới từ backend (có thể null) */}
+
                   <div className="detail-item">
                     <div className="detail-label">Dân tộc</div>
-                    <div className="detail-value">{selectedResident.ethnicity || "—"}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.ethnicity ?? ""}
+                          onChange={e => patchForm("ethnicity", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.ethnicity || "—"
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Tôn giáo</div>
-                    <div className="detail-value">{selectedResident.religion || "—"}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.religion ?? ""}
+                          onChange={e => patchForm("religion", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.religion || "—"
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Quốc tịch</div>
-                    <div className="detail-value">{selectedResident.nationality || "—"}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.nationality ?? ""}
+                          onChange={e => patchForm("nationality", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.nationality || "—"
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item">
                     <div className="detail-label">Quê quán</div>
-                    <div className="detail-value">{selectedResident.hometown || "—"}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.hometown ?? ""}
+                          onChange={e => patchForm("hometown", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.hometown || "—"
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Nghề nghiệp</div>
-                    <div className="detail-value">{selectedResident.occupation || "—"}</div>
+                    <div className="detail-value">
+                      {editMode ? (
+                        <input
+                          value={editForm?.occupation ?? ""}
+                          onChange={e => patchForm("occupation", e.target.value)}
+                          style={{ width: "100%" }}
+                        />
+                      ) : (
+                        selectedResident.occupation || "—"
+                      )}
+                    </div>
                   </div>
-
-                 
                 </div>
               )}
             </div>
 
             <div className="resident-modal-footer">
-              <button className="btn-secondary" type="button" onClick={closeDetail}>
-                Đóng
-              </button>
-              <button
-                className="btn-danger"
-                type="button"
-                onClick={() => handleDelete(selectedResident.id)}
-              >
-                <FaTrash /> Xóa
-              </button>
+              {editMode ? (
+                <>
+                  <button className="btn-secondary" type="button" onClick={cancelEdit} disabled={savingEdit}>
+                    Hủy
+                  </button>
+                  <button className="btn-secondary" type="button" onClick={saveEdit} disabled={savingEdit}>
+                    {savingEdit ? "Đang lưu..." : "Lưu"}
+                  </button>
+                </>
+              ) : (
+                <button className="btn-secondary" type="button" onClick={startEdit} disabled={loadingDetail}>
+                  Sửa
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -187,7 +187,9 @@ export const createResidentChange = async (req, res) => {
           select: {
             id: true,
             status: true,
-            household: { select: { address: true } }
+            householdId: true,
+            relationToOwner: true,
+            household: { select: { id: true, address: true, status: true, householdCode: true } }
           }
         })
 
@@ -202,8 +204,31 @@ export const createResidentChange = async (req, res) => {
           })
         }
 
-        if (ct === 2 || ct === 4) {
+        if (ct === 2 || ct === 4 || ct === 7) {
           finalFromAddress = existedR?.household?.address || null
+        }
+
+        if ((ct === 4 || ct === 7) && String(existedR.relationToOwner || "").trim() === "Chủ hộ") {
+          const hid = Number(existedR.householdId || existedR.household?.id || 0)
+          if (!hid || Number.isNaN(hid)) {
+            return res.status(400).json({ success: false, message: "Chủ hộ không có hộ khẩu hợp lệ" })
+          }
+
+          const ex = extraData || {}
+          const newOwnerId = Number(ex.newOwnerId)
+          if (!newOwnerId || Number.isNaN(newOwnerId) || newOwnerId === finalResidentId) {
+            return res.status(400).json({ success: false, message: "Chủ hộ chuyển đi/khai tử: phải chọn chủ hộ mới hợp lệ" })
+          }
+
+          const hh = await assertHouseholdActive(prisma, hid)
+          await assertResidentInHousehold(prisma, newOwnerId, hid)
+
+          extraDataToSave = {
+            householdId: hid,
+            householdCode: hh.householdCode || null,
+            oldOwnerId: finalResidentId,
+            newOwnerId
+          }
         }
       }
 
@@ -437,12 +462,56 @@ async function handleApprovedChange(tx, change) {
     case 2:
       await tx.resident.update({ where: { id: change.residentId }, data: { status: 2 } })
       break
-    case 4:
+
+    case 4: {
+      const ex = change.extraData || {}
+      if (ex?.householdId && ex?.newOwnerId) {
+        await tx.household.update({
+          where: { id: Number(ex.householdId) },
+          data: { ownerId: Number(ex.newOwnerId) }
+        })
+
+        if (ex?.oldOwnerId) {
+          await tx.resident.update({
+            where: { id: Number(ex.oldOwnerId) },
+            data: { relationToOwner: "Thành viên" }
+          })
+        }
+
+        await tx.resident.update({
+          where: { id: Number(ex.newOwnerId) },
+          data: { relationToOwner: "Chủ hộ" }
+        })
+      }
+
       await tx.resident.update({ where: { id: change.residentId }, data: { status: 3, householdId: null } })
       break
-    case 7:
+    }
+
+    case 7: {
+      const ex = change.extraData || {}
+      if (ex?.householdId && ex?.newOwnerId) {
+        await tx.household.update({
+          where: { id: Number(ex.householdId) },
+          data: { ownerId: Number(ex.newOwnerId) }
+        })
+
+        if (ex?.oldOwnerId) {
+          await tx.resident.update({
+            where: { id: Number(ex.oldOwnerId) },
+            data: { relationToOwner: "Thành viên" }
+          })
+        }
+
+        await tx.resident.update({
+          where: { id: Number(ex.newOwnerId) },
+          data: { relationToOwner: "Chủ hộ" }
+        })
+      }
+
       await tx.resident.update({ where: { id: change.residentId }, data: { status: 4 } })
       break
+    }
   }
 }
 

@@ -47,7 +47,7 @@ export const getDashboard = async (req, res) => {
         SUM(CASE WHEN ft."isMandatory" = false THEN fr."amount" ELSE 0 END)::float AS contribution
       FROM "FeeRecord" fr
       JOIN "FeeType" ft ON ft."id" = fr."feeTypeId"
-      WHERE fr."status" = 2
+      WHERE fr."status" IN (1, 2)
         AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
       GROUP BY month
       ORDER BY month
