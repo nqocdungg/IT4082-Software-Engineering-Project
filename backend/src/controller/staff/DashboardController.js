@@ -42,13 +42,13 @@ export const getDashboard = async (req, res) => {
     // =========================
     const feeRows = await prisma.$queryRaw`
       SELECT
-        EXTRACT(MONTH FROM fr."updatedAt")::int AS month,
+        EXTRACT(MONTH FROM fr."createdAt")::int AS month,
         SUM(CASE WHEN ft."isMandatory" = true THEN fr."amount" ELSE 0 END)::float AS mandatory,
         SUM(CASE WHEN ft."isMandatory" = false THEN fr."amount" ELSE 0 END)::float AS contribution
       FROM "FeeRecord" fr
       JOIN "FeeType" ft ON ft."id" = fr."feeTypeId"
       WHERE fr."status" IN (1, 2)
-        AND EXTRACT(YEAR FROM fr."updatedAt")::int = ${currentYear}
+        AND EXTRACT(YEAR FROM fr."createdAt")::int = ${currentYear}
       GROUP BY month
       ORDER BY month
     `
@@ -63,89 +63,96 @@ export const getDashboard = async (req, res) => {
       }
     })
 
-    // =========================
-    // 5. Tỷ lệ đóng phí tháng hiện tại
-    // =========================
+// =========================
+// 5. Tỷ lệ đóng phí (HOÀN THÀNH THEO NĂM – CỘNG DỒN TIỀN)
+// =========================
 
-    // số loại phí cố định (mandatory) cần phải đóng
-    const mandatoryTypeCount = await prisma.feeType.count({
-      where: { isMandatory: true }
-    })
+const startOfYear = new Date(currentYear, 0, 1)
+const startOfNextYear = new Date(currentYear + 1, 0, 1)
 
-    const paidHouseholds =
-      mandatoryTypeCount === 0
-        ? await prisma.household.findMany({
-          where: { status: 1 },
-          select: { id: true }
-        })
-        : await prisma.feeRecord
-          .groupBy({
-            by: ["householdId"],
-            where: {
-              status: 2,
-              updatedAt: { gte: startOfMonth, lt: startOfNextMonth },
-              feeType: { isMandatory: true },
-              household: { status: 1 }
-            },
-            _count: { feeTypeId: true }
-          })
-          .then(rows =>
-            rows
-              .filter(r => r._count.feeTypeId === mandatoryTypeCount)
-              .map(r => ({ householdId: r.householdId }))
-          )
+// lấy toàn bộ phí bắt buộc trong năm
+const mandatoryFees = await prisma.feeType.findMany({
+  where: {
+    isMandatory: true,
+    fromDate: { lte: startOfNextYear },
+    toDate: { gte: startOfYear }
+  }
+})
 
-    const paidCount = paidHouseholds.length
-    const paymentRate =
-      totalHouseholds === 0
-        ? 0
-        : Math.round((paidCount / totalHouseholds) * 100)
+const mandatoryFeeIds = mandatoryFees.map(f => f.id)
 
-    const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
-
-    const paidHouseholdsPrev =
-      mandatoryTypeCount === 0
-        ? await prisma.household.findMany({
-          where: { status: 1 },
-          select: { id: true }
-        })
-        : await prisma.feeRecord
-          .groupBy({
-            by: ["householdId"],
-            where: {
-              status: 2,
-              updatedAt: { gte: startOfPrevMonth, lt: startOfCurrentMonth },
-              feeType: { isMandatory: true },
-              household: { status: 1 }
-            },
-            _count: { feeTypeId: true }
-          })
-          .then(rows =>
-            rows
-              .filter(r => r._count.feeTypeId === mandatoryTypeCount)
-              .map(r => ({ householdId: r.householdId }))
-          )
-
-    const paidPrevCount = paidHouseholdsPrev.length
-
-    const prevPaymentRate =
-      totalHouseholds === 0
-        ? 0
-        : Math.round((paidPrevCount / totalHouseholds) * 100)
-
-    const paymentRateChange = paymentRate - prevPaymentRate
-
-    const prevUnpaidHouseholds = Math.max(totalHouseholds - paidPrevCount, 0)
-
-    let unpaidHouseholdsChange = 0
-
-    if (prevUnpaidHouseholds === 0 && unpaidHouseholds > 0) {
-      unpaidHouseholdsChange = 100
-    } else if (prevUnpaidHouseholds > 0) {
-      unpaidHouseholdsChange = Math.round(
-        ((unpaidHouseholds - prevUnpaidHouseholds) / prevUnpaidHouseholds) * 100
-      )
+// lấy toàn bộ record phí bắt buộc trong năm (kể cả đóng 1 phần)
+const records = await prisma.feeRecord.findMany({
+  where: {
+    createdAt: {
+      gte: startOfYear,
+      lt: startOfNextYear
+    },
+    feeTypeId: { in: mandatoryFeeIds },
+    household: { status: 1 }
+  },
+  include: {
+    feeType: true,
+    household: {
+      include: {
+        residents: {
+          where: { status: { in: [0, 1] } }
+        }
+      }
     }
+  }
+})
+
+// map householdId -> feeTypeId -> { paid, expected }
+const map = new Map()
+
+for (const r of records) {
+  const memberCount = r.household.residents.length
+  const expected = r.feeType.unitPrice * memberCount
+  const key = `${r.householdId}-${r.feeTypeId}`
+
+  if (!map.has(key)) {
+    map.set(key, {
+      householdId: r.householdId,
+      feeTypeId: r.feeTypeId,
+      expected,
+      paid: 0
+    })
+  }
+
+  map.get(key).paid += Number(r.amount || 0)
+}
+
+// householdId -> Set<feeTypeId đã hoàn thành>
+const completedByHousehold = new Map()
+
+for (const v of map.values()) {
+  if (v.paid >= v.expected) {
+    if (!completedByHousehold.has(v.householdId)) {
+      completedByHousehold.set(v.householdId, new Set())
+    }
+    completedByHousehold.get(v.householdId).add(v.feeTypeId)
+  }
+}
+
+// hộ hoàn thành = đủ TẤT CẢ feeType bắt buộc
+const paidHouseholds = [...completedByHousehold.entries()]
+  .filter(([_, set]) => set.size === mandatoryFees.length)
+  .map(([householdId]) => householdId)
+
+const paidCount = paidHouseholds.length
+
+const paymentRate =
+  totalHouseholds === 0
+    ? 0
+    : Math.round((paidCount / totalHouseholds) * 100)
+
+const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
+
+// tạm thời giữ 0 cho so sánh tháng
+const paymentRateChange = 0
+const unpaidHouseholdsChange = 0
+
 
 
     // =========================
@@ -223,7 +230,6 @@ export const getDashboard = async (req, res) => {
         absent: Math.round((absent / totalResidence) * 100)
       }
     }
-
 
 
 

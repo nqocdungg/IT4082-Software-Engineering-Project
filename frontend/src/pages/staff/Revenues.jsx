@@ -54,6 +54,14 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart <= bEnd && bStart <= aEnd
 }
 
+function isExpiredFee(fee) {
+  if (!fee?.toDate) return false
+  const end = new Date(fee.toDate)
+  if (Number.isNaN(end.getTime())) return false
+  const now = new Date()
+  return now > end
+}
+
 export default function RevenuesManagement() {
   const navigate = useNavigate()
 
@@ -137,7 +145,8 @@ export default function RevenuesManagement() {
     const optional = list.filter(f => !f.isMandatory).length
     const active = list.filter(f => f.status === 1).length
     const inactive = list.filter(f => f.status === 0).length
-    return { total, mandatory, optional, active, inactive }
+    const expired = list.filter(f => isExpiredFee(f)).length
+    return { total, mandatory, optional, active, inactive, expired }
   }, [fees])
 
   useEffect(() => {
@@ -163,10 +172,17 @@ export default function RevenuesManagement() {
     return `${start} - ${end} trên tổng số ${total} bản ghi`
   }, [filteredFees.length, currentPage, rowsPerPage])
 
-  function getStatusLabel(status) {
-    if (status === 1) return "Đang hoạt động"
-    if (status === 0) return "Ngừng áp dụng"
+  function getStatusLabel(fee) {
+    if (isExpiredFee(fee)) return "Đã hết hạn"
+    if (fee.status === 1) return "Đang hoạt động"
+    if (fee.status === 0) return "Ngừng áp dụng"
     return "Khác"
+  }
+
+  function getStatusClass(fee) {
+    if (isExpiredFee(fee)) return "fee-status-badge fee-status-expired"
+    if (fee.status === 1) return "fee-status-badge fee-status-active"
+    return "fee-status-badge fee-status-inactive"
   }
 
   function getDateRangeLabel(fee) {
@@ -340,9 +356,7 @@ export default function RevenuesManagement() {
                   <tr key={f.id} className="clickable-row">
                     <td className="col-name">
                       <div className="fee-name">{f.name}</div>
-                        {f.shortDescription && (
-                          <div className="fee-sub">{f.shortDescription}</div>
-                        )}
+                      {f.shortDescription && <div className="fee-sub">{f.shortDescription}</div>}
                     </td>
 
                     <td>
@@ -357,7 +371,6 @@ export default function RevenuesManagement() {
                         : <span className="fee-muted">Tự nguyện</span>}
                     </td>
 
-
                     <td className="col-date">
                       <span className={f.fromDate || f.toDate ? "fee-date-range" : "fee-date-range fee-date-none"}>
                         {getDateRangeLabel(f)}
@@ -365,8 +378,8 @@ export default function RevenuesManagement() {
                     </td>
 
                     <td>
-                      <span className={f.status === 1 ? "fee-status-badge fee-status-active" : "fee-status-badge fee-status-inactive"}>
-                        {getStatusLabel(f.status)}
+                      <span className={getStatusClass(f)}>
+                        {getStatusLabel(f)}
                       </span>
                     </td>
 
@@ -520,7 +533,6 @@ export default function RevenuesManagement() {
                     rows={6}
                   />
                 </div>
-
               </div>
 
               <div className="fee-modal-footer">

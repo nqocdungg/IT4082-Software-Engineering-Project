@@ -1,3 +1,5 @@
+/* frontend/src/styles/staff/fees-history.css */
+ 
 .fee-history-page {
   flex: 1;
   min-height: 0;
@@ -5,67 +7,173 @@
   background: #f6f7fb;
   position: relative;
 }
-
+ 
 .fee-history-page .stats-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
-
+ 
+/* ====== CARD / TOOLBAR WRAPPER ====== */
+.fee-history-page .table-card {
+  overflow: hidden;
+  border-radius: 16px;
+}
+ 
 .fee-history-page .table-toolbar {
   padding: 14px 16px;
   border-bottom: 1px solid #eef0f6;
   background: #fff;
 }
-
+ 
+/* 2 rows in toolbar */
 .fee-history-page .toolbar-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
 }
-
+ 
+.fee-history-page .toolbar-row + .toolbar-row {
+  margin-top: 12px;
+}
+ 
 .fee-history-page .toolbar-left,
 .fee-history-page .toolbar-right {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-end;
+  gap: 12px;
 }
-
-
-@media (max-width: 980px) {
-  .fee-history-page .toolbar-search {
-    min-width: 240px;
-  }
+ 
+/* ====== ROW 1: 4 FILTERS FULL WIDTH ======
+   JSX đang có:
+   <div className="toolbar-row">
+     <div className="toolbar-left"> (4 cái filter nằm trong đây)
+   => mình ép .toolbar-left của row 1 thành grid 4 cột.
+*/
+.fee-history-page .table-toolbar .toolbar-row:first-child .toolbar-left {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
 }
-
-@media (max-width: 640px) {
-  .fee-history-page .toolbar-left,
-  .fee-history-page .toolbar-right {
-    width: 100%;
-  }
-
-  .fee-history-page .toolbar-search {
-    width: 100%;
-    min-width: 0;
-  }
+ 
+/* ====== FILTER FIELD ====== */
+.fee-history-page .toolbar-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
-
+ 
+.fee-history-page .toolbar-select label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.2px;
+}
+ 
+.fee-history-page .toolbar-select select,
+.fee-history-page .toolbar-select input[type="month"] {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+ 
+.fee-history-page .toolbar-select select:hover,
+.fee-history-page .toolbar-select input[type="month"]:hover {
+  border-color: #cbd5e1;
+}
+ 
+.fee-history-page .toolbar-select select:focus,
+.fee-history-page .toolbar-select input[type="month"]:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+ 
+.fee-history-page .toolbar-select select:active,
+.fee-history-page .toolbar-select input[type="month"]:active {
+  transform: translateY(1px);
+}
+ 
+/* make native month icon nicer spacing on some browsers */
+.fee-history-page .toolbar-select input[type="month"] {
+  padding-right: 12px;
+}
+ 
+/* ====== ROW 2: EXCEL LEFT + SEARCH RIGHT ====== */
+.fee-history-page .table-toolbar .toolbar-row:nth-child(2) .toolbar-left {
+  flex: 0 0 auto;
+}
+ 
+.fee-history-page .table-toolbar .toolbar-row:nth-child(2) .toolbar-right {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+ 
+ 
+/* ====== SEARCH ====== */
+.fee-history-page .toolbar-search {
+  position: relative;
+  width: min(560px, 100%);
+}
+ 
+.fee-history-page .toolbar-search .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 16px;
+  pointer-events: none;
+}
+ 
+.fee-history-page .toolbar-search input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 42px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+ 
+.fee-history-page .toolbar-search input::placeholder {
+  color: #94a3b8;
+  font-weight: 600;
+}
+ 
+.fee-history-page .toolbar-search input:hover {
+  border-color: #cbd5e1;
+}
+ 
+.fee-history-page .toolbar-search input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+ 
+/* ====== TABLE ROWS ====== */
 .fee-history-page .clickable-row {
   cursor: pointer;
 }
-
+ 
 .fee-history-page .clickable-row:hover {
   background: #f9fafb;
 }
-
-
-
-
-
-
+ 
+/* ====== STATUS / PILL (giữ nếu đang dùng) ====== */
 .fee-history-page .pill {
   padding: 4px 10px;
   border-radius: 999px;
@@ -76,32 +184,33 @@
   align-items: center;
   gap: 6px;
 }
-
+ 
 .fee-history-page .pill.online {
   background: #e0f2fe;
   color: #0369a1;
 }
-
+ 
 .fee-history-page .pill.offline {
   background: #fffbeb;
   color: #92400e;
 }
-
+ 
 .fee-history-page .status.s0 {
   color: #b91c1c;
   font-weight: 700;
 }
-
+ 
 .fee-history-page .status.s1 {
   color: #b45309;
   font-weight: 700;
 }
-
+ 
 .fee-history-page .status.s2 {
   color: #065f46;
   font-weight: 700;
 }
-
+ 
+/* ====== MODAL (giữ nếu dùng) ====== */
 .fee-history-page .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -111,7 +220,7 @@
   justify-content: center;
   z-index: 999;
 }
-
+ 
 .fee-history-page .modal {
   background: #fff;
   border-radius: 14px;
@@ -120,7 +229,7 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(17, 24, 39, 0.06);
 }
-
+ 
 .fee-history-page .modal-header,
 .fee-history-page .modal-footer {
   padding: 16px;
@@ -128,55 +237,79 @@
   justify-content: space-between;
   align-items: center;
 }
-
+ 
 .fee-history-page .modal-header {
   border-bottom: 1px solid #eef0f6;
 }
-
+ 
 .fee-history-page .modal-body {
   padding: 16px;
 }
-
+ 
 .fee-history-page .modal-footer {
   border-top: 1px solid #eef0f6;
   justify-content: flex-end;
   gap: 10px;
 }
-
+ 
 .fee-history-page .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px 16px;
 }
-
+ 
 .fee-history-page .detail-grid label {
   font-size: 12px;
   color: #6b7280;
   font-weight: 700;
 }
-
+ 
 .fee-history-page .detail-grid .money {
   font-weight: 800;
   color: #065f46;
 }
-
+ 
 .fee-history-page .detail-grid .span-2 {
   grid-column: span 2;
 }
-
+ 
 .fee-history-page .note {
   background: #f9fafb;
   padding: 10px;
   border-radius: 12px;
   border: 1px solid #eef0f6;
 }
-
+ 
+/* ====== RESPONSIVE ====== */
+@media (max-width: 1100px) {
+  .fee-history-page .table-toolbar .toolbar-row:first-child .toolbar-left {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+ 
+@media (max-width: 640px) {
+  .fee-history-page .table-toolbar .toolbar-row:first-child .toolbar-left {
+    grid-template-columns: 1fr;
+  }
+ 
+  .fee-history-page .table-toolbar .toolbar-row:nth-child(2) .toolbar-left,
+  .fee-history-page .table-toolbar .toolbar-row:nth-child(2) .toolbar-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+ 
+  .fee-history-page .toolbar-search {
+    width: 100%;
+  }
+}
+ 
 @media (max-width: 520px) {
   .fee-history-page .detail-grid {
     grid-template-columns: 1fr;
   }
-
+ 
   .fee-history-page .detail-grid .span-2 {
     grid-column: auto;
   }
 }
+ 

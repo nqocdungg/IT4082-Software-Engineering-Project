@@ -8,9 +8,9 @@ export default function ResidentFooter() {
       <div className="footer-container">
         <div className="footer-col">
           <h4>HỆ THỐNG QUẢN LÝ NHÂN KHẨU – HỘ KHẨU</h4>
-          <p>Cơ quan quản lý: UBND Phường ABC</p>
-          <p>Địa chỉ: 12 Nguyễn Trãi, Quận XYZ, Hà Nội</p>
-          <p>Email: hotro@quanlynhankhau.gov.vn</p>
+          <p>Cơ quan quản lý: UBND Phường La Khê, Quận Hà Đông, Hà Nội</p>
+          <p>Địa chỉ: TDP số 7, Phường La Khê, Quận Hà Đông, Hà Nội</p>
+          <p>Email: tdp7lakhe@gmail.com</p>
           <p>Hotline: 1900 1234</p>
         </div>
 
