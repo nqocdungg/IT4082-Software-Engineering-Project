@@ -475,7 +475,6 @@
     justify-content: center;
     gap: 8px;
     transition: opacity 0.2s;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {

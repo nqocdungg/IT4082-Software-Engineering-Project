@@ -2,7 +2,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-import { FaChevronLeft, FaCashRegister, FaSearch, FaChevronRight } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaCashRegister,
+  FaSearch,
+  FaChevronRight,
+  FaEye,
+  FaPen
+} from "react-icons/fa";
 import { GiPayMoney, GiReceiveMoney } from "react-icons/gi";
 import { GrMoney } from "react-icons/gr";
 
@@ -32,6 +39,17 @@ export default function RevenuesDetail() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const [txOpen, setTxOpen] = useState(false);
+  const [txHousehold, setTxHousehold] = useState(null);
+  const [txRows, setTxRows] = useState([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState("");
+
+  const [editTx, setEditTx] = useState(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     if (!feeId) return;
@@ -85,6 +103,87 @@ export default function RevenuesDetail() {
       setSummaryError(err.response?.data?.message || "Không tải được bảng tổng hợp theo hộ");
     } finally {
       setSummaryLoading(false);
+    }
+  }
+
+  async function fetchTransactions(feeTypeId, hhId) {
+    setTxLoading(true);
+    setTxError("");
+    try {
+      const res = await axios.get(`${API_BASE}/fees/history`, {
+        headers: authHeaders(),
+        params: { feeId: feeTypeId, householdId: hhId, method: "OFFLINE" },
+      });
+      const rows = Array.isArray(res.data) ? res.data : [];
+      setTxRows(rows);
+    } catch (err) {
+      console.error("fetchTransactions error:", err);
+      setTxRows([]);
+      setTxError(err.response?.data?.message || "Không tải được lịch sử thu");
+    } finally {
+      setTxLoading(false);
+    }
+  }
+
+  async function openTransactions(row) {
+    const feeTypeId = Number(feeId);
+    const hh = row?.household || {};
+    if (!feeTypeId || !hh?.id) return;
+    setTxHousehold(hh);
+    setTxOpen(true);
+    setEditTx(null);
+    setEditAmount("");
+    setEditNote("");
+    await fetchTransactions(feeTypeId, hh.id);
+  }
+
+  function closeTransactions() {
+    setTxOpen(false);
+    setTxHousehold(null);
+    setTxRows([]);
+    setTxError("");
+    setEditTx(null);
+    setEditAmount("");
+    setEditNote("");
+    setEditSaving(false);
+  }
+
+  function openEditTx(tx) {
+    setEditTx(tx);
+    setEditAmount(String(tx?.amount ?? ""));
+    setEditNote(String(tx?.note ?? ""));
+  }
+
+  function closeEditTx() {
+    setEditTx(null);
+    setEditAmount("");
+    setEditNote("");
+    setEditSaving(false);
+  }
+
+  async function saveEditTx() {
+    if (!editTx?.id) return;
+    const nextAmount = Number(editAmount);
+    if (!Number.isFinite(nextAmount) || nextAmount <= 0) return alert("Số tiền chỉnh sửa phải > 0");
+
+    setEditSaving(true);
+    try {
+      await axios.patch(
+        `${API_BASE}/fees/history/${editTx.id}`,
+        { amount: nextAmount, note: editNote },
+        { headers: authHeaders() }
+      );
+
+      const feeTypeId = Number(feeId);
+      const hhId = Number(txHousehold?.id);
+      if (feeTypeId && hhId) await fetchTransactions(feeTypeId, hhId);
+      if (feeTypeId) await fetchFeeSummaryByFeeId(feeTypeId);
+
+      closeEditTx();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Chỉnh sửa giao dịch thất bại";
+      alert(msg);
+      setEditSaving(false);
     }
   }
 
@@ -322,7 +421,7 @@ export default function RevenuesDetail() {
                   <th style={{ width: 140 }}>Còn thiếu</th>
                   <th style={{ width: 130 }}>Trạng thái</th>
                   <th style={{ width: 160 }}>Thu lần này</th>
-                  <th style={{ width: 110 }}>Lưu</th>
+                  <th style={{ width: 160 }}>Thao tác</th>
                 </tr>
               </thead>
 
@@ -381,7 +480,7 @@ export default function RevenuesDetail() {
                       </td>
 
                       <td>
-                        <div className="row-actions">
+                        <div className="row-actions" style={{ display: "flex", gap: 8 }}>
                           <button
                             type="button"
                             title={disableSave ? "Không thể lưu" : "Lưu thu"}
@@ -389,6 +488,14 @@ export default function RevenuesDetail() {
                             onClick={() => saveRowPayment(row)}
                           >
                             <FaCashRegister />
+                          </button>
+
+                          <button
+                            type="button"
+                            title="Xem & sửa lịch sử thu"
+                            onClick={() => openTransactions(row)}
+                          >
+                            <FaEye />
                           </button>
                         </div>
                       </td>
@@ -432,6 +539,133 @@ export default function RevenuesDetail() {
           </div>
         </div>
       </div>
+
+      {txOpen && (
+        <div className="resident-modal-overlay" onClick={closeTransactions}>
+          <div className="resident-modal" onClick={(e) => e.stopPropagation()} style={{ width: 920, maxWidth: "92vw" }}>
+            <div className="resident-modal-header">
+              <div>
+                <h3 className="resident-modal-title">Lịch sử thu</h3>
+                <p className="resident-modal-sub">
+                  Hộ: <b>{txHousehold?.householdCode || `#${txHousehold?.id || "—"}`}</b>
+                </p>
+              </div>
+              <button className="modal-close-btn" type="button" onClick={closeTransactions}>
+                ✕
+              </button>
+            </div>
+
+            <div className="resident-modal-body">
+              {txLoading ? (
+                <div className="fee-records-empty">Đang tải lịch sử...</div>
+              ) : txError ? (
+                <div className="fee-records-empty">{txError}</div>
+              ) : txRows.length === 0 ? (
+                <div className="fee-records-empty">Chưa có giao dịch nào.</div>
+              ) : (
+                <div className="table-wrapper">
+                  <table className="resident-table fee-history-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 120 }}>ID</th>
+                        <th style={{ width: 160 }}>Số tiền</th>
+                        <th style={{ width: 140 }}>Trạng thái</th>
+                        <th style={{ width: 160 }}>Thời gian</th>
+                        <th style={{ width: 140 }}>Người thu</th>
+                        <th>Ghi chú</th>
+                        <th style={{ width: 90 }}>Sửa</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {txRows.map((t) => (
+                        <tr key={t.id}>
+                          <td>#{t.id}</td>
+                          <td className="money-cell">
+                            {new Intl.NumberFormat("vi-VN").format(Number(t.amount) || 0)} đ
+                          </td>
+                          <td>
+                            <span className={getPayStatusClass(t.status)}>
+                              {getPayStatusLabel(t.status, false)}
+                            </span>
+                          </td>
+                          <td>{t.date ? new Date(t.date).toLocaleString("vi-VN") : "—"}</td>
+                          <td>{t.manager?.fullname || "—"}</td>
+                          <td style={{ maxWidth: 280, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {t.note || ""}
+                          </td>
+                          <td>
+                            <button className="fee-action-btn fee-action-save" type="button" title="Sửa giao dịch" onClick={() => openEditTx(t)}>
+                              <FaPen />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="resident-modal-footer">
+              <button className="btn-secondary" type="button" onClick={closeTransactions}>
+                Đóng
+              </button>
+            </div>
+
+            {editTx && (
+              <div className="resident-modal-overlay" onClick={closeEditTx} style={{ position: "absolute", inset: 0 }}>
+                <div className="resident-modal" onClick={(e) => e.stopPropagation()} style={{ width: 520 }}>
+                  <div className="resident-modal-header">
+                    <div>
+                      <h3 className="resident-modal-title">Sửa giao dịch</h3>
+                      <p className="resident-modal-sub">ID: #{editTx.id}</p>
+                    </div>
+                    <button className="modal-close-btn" type="button" onClick={closeEditTx}>
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="resident-modal-body">
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, marginBottom: 6 }}>Số tiền</div>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={editAmount}
+                          onChange={(e) => setEditAmount(e.target.value.replace(/[^\d]/g, ""))}
+                          style={{ width: "100%" }}
+                          disabled={editSaving}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ fontWeight: 700, marginBottom: 6 }}>Ghi chú</div>
+                        <input
+                          type="text"
+                          value={editNote}
+                          onChange={(e) => setEditNote(e.target.value)}
+                          style={{ width: "100%" }}
+                          disabled={editSaving}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="resident-modal-footer">
+                    <button className="btn-secondary" type="button" onClick={closeEditTx} disabled={editSaving}>
+                      Hủy
+                    </button>
+                    <button className="btn-primary" type="button" onClick={saveEditTx} disabled={editSaving}>
+                      Lưu
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

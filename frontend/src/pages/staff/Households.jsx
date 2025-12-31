@@ -9,7 +9,8 @@ import {
   FaUsers,
   FaUserCheck,
   FaPlus,
-  FaTrash
+  FaTrash,
+  FaFileExcel
 } from "react-icons/fa"
 import { HiOutlineLogout } from "react-icons/hi"
 import { useNavigate } from "react-router-dom"
@@ -644,8 +645,8 @@ export default function HouseholdsPage() {
             </div>
 
             <div className="toolbar-right">
-              <button className="btn-secondary" onClick={handleExportExcel}>
-                Tải Excel
+              <button className="btn-primary-excel" onClick={handleExportExcel}>
+                <FaFileExcel/> Xuất Excel
               </button>
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
