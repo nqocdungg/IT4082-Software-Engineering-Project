@@ -83,76 +83,99 @@ async function handleExport() {
   const [comparison, setComparison] = useState(null)
 
   // ===== Pie =====
-  const pieColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
+  const pieColors = [
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#64748b", 
+]
 
-  const pieData = Array.isArray(feeTypes)
-    ? feeTypes.map((f) => ({
-        name: f.name,
-        value: Number(f.totalCollected),
-      }))
-    : []
 
-
+  const pieData = feeTypes
+    .filter(f => Number(f.totalCollected) > 0)
+    .map((f) => ({
+      name: f.name,
+      value: Number(f.totalCollected),
+    }))
 
   const totalPieValue = pieData.reduce((s, i) => s + i.value, 0)
 
   useEffect(() => {
-    fetchMainData()
-    // eslint-disable-next-line
-  }, [month, year, comparisonType])
+    fetchOverview()
+    fetchFeeType()
+  }, [month])
+
+  useEffect(() => {
+    fetchHouseholdStatus()
+  }, [month])
 
 
-  async function fetchMainData() {
-    try {
-      setLoading(true)
+  useEffect(() => {
+    fetchMonthly()
+  }, [year])
 
-      const [ov, m, ft, hh, cp] = await Promise.all([
-        axios.get(`${API_BASE}/fee-report/overview`, {
-          params: { month },
-          headers: authHeaders(),
-        }),
-        axios.get(`${API_BASE}/fee-report/monthly`, {
-          params: { year },
-          headers: authHeaders(),
-        }),
-        axios.get(`${API_BASE}/fee-report/by-fee-type`, {
-          params: { month },
-          headers: authHeaders(),
-        }),
-        axios.get(`${API_BASE}/fee-report/household-status`, {
-          params: { month },
-          headers: authHeaders(),
-        }),
-        axios.get(`${API_BASE}/fee-report/comparison`, {
-          params: {
-            type: comparisonType,
-            current: comparisonType === "month" ? month : year,
-          },
-          headers: authHeaders(),
-        }),
-      ])
-      setOverview(ov.data)
-      setFeeTypes(Array.isArray(ft.data) ? ft.data : [])
-      setMonthly(Array.isArray(m.data) ? m.data : [])
+  useEffect(() => {
+    fetchComparison()
+  }, [month, comparisonType])
+
+  useEffect(() => {
+    console.log("feeTypes:", feeTypes)
+  }, [feeTypes])
+
+async function fetchOverview() {
+  const res = await axios.get(`${API_BASE}/fee-report/overview`, {
+    params: { month },
+    headers: authHeaders(),
+  })
+  setOverview(res.data)
+}
+
+async function fetchFeeType() {
+  const res = await axios.get(`${API_BASE}/fee-report/by-fee-type`, {
+    params: { month },
+    headers: authHeaders(),
+  })
+  setFeeTypes(Array.isArray(res.data) ? res.data : [])
+}
+
+async function fetchMonthly() {
+  const res = await axios.get(`${API_BASE}/fee-report/monthly`, {
+    params: { year },
+    headers: authHeaders(),
+  })
+  setMonthly(Array.isArray(res.data) ? res.data : [])
+}
+
+async function fetchHouseholdStatus() {
+  const res = await axios.get(`${API_BASE}/fee-report/household-status`, {
+    params: { month },
+    headers: authHeaders(),
+  })
+  setHouseholdStatus(res.data)
+}
+
+async function fetchComparison() {
+  const res = await axios.get(`${API_BASE}/fee-report/comparison`, {
+    params: {
+      type: comparisonType,
+      current: comparisonType === "month" ? month : year,
+    },
+    headers: authHeaders(),
+  })
+  setComparison(res.data)
+}
 
 
-      setHouseholdStatus(hh.data)
-      if (
-        cp.data &&
-        cp.data.totalCollected &&
-        cp.data.completionRate
-      ) {
-        setComparison(cp.data)
-      } else {
-        setComparison(null)
-      }
 
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
+
+  const sortedFeeTypes = [...feeTypes].sort((a, b) => {
+    if (b.totalCollected !== a.totalCollected)
+      return b.totalCollected - a.totalCollected
+    return b.paidHouseholds - a.paidHouseholds
+  })
 
 
   return (
@@ -269,7 +292,7 @@ async function handleExport() {
                     </tr>
                   </thead>
                   <tbody>
-                    {Array.isArray(feeTypes) && feeTypes.map((f, index) => (
+                    {Array.isArray(sortedFeeTypes) && sortedFeeTypes.map((f, index) => (
                       <tr key={`${f.name}-${index}`}>
                         <td>{f.name}</td>
                         <td className="text-center">
@@ -302,51 +325,41 @@ async function handleExport() {
 
               {/* PIE */}
               <div className="fee-type-pie">
-                {pieData.length > 0 ? (
-                <PieChart width={260} height={260}>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={75}
-                    outerRadius={105}
-                    dataKey="value"
-                    paddingAngle={2}
-                    animationDuration={800}
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell
-                        key={i}
-                        fill={pieColors[i % pieColors.length]}
-                      />
-                    ))}
-                  </Pie>
+                {pieData.length > 0 && totalPieValue > 0 ? (
+                  <PieChart width={260} height={260}>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={75}
+                      outerRadius={105}
+                      dataKey="value"
+                      paddingAngle={2}
+                    >
+                      {pieData.map((f, i) => (
+                        <Cell
+                          key={i}
+                          fill={
+                            f.name === "Các loại phí khác"
+                              ? "#64748b"
+                              : pieColors[i % pieColors.length]
+                          }
+                        />
+                      ))}
+                    </Pie>
 
-                  <text
-                    x="50%"
-                    y="48%"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="20"
-                    fontWeight="600"
-                  >
-                    {(totalPieValue / 1_000_000).toFixed(0)} Tr
-                  </text>
-                  <text
-                    x="50%"
-                    y="58%"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="12"
-                    fill="#6b7280"
-                  >
-                    Tổng thu
-                  </text>
-                </PieChart>
+                    <text x="50%" y="48%" textAnchor="middle" fontSize="20" fontWeight="600">
+                      {(totalPieValue / 1_000_000).toFixed(0)} Tr
+                    </text>
+                    <text x="50%" y="58%" textAnchor="middle" fontSize="12" fill="#6b7280">
+                      Tổng thu
+                    </text>
+                  </PieChart>
                 ) : (
-  <div className="pie-empty">Chưa có dữ liệu</div>
-)}
+                  <div className="pie-empty">Chưa có dữ liệu</div>
+                )}
               </div>
+
             </div>
           </div>
         </section>
