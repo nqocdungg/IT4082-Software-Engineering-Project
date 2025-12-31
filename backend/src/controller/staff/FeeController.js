@@ -537,3 +537,146 @@ export const getFeeSummary = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+export const updateTransaction = async (req, res) => {
+  const { id } = req.params
+  const { amount, note } = req.body
+
+  try {
+    const recordId = parseInt(id, 10)
+    const nextAmount = Number(amount)
+
+    const role = req.user?.role
+    if (role === "HOUSEHOLD") {
+      return res.status(403).json({
+        message: "Cư dân không được phép thao tác chức năng thu tiền của ban quản lý",
+      })
+    }
+
+    if (!recordId || !Number.isFinite(nextAmount) || nextAmount <= 0) {
+      return res.status(400).json({ message: "Số tiền chỉnh sửa không hợp lệ" })
+    }
+
+    const current = await prisma.feeRecord.findUnique({
+      where: { id: recordId },
+      select: { id: true, feeTypeId: true, householdId: true, amount: true }
+    })
+    if (!current) return res.status(404).json({ message: "Giao dịch không tồn tại" })
+
+    const feeType = await prisma.feeType.findUnique({
+      where: { id: current.feeTypeId },
+      select: { id: true, isMandatory: true, unitPrice: true, isActive: true }
+    })
+    if (!feeType) return res.status(404).json({ message: "FeeType không tồn tại" })
+    if (!feeType.isActive) return res.status(400).json({ message: "Khoản thu đang ngừng áp dụng" })
+
+    const household = await prisma.household.findUnique({
+      where: { id: current.householdId },
+      select: { id: true, residents: { select: { status: true } } }
+    })
+    if (!household) return res.status(404).json({ message: "Household không tồn tại" })
+
+    // ===== ĐÓNG GÓP (tự nguyện) =====
+    if (!feeType.isMandatory) {
+      const aggAll = await prisma.feeRecord.aggregate({
+        where: { feeTypeId: current.feeTypeId, householdId: current.householdId },
+        _sum: { amount: true }
+      })
+      const totalBefore = Number(aggAll?._sum?.amount) || 0
+      const totalAfter = totalBefore - Number(current.amount) + nextAmount
+
+      if (totalAfter < 0) {
+        return res.status(400).json({ message: "Không thể chỉnh làm tổng đóng góp < 0" })
+      }
+
+      const nextStatus = totalAfter > 0 ? 2 : 0
+
+      const updated = await prisma.feeRecord.update({
+        where: { id: recordId },
+        data: {
+          amount: nextAmount,
+          status: nextStatus,
+          description: note !== undefined ? (note || "") : undefined
+        },
+        include: {
+          feeType: { select: { id: true, name: true, isMandatory: true, unitPrice: true } },
+          household: { select: { id: true, householdCode: true } },
+          manager: { select: { id: true, fullname: true, role: true } }
+        }
+      })
+
+      return res.status(200).json({
+        message: "Updated successfully",
+        data: {
+          id: updated.id,
+          amount: updated.amount,
+          status: updated.status,
+          note: updated.description,
+          date: updated.updatedAt,
+          fee: updated.feeType,
+          household: updated.household,
+          manager: updated.manager
+        }
+      })
+    }
+
+    // ===== BẮT BUỘC =====
+    const unitPrice = Number(feeType.unitPrice)
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      return res.status(400).json({
+        message: "Khoản thu bắt buộc chưa có đơn giá hợp lệ (>0). Hãy cập nhật đơn giá trước khi sửa.",
+      })
+    }
+
+    const activeStatuses = [0, 1]
+    const memberCount = (household.residents || []).filter((r) =>
+      activeStatuses.includes(Number(r.status))
+    ).length
+    const expected = unitPrice * memberCount
+
+    const aggAll = await prisma.feeRecord.aggregate({
+      where: { feeTypeId: current.feeTypeId, householdId: current.householdId },
+      _sum: { amount: true }
+    })
+    const paidBefore = Number(aggAll?._sum?.amount) || 0
+    const paidAfter = paidBefore - Number(current.amount) + nextAmount
+
+    if (paidAfter < 0) return res.status(400).json({ message: "Không thể chỉnh làm số đã thu < 0" })
+    if (paidAfter > expected) {
+      return res.status(400).json({ message: "Không thể chỉnh làm số đã thu vượt quá số tiền cần thu" })
+    }
+
+    const remainingAfter = Math.max(expected - paidAfter, 0)
+    const nextStatus = remainingAfter <= 0 ? 2 : paidAfter <= 0 ? 0 : 1
+
+    const updated = await prisma.feeRecord.update({
+      where: { id: recordId },
+      data: {
+        amount: nextAmount,
+        status: nextStatus,
+        description: note !== undefined ? (note || "") : undefined
+      },
+      include: {
+        feeType: { select: { id: true, name: true, isMandatory: true, unitPrice: true } },
+        household: { select: { id: true, householdCode: true } },
+        manager: { select: { id: true, fullname: true, role: true } }
+      }
+    })
+
+    res.status(200).json({
+      message: "Updated successfully",
+      data: {
+        id: updated.id,
+        amount: updated.amount,
+        status: updated.status,
+        note: updated.description,
+        date: updated.updatedAt,
+        fee: updated.feeType,
+        household: updated.household,
+        manager: updated.manager
+      }
+    })
+  } catch (error) {
+    console.error("PATCH /api/fees/history/:id error:", error)
+    res.status(500).json({ error: error.message })
+  }
+}

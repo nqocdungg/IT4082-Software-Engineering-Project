@@ -8,6 +8,8 @@ import {
   getTransactions,
   getFeeSummary,
 } from "../../controller/staff/FeeController.js"
+import { updateTransaction } from "../../controller/staff/FeeController.js"
+
 
 import verifyToken from "../../middleware/authMiddleware.js"
 import { allowRoles } from "../../middleware/roleMiddleware.js"
@@ -57,5 +59,6 @@ router.get(
   allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"),
   getFeeSummary
 )
+router.patch("/history/:id", allowRoles("ACCOUNTANT", "HEAD", "DEPUTY"), updateTransaction)
 
 export default router

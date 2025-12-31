@@ -729,7 +729,7 @@
   padding: 12px 10px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
 }
 
@@ -737,6 +737,7 @@
   font-size: 12px;
   font-weight: 800;
   color: #6b7280;
+  text-align: center;
 }
 
 .revenues-page .revenues-detail-table tbody tr:hover {
@@ -882,3 +883,70 @@
   border-color: #2563eb;
   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
+.fee-sub{
+  text-align: left;
+}
+
+/* =========================
+   ACTION BUTTONS (EDIT / HISTORY / SAVE)
+========================= */
+
+.fee-action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #374151;
+}
+
+.fee-action-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.fee-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ===== Edit (✏️) ===== */
+.fee-action-edit {
+  color: #2563eb;
+}
+
+.fee-action-edit:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+/* ===== History (📜 / 👁) ===== */
+.fee-action-history {
+  color: #6b7280;
+}
+
+.fee-action-history:hover {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+/* ===== Save (💾 / CashRegister) ===== */
+.fee-action-save {
+  color: #2563eb;              /* blue-600 */
+}
+
+.fee-action-save:hover {
+  background: #eff6ff;         /* blue-50 */
+  border-color: #93c5fd;       /* blue-300 */
+  color: #1d4ed8;              /* blue-700 */
+}
+
+

@@ -1,3 +1,4 @@
+// frontend/src/pages/staff/FeeHistory.jsx
 import React, { useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import {
@@ -111,17 +112,53 @@ export default function FeeHistory() {
     return `${start} - ${end} trên tổng số ${total} bản ghi`
   }, [page, pageSize, total])
 
-  const exportExcel = () => {
-    const params = new URLSearchParams()
-    if (debouncedSearch.trim()) params.append("q", debouncedSearch.trim())
-    if (method !== "ALL") params.append("method", method)
-    if (status !== "ALL") params.append("status", status)
-    window.open(`${API_BASE}/fee-history/export-excel?${params.toString()}`)
+  const exportExcel = async () => {
+    try {
+      const params = {}
+      if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
+      if (method !== "ALL") params.method = method
+      if (status !== "ALL") params.status = status
+
+      const res = await axios.get(`${API_BASE}/fee-history/export-excel`, {
+        headers: authHeaders(),
+        params,
+        responseType: "blob"
+      })
+
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      })
+
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `fee_history_${Date.now()}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error("export excel error:", e)
+      alert("Không xuất được Excel")
+    }
   }
 
-  const printInvoice = () => {
+  const printInvoice = async () => {
     if (!selected) return
-    window.open(`${API_BASE}/fee-history/${selected.id}/invoice`, "_blank")
+    try {
+      const res = await axios.get(`${API_BASE}/fee-history/${selected.id}/invoice`, {
+        headers: authHeaders(),
+        responseType: "blob"
+      })
+
+      const blob = new Blob([res.data], { type: "application/pdf" })
+      const url = window.URL.createObjectURL(blob)
+      window.open(url, "_blank")
+      setTimeout(() => window.URL.revokeObjectURL(url), 60_000)
+    } catch (e) {
+      console.error("print invoice error:", e)
+      alert("Không in/xuất được hóa đơn PDF")
+    }
   }
 
   const statusBadgeClass = s => {
@@ -184,12 +221,7 @@ export default function FeeHistory() {
             </div>
 
             <div className="toolbar-right">
-              <button
-                type="button"
-                className="btn-primary-excel"
-                onClick={exportExcel}
-                style={{ marginRight: 10 }}
-              >
+              <button type="button" className="btn-primary-excel" onClick={exportExcel} style={{ marginRight: 10 }}>
                 <FaFileExcel /> Xuất Excel
               </button>
 
