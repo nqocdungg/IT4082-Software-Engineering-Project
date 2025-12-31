@@ -10,7 +10,9 @@ import {
   FaUserCheck,
   FaPlus,
   FaTrash,
-  FaFileExcel
+  FaFileExcel,
+  FaEdit,
+  FaSave
 } from "react-icons/fa"
 import { HiOutlineLogout } from "react-icons/hi"
 import { useNavigate } from "react-router-dom"
@@ -295,7 +297,11 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
             <div className="detail-item">
               <div className="detail-label">Mã hộ khẩu *</div>
               <div className="detail-value">
-                <input required value={form.householdCode} onChange={e => setHouseholdField("householdCode", e.target.value)} />
+                <input
+                  required
+                  value={form.householdCode}
+                  onChange={e => setHouseholdField("householdCode", e.target.value)}
+                />
               </div>
             </div>
 
@@ -385,13 +391,7 @@ function CreateHouseholdModal({ open, onClose, onCreate }) {
                       <li key={idx} className="member-item">
                         <div className="member-name">{m.fullname}</div>
                         <div className="member-meta">
-                          {(m.gender === "M" ? "Nam" : "Nữ") +
-                            " • " +
-                            (m.relationToOwner || "Thành viên") +
-                            " • " +
-                            (m.residentCCCD || "—") +
-                            " • " +
-                            formatDateDMY(m.dob)}
+                          {(m.gender === "M" ? "Nam" : "Nữ") + " • " + (m.relationToOwner || "Thành viên") + " • " + (m.residentCCCD || "—") + " • " + formatDateDMY(m.dob)}
                         </div>
                         <button type="button" className="member-remove" onClick={() => removeMember(idx)} title="Xóa khỏi danh sách">
                           <FaTrash />
@@ -442,6 +442,10 @@ export default function HouseholdsPage() {
 
   const [editHousehold, setEditHousehold] = useState(null)
   const [editStatus, setEditStatus] = useState("1")
+
+  const [editAddressMode, setEditAddressMode] = useState(false)
+  const [editAddress, setEditAddress] = useState("")
+  const [savingAddress, setSavingAddress] = useState(false)
 
   const [meta, setMeta] = useState({
     page: 1,
@@ -516,7 +520,6 @@ export default function HouseholdsPage() {
       })
   }
 
-
   const totalPages = Math.max(1, Number(meta.totalPages || 1))
 
   useEffect(() => {
@@ -561,11 +564,19 @@ export default function HouseholdsPage() {
     }
   }
 
-  const closeDetail = () => setViewHousehold(null)
+  const closeDetail = () => {
+    setViewHousehold(null)
+    setEditAddressMode(false)
+    setEditAddress("")
+    setSavingAddress(false)
+  }
 
   const handleOpenDetail = async household => {
     setViewHousehold(household)
     setLoadingDetail(true)
+    setEditAddressMode(false)
+    setEditAddress("")
+    setSavingAddress(false)
     try {
       const res = await axios.get(`${API_BASE}/households/${household.id}`, { headers: authHeaders() })
       setViewHousehold(res.data.data)
@@ -575,6 +586,49 @@ export default function HouseholdsPage() {
     } finally {
       setLoadingDetail(false)
     }
+  }
+
+  const startEditAddress = () => {
+    if (!viewHousehold) return
+    setEditAddressMode(true)
+    setEditAddress(viewHousehold.address || "")
+  }
+
+  const cancelEditAddress = () => {
+    setEditAddressMode(false)
+    setEditAddress("")
+  }
+
+  const saveAddress = async () => {
+    if (!viewHousehold || savingAddress) return
+    const addr = String(editAddress || "").trim()
+    if (!addr) {
+      alert("Địa chỉ không được để trống.")
+      return
+    }
+    setSavingAddress(true)
+    try {
+      const res = await axios.put(
+        `${API_BASE}/households/${viewHousehold.id}/address`,
+        { address: addr },
+        { headers: authHeaders() }
+      )
+
+      const updated = res.data.data
+
+      setViewHousehold(prev => (prev ? { ...prev, address: updated.address } : prev))
+      setHouseholds(prev => prev.map(h => (h.id === updated.id ? { ...h, address: updated.address } : h)))
+
+      setEditAddressMode(false)
+      setEditAddress("")
+      await fetchHouseholds()
+    } catch (err) {
+      console.error(err)
+      alert(err?.response?.data?.message || "Không thể cập nhật địa chỉ")
+    } finally {
+      setSavingAddress(false)
+    }
+
   }
 
   const handleOpenEdit = household => {
@@ -646,7 +700,7 @@ export default function HouseholdsPage() {
 
             <div className="toolbar-right">
               <button className="btn-primary-excel" onClick={handleExportExcel}>
-                <FaFileExcel/> Xuất Excel
+                <FaFileExcel /> Xuất Excel
               </button>
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
@@ -667,7 +721,7 @@ export default function HouseholdsPage() {
           <table className="resident-table">
             <thead>
               <tr>
-                <th >Mã hộ khẩu</th>
+                <th>Mã hộ khẩu</th>
                 <th className="full_name">Chủ hộ</th>
                 <th className="address">Địa chỉ</th>
                 <th>Số nhân khẩu</th>
@@ -753,7 +807,7 @@ export default function HouseholdsPage() {
           <div className="resident-modal" onClick={e => e.stopPropagation()}>
             <div className="resident-modal-header">
               <div>
-                <h3 className="resident-modal-title">Chi tiết hộ khẩu</h3>
+                <h3 className="resident-modal-title">{editAddressMode ? "Sửa địa chỉ hộ khẩu" : "Chi tiết hộ khẩu"}</h3>
                 <p className="resident-modal-sub">ID: #{viewHousehold.id}</p>
               </div>
               <button className="modal-close-btn" type="button" onClick={closeDetail}>
@@ -782,7 +836,13 @@ export default function HouseholdsPage() {
 
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Địa chỉ</div>
-                    <div className="detail-value">{viewHousehold.address}</div>
+                    <div className="detail-value">
+                      {editAddressMode ? (
+                        <input value={editAddress} onChange={e => setEditAddress(e.target.value)} style={{ width: "100%" }} />
+                      ) : (
+                        viewHousehold.address
+                      )}
+                    </div>
                   </div>
 
                   <div className="detail-item">
@@ -819,9 +879,25 @@ export default function HouseholdsPage() {
             </div>
 
             <div className="resident-modal-footer">
-              <button className="btn-secondary" type="button" onClick={closeDetail}>
-                Đóng
-              </button>
+              {editAddressMode ? (
+                <>
+                  <button className="btn-secondary" type="button" onClick={cancelEditAddress} disabled={savingAddress}>
+                    Hủy
+                  </button>
+                  <button className="btn-danger" type="button" onClick={saveAddress} disabled={savingAddress}>
+                    {savingAddress ? "Đang lưu..." : "Lưu"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="btn-secondary" type="button" onClick={closeDetail}>
+                    Đóng
+                  </button>
+                  <button className="btn-secondary" type="button" onClick={startEditAddress} disabled={loadingDetail}>
+                    <FaEdit style={{ marginRight: 6 }} /> Sửa
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
