@@ -12,22 +12,22 @@ import {
   FaClock,
   FaTimesCircle
 } from "react-icons/fa"
-
+ 
 import "../../styles/staff/layout.css"
 import "../../styles/staff/fees-history.css"
 import { formatDateDMY } from "../../utils/date"
-
+ 
 const API_BASE = "http://localhost:5000/api"
-
+ 
 function authHeaders() {
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
-
+ 
 function money(v) {
   return new Intl.NumberFormat("vi-VN").format(Number(v || 0))
 }
-
+ 
 function useDebouncedValue(value, delay = 350) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -36,53 +36,54 @@ function useDebouncedValue(value, delay = 350) {
   }, [value, delay])
   return debounced
 }
-
+ 
 function getCurrentMonth() {
   const d = new Date()
   const m = String(d.getMonth() + 1).padStart(2, "0")
   return `${d.getFullYear()}-${m}`
 }
-
+ 
 export default function FeeHistory() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
-
+ 
   const [search, setSearch] = useState("")
   const [method, setMethod] = useState("ALL")
   const [status, setStatus] = useState("ALL")
   const [sort, setSort] = useState("desc")
-  const [month, setMonth] = useState(getCurrentMonth())
-
+  const [month, setMonth] = useState("")
+ 
+ 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
   const [total, setTotal] = useState(0)
-
+ 
   // ✅ stats global theo filter (q/method/month) nhưng bỏ status để card không bị vô nghĩa
   const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, partial: 0 })
-
+ 
   const [selected, setSelected] = useState(null)
   const [detail, setDetail] = useState(null)
-
+ 
   const debouncedSearch = useDebouncedValue(search, 350)
-
+ 
   async function fetchData() {
     setLoading(true)
     try {
       const params = { page, pageSize, sort }
-
+ 
       if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
       if (method !== "ALL") params.method = method
       if (status !== "ALL") params.status = status
       if (month) params.month = month
-
+ 
       const res = await axios.get(`${API_BASE}/fee-history`, {
         headers: authHeaders(),
         params
       })
-
+ 
       setRows(res.data?.data || [])
       setTotal(res.data?.meta?.total || 0)
-
+ 
       const s = res.data?.meta?.stats
       if (s) {
         setStats({
@@ -98,37 +99,37 @@ export default function FeeHistory() {
       setLoading(false)
     }
   }
-
+ 
   async function fetchDetail(id) {
     const res = await axios.get(`${API_BASE}/fee-history/${id}`, {
       headers: authHeaders()
     })
     setDetail(res.data?.data)
   }
-
+ 
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, pageSize, method, status, debouncedSearch, sort, month])
-
+ 
   useEffect(() => {
     if (selected) fetchDetail(selected.id)
     else setDetail(null)
   }, [selected])
-
+ 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
-
+ 
   useEffect(() => {
     if (page > totalPages) setPage(1)
   }, [totalPages, page])
-
+ 
   const rangeText = useMemo(() => {
     if (!total) return `0 - 0 trên tổng số 0 bản ghi`
     const start = (page - 1) * pageSize + 1
     const end = Math.min(page * pageSize, total)
     return `${start} - ${end} trên tổng số ${total} bản ghi`
   }, [page, pageSize, total])
-
+ 
   const exportExcel = async () => {
     try {
       const params = { sort }
@@ -136,17 +137,17 @@ export default function FeeHistory() {
       if (method !== "ALL") params.method = method
       if (status !== "ALL") params.status = status
       if (month) params.month = month
-
+ 
       const res = await axios.get(`${API_BASE}/fee-history/export-excel`, {
         headers: authHeaders(),
         params,
         responseType: "blob"
       })
-
+ 
       const blob = new Blob([res.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       })
-
+ 
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -160,7 +161,7 @@ export default function FeeHistory() {
       alert("Không xuất được Excel")
     }
   }
-
+ 
   const printInvoice = async () => {
     if (!selected) return
     try {
@@ -168,7 +169,7 @@ export default function FeeHistory() {
         headers: authHeaders(),
         responseType: "blob"
       })
-
+ 
       const blob = new Blob([res.data], { type: "application/pdf" })
       const url = window.URL.createObjectURL(blob)
       window.open(url, "_blank")
@@ -178,18 +179,18 @@ export default function FeeHistory() {
       alert("Không in/xuất được hóa đơn PDF")
     }
   }
-
+ 
   const statusBadgeClass = s => {
     if (s === 2) return "status-thuong_tru"
     if (s === 0) return "status-tam_tru"
     return "status-tam_vang"
   }
-
+ 
   const collectorName = r => {
     if (String(r?.method || "").toUpperCase() === "ONLINE") return "HỆ THỐNG"
     return r?.manager?.fullname || "—"
   }
-
+ 
   return (
     <div className="page-container fee-history-page">
       <div className="stats-strip">
@@ -208,7 +209,7 @@ export default function FeeHistory() {
           </div>
         ))}
       </div>
-
+ 
       <div className="card table-card">
         <div className="table-toolbar">
           <div className="toolbar-row">
@@ -226,7 +227,7 @@ export default function FeeHistory() {
                   <option value="OFFLINE">Offline</option>
                 </select>
               </div>
-
+ 
               <div className="toolbar-field">
                 <select
                   value={status}
@@ -241,7 +242,7 @@ export default function FeeHistory() {
                   <option value="2">Đã nộp</option>
                 </select>
               </div>
-
+ 
               <div className="toolbar-field">
                 <input
                   type="month"
@@ -252,7 +253,7 @@ export default function FeeHistory() {
                   }}
                 />
               </div>
-
+ 
               <div className="toolbar-field">
                 <select
                   value={sort}
@@ -267,14 +268,14 @@ export default function FeeHistory() {
               </div>
             </div>
           </div>
-
+ 
           <div className="toolbar-row">
             <div className="toolbar-left">
               <button type="button" className="btn-primary-excel" onClick={exportExcel}>
                 <FaFileExcel /> Xuất Excel
               </button>
             </div>
-
+ 
             <div className="toolbar-right">
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
@@ -291,7 +292,7 @@ export default function FeeHistory() {
             </div>
           </div>
         </div>
-
+ 
         <div className="table-wrapper">
           <table className="resident-table fee-history-table">
             <thead>
@@ -305,7 +306,7 @@ export default function FeeHistory() {
                 <th>Người thu</th>
               </tr>
             </thead>
-
+ 
             <tbody>
               {loading || rows.length === 0 ? (
                 <tr>
@@ -336,7 +337,7 @@ export default function FeeHistory() {
             </tbody>
           </table>
         </div>
-
+ 
         <div className="table-footer">
           <div className="footer-left">
             <span className="footer-muted">Số bản ghi</span>
@@ -351,7 +352,7 @@ export default function FeeHistory() {
               <option value={10}>10</option>
             </select>
           </div>
-
+ 
           <div className="footer-right">
             <span className="footer-muted">{rangeText}</span>
             <div className="pager">
@@ -365,7 +366,7 @@ export default function FeeHistory() {
           </div>
         </div>
       </div>
-
+ 
       {selected && detail && (
         <div className="resident-modal-overlay" onClick={() => setSelected(null)}>
           <div className="resident-modal" onClick={e => e.stopPropagation()}>
@@ -378,29 +379,29 @@ export default function FeeHistory() {
                 ✕
               </button>
             </div>
-
+ 
             <div className="resident-modal-body">
               <div className="detail-grid">
                 <div className="detail-item">
                   <div className="detail-label">Hộ</div>
                   <div className="detail-value">{detail.household?.householdCode || "—"}</div>
                 </div>
-
+ 
                 <div className="detail-item">
                   <div className="detail-label">Khoản thu</div>
                   <div className="detail-value">{detail.feeType?.name || "—"}</div>
                 </div>
-
+ 
                 <div className="detail-item">
                   <div className="detail-label">Số tiền</div>
                   <div className="detail-value">{money(detail.amount)} đ</div>
                 </div>
-
+ 
                 <div className="detail-item">
                   <div className="detail-label">Hình thức</div>
                   <div className="detail-value">{detail.method || "—"}</div>
                 </div>
-
+ 
                 <div className="detail-item detail-wide">
                   <div className="detail-label">Trạng thái</div>
                   <div className="detail-value">
@@ -409,7 +410,7 @@ export default function FeeHistory() {
                     </span>
                   </div>
                 </div>
-
+ 
                 <div className="detail-item detail-wide">
                   <div className="detail-label">Người thu</div>
                   <div className="detail-value">
@@ -420,7 +421,7 @@ export default function FeeHistory() {
                 </div>
               </div>
             </div>
-
+ 
             <div className="resident-modal-footer">
               <button className="btn-secondary" type="button" onClick={() => setSelected(null)}>
                 Đóng
