@@ -37,6 +37,12 @@ function useDebouncedValue(value, delay = 350) {
   return debounced
 }
 
+function getCurrentMonth() {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  return `${d.getFullYear()}-${m}`
+}
+
 export default function FeeHistory() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
@@ -44,10 +50,15 @@ export default function FeeHistory() {
   const [search, setSearch] = useState("")
   const [method, setMethod] = useState("ALL")
   const [status, setStatus] = useState("ALL")
+  const [sort, setSort] = useState("desc")
+  const [month, setMonth] = useState(getCurrentMonth())
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
   const [total, setTotal] = useState(0)
+
+  // ✅ stats global theo filter (q/method/month) nhưng bỏ status để card không bị vô nghĩa
+  const [stats, setStats] = useState({ total: 0, paid: 0, pending: 0, partial: 0 })
 
   const [selected, setSelected] = useState(null)
   const [detail, setDetail] = useState(null)
@@ -57,10 +68,12 @@ export default function FeeHistory() {
   async function fetchData() {
     setLoading(true)
     try {
-      const params = { page, pageSize }
+      const params = { page, pageSize, sort }
+
       if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
       if (method !== "ALL") params.method = method
       if (status !== "ALL") params.status = status
+      if (month) params.month = month
 
       const res = await axios.get(`${API_BASE}/fee-history`, {
         headers: authHeaders(),
@@ -69,6 +82,18 @@ export default function FeeHistory() {
 
       setRows(res.data?.data || [])
       setTotal(res.data?.meta?.total || 0)
+
+      const s = res.data?.meta?.stats
+      if (s) {
+        setStats({
+          total: Number(s.total || 0),
+          paid: Number(s.paid || 0),
+          pending: Number(s.pending || 0),
+          partial: Number(s.partial || 0)
+        })
+      } else {
+        setStats({ total: 0, paid: 0, pending: 0, partial: 0 })
+      }
     } finally {
       setLoading(false)
     }
@@ -83,21 +108,13 @@ export default function FeeHistory() {
 
   useEffect(() => {
     fetchData()
-  }, [page, pageSize, method, status, debouncedSearch])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, method, status, debouncedSearch, sort, month])
 
   useEffect(() => {
     if (selected) fetchDetail(selected.id)
     else setDetail(null)
   }, [selected])
-
-  const stats = useMemo(() => {
-    return {
-      total,
-      paid: rows.filter(r => r.status === 2).length,
-      pending: rows.filter(r => r.status === 0).length,
-      partial: rows.filter(r => r.status === 1).length
-    }
-  }, [rows, total])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
@@ -114,10 +131,11 @@ export default function FeeHistory() {
 
   const exportExcel = async () => {
     try {
-      const params = {}
+      const params = { sort }
       if (debouncedSearch.trim()) params.q = debouncedSearch.trim()
       if (method !== "ALL") params.method = method
       if (status !== "ALL") params.status = status
+      if (month) params.month = month
 
       const res = await axios.get(`${API_BASE}/fee-history/export-excel`, {
         headers: authHeaders(),
@@ -167,6 +185,11 @@ export default function FeeHistory() {
     return "status-tam_vang"
   }
 
+  const collectorName = r => {
+    if (String(r?.method || "").toUpperCase() === "ONLINE") return "HỆ THỐNG"
+    return r?.manager?.fullname || "—"
+  }
+
   return (
     <div className="page-container fee-history-page">
       <div className="stats-strip">
@@ -190,7 +213,7 @@ export default function FeeHistory() {
         <div className="table-toolbar">
           <div className="toolbar-row">
             <div className="toolbar-left">
-              <div className="toolbar-select">
+              <div className="toolbar-field">
                 <select
                   value={method}
                   onChange={e => {
@@ -198,13 +221,13 @@ export default function FeeHistory() {
                     setMethod(e.target.value)
                   }}
                 >
-                  <option value="ALL">Tất cả hình thức</option>
+                  <option value="ALL">Tất cả</option>
                   <option value="ONLINE">Online</option>
                   <option value="OFFLINE">Offline</option>
                 </select>
               </div>
 
-              <div className="toolbar-select">
+              <div className="toolbar-field">
                 <select
                   value={status}
                   onChange={e => {
@@ -212,19 +235,47 @@ export default function FeeHistory() {
                     setStatus(e.target.value)
                   }}
                 >
-                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="ALL">Tất cả</option>
                   <option value="0">Chưa nộp</option>
                   <option value="1">Nộp 1 phần</option>
                   <option value="2">Đã nộp</option>
                 </select>
               </div>
+
+              <div className="toolbar-field">
+                <input
+                  type="month"
+                  value={month}
+                  onChange={e => {
+                    setPage(1)
+                    setMonth(e.target.value)
+                  }}
+                />
+              </div>
+
+              <div className="toolbar-field">
+                <select
+                  value={sort}
+                  onChange={e => {
+                    setPage(1)
+                    setSort(e.target.value)
+                  }}
+                >
+                  <option value="desc">Mới nhất</option>
+                  <option value="asc">Cũ nhất</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="toolbar-row">
+            <div className="toolbar-left">
+              <button type="button" className="btn-primary-excel" onClick={exportExcel}>
+                <FaFileExcel /> Xuất Excel
+              </button>
             </div>
 
             <div className="toolbar-right">
-              <button type="button" className="btn-primary-excel" onClick={exportExcel} style={{ marginRight: 10 }}>
-                <FaFileExcel /> Xuất Excel
-              </button>
-
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
@@ -278,7 +329,7 @@ export default function FeeHistory() {
                         {r.status === 2 ? "Đã nộp" : r.status === 1 ? "Nộp 1 phần" : "Chưa nộp"}
                       </span>
                     </td>
-                    <td>{r.manager?.fullname || "—"}</td>
+                    <td>{collectorName(r)}</td>
                   </tr>
                 ))
               )}
@@ -361,7 +412,11 @@ export default function FeeHistory() {
 
                 <div className="detail-item detail-wide">
                   <div className="detail-label">Người thu</div>
-                  <div className="detail-value">{detail.manager?.fullname || "—"}</div>
+                  <div className="detail-value">
+                    {String(detail?.method || "").toUpperCase() === "ONLINE"
+                      ? "HỆ THỐNG"
+                      : detail.manager?.fullname || "—"}
+                  </div>
                 </div>
               </div>
             </div>

@@ -128,7 +128,7 @@ export default function Dashboard() {
   const totalResidents = dashboard?.cards.totalResidents ?? 0
   const pendingProfiles = dashboard?.cards.pendingProfiles ?? 0
 
-  const MAX_REVENUE = 1_000_000
+  const MAX_REVENUE = 35_000_000
 
   const fixedWidthPct = Math.min((totalFixedFee / MAX_REVENUE) * 100, 100)
   const contribWidthPct = Math.min((totalContribution / MAX_REVENUE) * 100, 100)

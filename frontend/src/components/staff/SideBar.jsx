@@ -16,7 +16,7 @@ import {
   FiBell
 } from "react-icons/fi"
 import logo from "../../assets/images/new-logo.png"
-
+ 
 const menuGroups = [
   {
     title: "TỔNG QUAN",
@@ -30,14 +30,14 @@ const menuGroups = [
       { icon: FiHome, label: "Hộ khẩu", path: "/households" },
       { icon: FiUsers, label: "Cư dân", path: "/residents" },
       { icon: FiRepeat, label: "Biến đổi nhân khẩu", path: "/resident-changes" },
-      { icon: FiClock, label: "Lịch sử biến động", disabled: true }
+      { icon: FiClock, label: "Lịch sử biến động", path: "/resident-changes-history" },
     ]
   },
   {
     title: "TÀI CHÍNH",
     items: [
       { icon: FiTrendingUp, label: "Khoản thu", path: "/revenues" },
-      { icon: FiDollarSign, label: "Lịch sử thu phí", path: "fee-history" },
+      { icon: FiDollarSign, label: "Lịch sử thu phí", path: "/fee-history" },
       { icon: FiFileText, label: "Báo cáo - Thống kê", path: "/fee-report" }
     ]
   },
@@ -54,17 +54,17 @@ const menuGroups = [
     ]
   }
 ]
-
-
+ 
+ 
 export default function SideBar() {
   const location = useLocation()
   const navigate = useNavigate()
-
+ 
   const logout = () => {
     localStorage.clear()
     navigate("/login")
   }
-
+ 
   return (
     <aside className="sidebar">
       {/* LOGO */}
@@ -72,17 +72,17 @@ export default function SideBar() {
         <img src={logo} alt="CiviHub" />
         <span className="sidebar-brand">CIVIHUB</span>
       </div>
-
+ 
       {/* NAV */}
       <nav className="sidebar-nav">
         {menuGroups.map(group => (
           <div key={group.title} className="sidebar-group">
             <div className="sidebar-section">{group.title}</div>
-
+ 
             {group.items.map(item => {
               const Icon = item.icon
               const isActive = item.path && location.pathname === item.path
-
+ 
               if (item.disabled) {
                 return (
                   <div key={item.label} className="nav-item disabled">
@@ -93,7 +93,7 @@ export default function SideBar() {
                   </div>
                 )
               }
-
+ 
               return (
                 <Link
                   key={item.path}
@@ -108,7 +108,7 @@ export default function SideBar() {
           </div>
         ))}
       </nav>
-
+ 
       {/* FOOTER */}
       <div className="sidebar-footer">
         <div className="sidebar-divider" />
@@ -120,3 +120,4 @@ export default function SideBar() {
     </aside>
   )
 }
+ 

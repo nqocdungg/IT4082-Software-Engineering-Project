@@ -1,10 +1,31 @@
-import prisma from "../../../prisma/prismaClient.js";
+import prisma from "../../../prisma/prismaClient.js"
+
+function isExpired(feeType) {
+  if (!feeType?.toDate) return false
+
+  const now = new Date()
+
+  // Đưa toDate về CUỐI NGÀY
+  const endOfDay = new Date(feeType.toDate)
+  endOfDay.setHours(23, 59, 59, 999)
+
+  return now > endOfDay
+}
+
+function normalizeToEndOfDay(dateStr) {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  d.setHours(23, 59, 59, 999)
+  return d
+}
+
+
 
 export const getAllFees = async (req, res) => {
   try {
     const feeTypes = await prisma.feeType.findMany({
       orderBy: { id: "desc" },
-    });
+    })
 
     const mapped = feeTypes.map((f) => ({
       id: f.id,
@@ -12,51 +33,48 @@ export const getAllFees = async (req, res) => {
       shortDescription: f.shortDescription,
       longDescription: f.longDescription,
       isMandatory: f.isMandatory,
-      unitPrice: f.unitPrice, // có thể null nếu đóng góp
+      unitPrice: f.unitPrice,
       status: f.isActive ? 1 : 0,
       fromDate: f.fromDate,
       toDate: f.toDate,
-    }));
+    }))
 
-    res.status(200).json(mapped);
+    res.status(200).json(mapped)
   } catch (error) {
-    console.error("GET /api/fees/list error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("GET /api/fees/list error:", error)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
 export const createFee = async (req, res) => {
-  const { name, shortDescription, longDescription, isMandatory, unitPrice, fromDate, toDate } = req.body;
+  const { name, shortDescription, longDescription, isMandatory, unitPrice, fromDate, toDate } = req.body
 
   try {
-    const cleanName = String(name || "").trim();
+    const cleanName = String(name || "").trim()
     if (!cleanName) {
-      return res.status(400).json({ message: "Tên khoản thu không được để trống" });
+      return res.status(400).json({ message: "Tên khoản thu không được để trống" })
     }
 
-    const mandatoryBool = Boolean(isMandatory);
+    const mandatoryBool = Boolean(isMandatory)
 
-    // ✅ Nếu BẮT BUỘC: bắt buộc unitPrice > 0
-    // ✅ Nếu ĐÓNG GÓP: unitPrice có thể null
-    let priceValue = null;
+    let priceValue = null
     if (mandatoryBool) {
-      const priceNum = Number(unitPrice);
+      const priceNum = Number(unitPrice)
       if (!Number.isFinite(priceNum) || priceNum <= 0) {
         return res.status(400).json({
           message: "Khoản thu bắt buộc phải có đơn giá > 0 (tính theo nhân khẩu).",
-        });
+        })
       }
-      priceValue = priceNum;
+      priceValue = priceNum
     } else {
-      // đóng góp: cho phép null/0, nhưng nếu user nhập thì parse
       if (unitPrice !== undefined && unitPrice !== null && String(unitPrice) !== "") {
-        const priceNum = Number(unitPrice);
+        const priceNum = Number(unitPrice)
         if (!Number.isFinite(priceNum) || priceNum < 0) {
-          return res.status(400).json({ message: "Đơn giá không hợp lệ" });
+          return res.status(400).json({ message: "Đơn giá không hợp lệ" })
         }
-        priceValue = priceNum;
+        priceValue = priceNum
       } else {
-        priceValue = null;
+        priceValue = null
       }
     }
 
@@ -68,35 +86,37 @@ export const createFee = async (req, res) => {
         isMandatory: mandatoryBool,
         unitPrice: priceValue,
         fromDate: fromDate ? new Date(fromDate) : null,
-        toDate: toDate ? new Date(toDate) : null,
+        toDate: toDate ? normalizeToEndOfDay(toDate) : null,
         isActive: true,
       },
-    });
+    })
 
     if (newFeeType.isMandatory && newFeeType.isActive) {
       const householdUsers = await prisma.user.findMany({
         where: { role: "HOUSEHOLD", isActive: true },
-        select: { id: true }
-      });
+        select: { id: true },
+      })
 
       if (householdUsers.length > 0) {
         const notification = await prisma.notification.create({
           data: {
             title: `🔔 Thông báo thu phí: ${newFeeType.name}`,
-            message: `Ban quản lý vừa triển khai khoản thu bắt buộc mới: "${newFeeType.name}". Đơn giá: ${newFeeType.unitPrice?.toLocaleString('vi-VN')} VNĐ/nhân khẩu. Vui lòng kiểm tra và đóng phí đúng hạn.`,
+            message: `Ban quản lý vừa triển khai khoản thu bắt buộc mới: "${newFeeType.name}". Đơn giá: ${newFeeType.unitPrice?.toLocaleString(
+              "vi-VN"
+            )} VNĐ/nhân khẩu. Vui lòng kiểm tra và đóng phí đúng hạn.`,
             type: "FEE_ANNOUNCEMENT",
             relatedId: newFeeType.id,
-          }
-        });
+          },
+        })
 
-        const recipients = householdUsers.map(u => ({
+        const recipients = householdUsers.map((u) => ({
           userId: u.id,
           notificationId: notification.id,
-          isRead: false
-        }));
+          isRead: false,
+        }))
 
-        await prisma.notificationRecipient.createMany({ data: recipients });
-        console.log(`[AUTO-NOTI] Đã gửi thông báo phí mới tới ${householdUsers.length} hộ.`);
+        await prisma.notificationRecipient.createMany({ data: recipients })
+        console.log(`[AUTO-NOTI] Đã gửi thông báo phí mới tới ${householdUsers.length} hộ.`)
       }
     }
 
@@ -113,78 +133,71 @@ export const createFee = async (req, res) => {
         fromDate: newFeeType.fromDate,
         toDate: newFeeType.toDate,
       },
-    });
+    })
   } catch (error) {
-    console.error("POST /api/fees/create error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("POST /api/fees/create error:", error)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
 export const updateFee = async (req, res) => {
-  const { id } = req.params;
-  const { name, shortDescription, longDescription, isMandatory, unitPrice, status, fromDate, toDate } = req.body;
+  const { id } = req.params
+  const { name, shortDescription, longDescription, isMandatory, unitPrice, status, fromDate, toDate } = req.body
 
   try {
-    const feeTypeId = parseInt(id, 10);
-    if (!feeTypeId) return res.status(400).json({ message: "id không hợp lệ" });
+    const feeTypeId = parseInt(id, 10)
+    if (!feeTypeId) return res.status(400).json({ message: "id không hợp lệ" })
 
-    // lấy hiện trạng để validate theo isMandatory mới/ cũ
     const current = await prisma.feeType.findUnique({
       where: { id: feeTypeId },
       select: { id: true, isMandatory: true },
-    });
-    if (!current) return res.status(404).json({ message: "FeeType không tồn tại" });
+    })
+    if (!current) return res.status(404).json({ message: "FeeType không tồn tại" })
 
-    const nextIsMandatory =
-      isMandatory !== undefined ? Boolean(isMandatory) : Boolean(current.isMandatory);
+    const nextIsMandatory = isMandatory !== undefined ? Boolean(isMandatory) : Boolean(current.isMandatory)
 
-    const data = {};
+    const data = {}
 
     if (name !== undefined) {
-      const cleanName = String(name || "").trim();
-      if (!cleanName) return res.status(400).json({ message: "Tên khoản thu không được để trống" });
-      data.name = cleanName;
+      const cleanName = String(name || "").trim()
+      if (!cleanName) return res.status(400).json({ message: "Tên khoản thu không được để trống" })
+      data.name = cleanName
     }
 
-    if (shortDescription !== undefined)
-      data.shortDescription = shortDescription ? String(shortDescription) : null
-
-    if (longDescription !== undefined)
-      data.longDescription = longDescription ? String(longDescription) : null
-
-
-    if (isMandatory !== undefined) data.isMandatory = Boolean(isMandatory);
+    if (shortDescription !== undefined) data.shortDescription = shortDescription ? String(shortDescription) : null
+    if (longDescription !== undefined) data.longDescription = longDescription ? String(longDescription) : null
+    if (isMandatory !== undefined) data.isMandatory = Boolean(isMandatory)
 
     if (unitPrice !== undefined) {
-      // ✅ bắt buộc: unitPrice > 0
-      // ✅ đóng góp: unitPrice nullable
       if (nextIsMandatory) {
-        const priceNum = Number(unitPrice);
+        const priceNum = Number(unitPrice)
         if (!Number.isFinite(priceNum) || priceNum <= 0) {
-          return res.status(400).json({ message: "Khoản thu bắt buộc phải có đơn giá > 0." });
+          return res.status(400).json({ message: "Khoản thu bắt buộc phải có đơn giá > 0." })
         }
-        data.unitPrice = priceNum;
+        data.unitPrice = priceNum
       } else {
-        if (unitPrice === "" || unitPrice === null) data.unitPrice = null;
+        if (unitPrice === "" || unitPrice === null) data.unitPrice = null
         else {
-          const priceNum = Number(unitPrice);
+          const priceNum = Number(unitPrice)
           if (!Number.isFinite(priceNum) || priceNum < 0) {
-            return res.status(400).json({ message: "Đơn giá không hợp lệ" });
+            return res.status(400).json({ message: "Đơn giá không hợp lệ" })
           }
-          data.unitPrice = priceNum;
+          data.unitPrice = priceNum
         }
       }
     }
 
-    if (status !== undefined) data.isActive = Number(status) === 1;
+    if (status !== undefined) data.isActive = Number(status) === 1
+    if (fromDate !== undefined) data.fromDate = fromDate ? new Date(fromDate) : null
+if (toDate !== undefined) {
+  data.toDate = toDate ? normalizeToEndOfDay(toDate) : null
+}
 
-    if (fromDate !== undefined) data.fromDate = fromDate ? new Date(fromDate) : null;
-    if (toDate !== undefined) data.toDate = toDate ? new Date(toDate) : null;
 
     const updated = await prisma.feeType.update({
       where: { id: feeTypeId },
       data,
-    });
+    })
 
     res.status(200).json({
       message: "Updated successfully",
@@ -199,69 +212,67 @@ export const updateFee = async (req, res) => {
         fromDate: updated.fromDate,
         toDate: updated.toDate,
       },
-    });
+    })
   } catch (error) {
-    console.error("PUT /api/fees/update error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("PUT /api/fees/update error:", error)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
 export const deleteFee = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params
 
   try {
-    const feeTypeId = parseInt(id, 10);
-    if (!feeTypeId) return res.status(400).json({ message: "id không hợp lệ" });
+    const feeTypeId = parseInt(id, 10)
+    if (!feeTypeId) return res.status(400).json({ message: "id không hợp lệ" })
 
     const record = await prisma.feeRecord.findFirst({
       where: { feeTypeId },
       select: { id: true },
-    });
+    })
 
     if (record) {
       return res.status(400).json({
         message: "Không thể xóa khoản thu đã có lịch sử thu. Hãy chuyển trạng thái sang ngừng áp dụng.",
-      });
+      })
     }
 
     await prisma.feeType.delete({
       where: { id: feeTypeId },
-    });
+    })
 
-    res.status(200).json({ message: "Fee deleted successfully" });
+    res.status(200).json({ message: "Fee deleted successfully" })
   } catch (error) {
-    console.error("DELETE /api/fees/delete error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("DELETE /api/fees/delete error:", error)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
 export const createTransaction = async (req, res) => {
-  const { feeId, householdId, amount, note} = req.body;
+  const { feeId, householdId, amount, note } = req.body
 
   try {
-    const feeTypeId = parseInt(feeId, 10);
-    const hhId = parseInt(householdId, 10);
-    const payAmount = Number(amount);
+    const feeTypeId = parseInt(feeId, 10)
+    const hhId = parseInt(householdId, 10)
+    const payAmount = Number(amount)
 
-    const role = req.user?.role;
-
+    const role = req.user?.role
     if (role === "HOUSEHOLD") {
       return res.status(403).json({
         message: "Cư dân không được phép thao tác chức năng thu tiền của ban quản lý",
-      });
+      })
     }
 
-    const paymentMethod = "OFFLINE";
-
+    const paymentMethod = "OFFLINE"
 
     if (!feeTypeId || !hhId || !Number.isFinite(payAmount) || payAmount <= 0) {
-      return res.status(400).json({ message: "Dữ liệu thu phí không hợp lệ" });
+      return res.status(400).json({ message: "Dữ liệu thu phí không hợp lệ" })
     }
 
     const feeType = await prisma.feeType.findUnique({
       where: { id: feeTypeId },
-      select: { id: true, name: true, isMandatory: true, unitPrice: true, isActive: true },
-    });
+      select: { id: true, name: true, isMandatory: true, unitPrice: true, isActive: true, toDate: true },
+    })
 
     const household = await prisma.household.findUnique({
       where: { id: hhId },
@@ -270,14 +281,18 @@ export const createTransaction = async (req, res) => {
         householdCode: true,
         residents: { select: { status: true } },
       },
-    });
+    })
 
     if (!feeType || !household) {
-      return res.status(404).json({ message: "FeeType hoặc Household không tồn tại" });
+      return res.status(404).json({ message: "FeeType hoặc Household không tồn tại" })
     }
 
     if (!feeType.isActive) {
-      return res.status(400).json({ message: "Khoản thu đang ngừng áp dụng" });
+      return res.status(400).json({ message: "Khoản thu đang ngừng áp dụng" })
+    }
+
+    if (isExpired(feeType)) {
+      return res.status(400).json({ message: "Khoản thu đã hết hạn, không thể tiếp tục thu" })
     }
 
     if (!feeType.isMandatory) {
@@ -287,17 +302,16 @@ export const createTransaction = async (req, res) => {
           isActive: true,
         },
         select: { id: true, fullname: true, role: true },
-      });
-
+      })
 
       if (!manager) {
-        return res.status(400).json({ message: "Không tìm thấy cán bộ quản lý để ghi nhận thu" });
+        return res.status(400).json({ message: "Không tìm thấy cán bộ quản lý để ghi nhận thu" })
       }
 
       const newRecord = await prisma.feeRecord.create({
         data: {
           amount: payAmount,
-          status: 2, 
+          status: 2,
           method: paymentMethod,
           description: note || "",
           householdId: hhId,
@@ -309,7 +323,7 @@ export const createTransaction = async (req, res) => {
           household: { select: { id: true, householdCode: true } },
           manager: { select: { id: true, fullname: true, role: true } },
         },
-      });
+      })
 
       return res.status(201).json({
         message: "Transaction created successfully",
@@ -323,46 +337,41 @@ export const createTransaction = async (req, res) => {
           household: newRecord.household,
           manager: newRecord.manager,
         },
-      });
+      })
     }
 
-    // ✅ BẮT BUỘC: tính theo nhân khẩu + check remaining
-    const unitPrice = Number(feeType.unitPrice);
+    const unitPrice = Number(feeType.unitPrice)
     if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
       return res.status(400).json({
         message: "Khoản thu bắt buộc chưa có đơn giá hợp lệ (>0). Hãy cập nhật đơn giá trước khi thu.",
-      });
+      })
     }
 
-    const activeStatuses = [0, 1];
-    const memberCount = (household.residents || []).filter((r) =>
-      activeStatuses.includes(Number(r.status))
-    ).length;
-
-    const expected = unitPrice * memberCount;
+    const activeStatuses = [0, 1]
+    const memberCount = (household.residents || []).filter((r) => activeStatuses.includes(Number(r.status))).length
+    const expected = unitPrice * memberCount
 
     const paidAgg = await prisma.feeRecord.aggregate({
       where: {
         feeTypeId,
         householdId: hhId,
-        status: { in: [1, 2] }
+        status: { in: [1, 2] },
       },
       _sum: { amount: true },
-    });
+    })
 
-
-    const paidSoFar = Number(paidAgg?._sum?.amount) || 0;
-    const remainingBefore = Math.max(expected - paidSoFar, 0);
+    const paidSoFar = Number(paidAgg?._sum?.amount) || 0
+    const remainingBefore = Math.max(expected - paidSoFar, 0)
 
     if (remainingBefore <= 0) {
-      return res.status(400).json({ message: "Hộ này đã thu đủ khoản này" });
+      return res.status(400).json({ message: "Hộ này đã thu đủ khoản này" })
     }
 
     if (payAmount > remainingBefore) {
-      return res.status(400).json({ message: "Số tiền thu lần này vượt quá số tiền còn thiếu" });
+      return res.status(400).json({ message: "Số tiền thu lần này vượt quá số tiền còn thiếu" })
     }
 
-    const recordStatus = payAmount >= remainingBefore ? 2 : 1;
+    const recordStatus = payAmount >= remainingBefore ? 2 : 1
 
     const manager = await prisma.user.findFirst({
       where: {
@@ -370,11 +379,10 @@ export const createTransaction = async (req, res) => {
         isActive: true,
       },
       select: { id: true, fullname: true, role: true },
-    });
-
+    })
 
     if (!manager) {
-      return res.status(400).json({ message: "Không tìm thấy cán bộ quản lý để ghi nhận thu" });
+      return res.status(400).json({ message: "Không tìm thấy cán bộ quản lý để ghi nhận thu" })
     }
 
     const newRecord = await prisma.feeRecord.create({
@@ -392,7 +400,7 @@ export const createTransaction = async (req, res) => {
         household: { select: { id: true, householdCode: true } },
         manager: { select: { id: true, fullname: true, role: true } },
       },
-    });
+    })
 
     res.status(201).json({
       message: "Transaction created successfully",
@@ -406,22 +414,22 @@ export const createTransaction = async (req, res) => {
         household: newRecord.household,
         manager: newRecord.manager,
       },
-    });
+    })
   } catch (error) {
-    console.error("POST /api/fees/pay error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("POST /api/fees/pay error:", error)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
 export const getTransactions = async (req, res) => {
-  const { feeId, householdId, method } = req.query;
-  const whereClause = {};
+  const { feeId, householdId, method } = req.query
+  const whereClause = {}
 
-  if (feeId) whereClause.feeTypeId = parseInt(feeId, 10);
-  if (householdId) whereClause.householdId = parseInt(householdId, 10);
+  if (feeId) whereClause.feeTypeId = parseInt(feeId, 10)
+  if (householdId) whereClause.householdId = parseInt(householdId, 10)
 
   if (method === "ONLINE" || method === "OFFLINE") {
-    whereClause.method = method;
+    whereClause.method = method
   }
 
   try {
@@ -433,7 +441,7 @@ export const getTransactions = async (req, res) => {
         manager: { select: { id: true, fullname: true, role: true } },
       },
       orderBy: { createdAt: "desc" },
-    });
+    })
 
     const mapped = history.map((r) => ({
       id: r.id,
@@ -445,27 +453,27 @@ export const getTransactions = async (req, res) => {
       fee: r.feeType,
       household: r.household,
       manager: r.manager,
-    }));
+    }))
 
-    res.status(200).json(mapped);
+    res.status(200).json(mapped)
   } catch (error) {
-    console.error("GET /api/fees/history error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("GET /api/fees/history error:", error)
+    res.status(500).json({ error: error.message })
   }
-};
+}
 
 export const getFeeSummary = async (req, res) => {
-  const { feeId } = req.query;
+  const { feeId } = req.query
 
   try {
-    const feeTypeId = parseInt(feeId, 10);
-    if (!feeTypeId) return res.status(400).json({ message: "feeId không hợp lệ" });
+    const feeTypeId = parseInt(feeId, 10)
+    if (!feeTypeId) return res.status(400).json({ message: "feeId không hợp lệ" })
 
     const fee = await prisma.feeType.findUnique({
       where: { id: feeTypeId },
       select: { id: true, unitPrice: true, isMandatory: true, name: true, isActive: true },
-    });
-    if (!fee) return res.status(404).json({ message: "FeeType không tồn tại" });
+    })
+    if (!fee) return res.status(404).json({ message: "FeeType không tồn tại" })
 
     const households = await prisma.household.findMany({
       orderBy: { id: "asc" },
@@ -475,31 +483,25 @@ export const getFeeSummary = async (req, res) => {
         householdCode: true,
         residents: { select: { status: true } },
       },
-    });
+    })
 
     const paidByHousehold = await prisma.feeRecord.groupBy({
       by: ["householdId"],
-      where: { 
-        feeTypeId, 
-        status: { in: [1, 2] } // partial + paid
+      where: {
+        feeTypeId,
+        status: { in: [1, 2] },
       },
       _sum: { amount: true },
-    });
+    })
 
-    const paidMap = new Map(
-      paidByHousehold.map((x) => [x.householdId, Number(x._sum.amount) || 0])
-    );
+    const paidMap = new Map(paidByHousehold.map((x) => [x.householdId, Number(x._sum.amount) || 0]))
 
-    const activeStatuses = [0, 1];
+    const activeStatuses = [0, 1]
 
     const rows = households.map((hh) => {
-      const memberCount = (hh.residents || []).filter((r) =>
-        activeStatuses.includes(Number(r.status))
-      ).length;
+      const memberCount = (hh.residents || []).filter((r) => activeStatuses.includes(Number(r.status))).length
+      const paid = paidMap.get(hh.id) || 0
 
-      const paid = paidMap.get(hh.id) || 0;
-
-      // ✅ ĐÓNG GÓP: không có expected/remaining theo nghiệp vụ
       if (!fee.isMandatory) {
         return {
           household: { id: hh.id, householdCode: hh.householdCode },
@@ -508,17 +510,16 @@ export const getFeeSummary = async (req, res) => {
           expected: 0,
           paid,
           remaining: 0,
-          status: paid > 0 ? 2 : 0, // đã đóng góp / chưa đóng góp
-        };
+          status: paid > 0 ? 2 : 0,
+        }
       }
 
-      // ✅ BẮT BUỘC
-      const unitPrice = Number(fee.unitPrice);
-      const safeUnitPrice = Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 0;
+      const unitPrice = Number(fee.unitPrice)
+      const safeUnitPrice = Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 0
 
-      const expected = safeUnitPrice * memberCount;
-      const remaining = Math.max(expected - paid, 0);
-      const summaryStatus = remaining <= 0 ? 2 : paid <= 0 ? 0 : 1;
+      const expected = safeUnitPrice * memberCount
+      const remaining = Math.max(expected - paid, 0)
+      const summaryStatus = remaining <= 0 ? 2 : paid <= 0 ? 0 : 1
 
       return {
         household: { id: hh.id, householdCode: hh.householdCode },
@@ -528,15 +529,16 @@ export const getFeeSummary = async (req, res) => {
         paid,
         remaining,
         status: summaryStatus,
-      };
-    });
+      }
+    })
 
-    res.status(200).json(rows);
+    res.status(200).json(rows)
   } catch (error) {
-    console.error("GET /api/fees/summary error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("GET /api/fees/summary error:", error)
+    res.status(500).json({ error: error.message })
   }
-};
+}
+
 export const updateTransaction = async (req, res) => {
   const { id } = req.params
   const { amount, note } = req.body
@@ -558,28 +560,30 @@ export const updateTransaction = async (req, res) => {
 
     const current = await prisma.feeRecord.findUnique({
       where: { id: recordId },
-      select: { id: true, feeTypeId: true, householdId: true, amount: true }
+      select: { id: true, feeTypeId: true, householdId: true, amount: true },
     })
     if (!current) return res.status(404).json({ message: "Giao dịch không tồn tại" })
 
     const feeType = await prisma.feeType.findUnique({
       where: { id: current.feeTypeId },
-      select: { id: true, isMandatory: true, unitPrice: true, isActive: true }
+      select: { id: true, isMandatory: true, unitPrice: true, isActive: true, toDate: true },
     })
     if (!feeType) return res.status(404).json({ message: "FeeType không tồn tại" })
     if (!feeType.isActive) return res.status(400).json({ message: "Khoản thu đang ngừng áp dụng" })
+    if (isExpired(feeType)) {
+      return res.status(400).json({ message: "Khoản thu đã hết hạn, không thể chỉnh sửa giao dịch" })
+    }
 
     const household = await prisma.household.findUnique({
       where: { id: current.householdId },
-      select: { id: true, residents: { select: { status: true } } }
+      select: { id: true, residents: { select: { status: true } } },
     })
     if (!household) return res.status(404).json({ message: "Household không tồn tại" })
 
-    // ===== ĐÓNG GÓP (tự nguyện) =====
     if (!feeType.isMandatory) {
       const aggAll = await prisma.feeRecord.aggregate({
         where: { feeTypeId: current.feeTypeId, householdId: current.householdId },
-        _sum: { amount: true }
+        _sum: { amount: true },
       })
       const totalBefore = Number(aggAll?._sum?.amount) || 0
       const totalAfter = totalBefore - Number(current.amount) + nextAmount
@@ -595,13 +599,13 @@ export const updateTransaction = async (req, res) => {
         data: {
           amount: nextAmount,
           status: nextStatus,
-          description: note !== undefined ? (note || "") : undefined
+          description: note !== undefined ? (note || "") : undefined,
         },
         include: {
           feeType: { select: { id: true, name: true, isMandatory: true, unitPrice: true } },
           household: { select: { id: true, householdCode: true } },
-          manager: { select: { id: true, fullname: true, role: true } }
-        }
+          manager: { select: { id: true, fullname: true, role: true } },
+        },
       })
 
       return res.status(200).json({
@@ -614,12 +618,11 @@ export const updateTransaction = async (req, res) => {
           date: updated.updatedAt,
           fee: updated.feeType,
           household: updated.household,
-          manager: updated.manager
-        }
+          manager: updated.manager,
+        },
       })
     }
 
-    // ===== BẮT BUỘC =====
     const unitPrice = Number(feeType.unitPrice)
     if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
       return res.status(400).json({
@@ -628,14 +631,12 @@ export const updateTransaction = async (req, res) => {
     }
 
     const activeStatuses = [0, 1]
-    const memberCount = (household.residents || []).filter((r) =>
-      activeStatuses.includes(Number(r.status))
-    ).length
+    const memberCount = (household.residents || []).filter((r) => activeStatuses.includes(Number(r.status))).length
     const expected = unitPrice * memberCount
 
     const aggAll = await prisma.feeRecord.aggregate({
       where: { feeTypeId: current.feeTypeId, householdId: current.householdId },
-      _sum: { amount: true }
+      _sum: { amount: true },
     })
     const paidBefore = Number(aggAll?._sum?.amount) || 0
     const paidAfter = paidBefore - Number(current.amount) + nextAmount
@@ -653,13 +654,13 @@ export const updateTransaction = async (req, res) => {
       data: {
         amount: nextAmount,
         status: nextStatus,
-        description: note !== undefined ? (note || "") : undefined
+        description: note !== undefined ? (note || "") : undefined,
       },
       include: {
         feeType: { select: { id: true, name: true, isMandatory: true, unitPrice: true } },
         household: { select: { id: true, householdCode: true } },
-        manager: { select: { id: true, fullname: true, role: true } }
-      }
+        manager: { select: { id: true, fullname: true, role: true } },
+      },
     })
 
     res.status(200).json({
@@ -672,8 +673,8 @@ export const updateTransaction = async (req, res) => {
         date: updated.updatedAt,
         fee: updated.feeType,
         household: updated.household,
-        manager: updated.manager
-      }
+        manager: updated.manager,
+      },
     })
   } catch (error) {
     console.error("PATCH /api/fees/history/:id error:", error)

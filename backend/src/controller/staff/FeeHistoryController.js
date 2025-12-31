@@ -17,8 +17,28 @@ function toInt(v, def = undefined) {
   return Number.isFinite(n) ? n : def
 }
 
-function buildWhere(query) {
-  const { q, householdId, feeTypeId, method, status, fromDate, toDate } = query
+function buildMonthRange(month) {
+  if (!month) return null
+  const start = new Date(`${month}-01`)
+  if (Number.isNaN(start.getTime())) return null
+  const end = new Date(start)
+  end.setMonth(end.getMonth() + 1)
+  return { gte: start, lt: end }
+}
+
+function buildYearRange(year) {
+  if (!year) return null
+  const y = toInt(year)
+  if (!y) return null
+  const start = new Date(`${y}-01-01`)
+  const end = new Date(`${y + 1}-01-01`)
+  return { gte: start, lt: end }
+}
+
+function buildWhere(query, opts = {}) {
+  const { ignoreStatus = false } = opts
+
+  const { q, householdId, feeTypeId, method, status, month, year } = query
   const where = {}
 
   if (householdId) where.householdId = toInt(householdId)
@@ -28,19 +48,17 @@ function buildWhere(query) {
     where.method = String(method).toUpperCase()
   }
 
-  if (status !== undefined && status !== "" && ["0", "1", "2", 0, 1, 2].includes(status)) {
-    where.status = toInt(status)
-  }
-
-  if (fromDate || toDate) {
-    where.createdAt = {}
-    if (fromDate) where.createdAt.gte = new Date(fromDate)
-    if (toDate) {
-      const d = new Date(toDate)
-      d.setHours(23, 59, 59, 999)
-      where.createdAt.lte = d
+  if (!ignoreStatus) {
+    if (status !== undefined && status !== "" && ["0", "1", "2", 0, 1, 2].includes(status)) {
+      where.status = toInt(status)
     }
   }
+
+  const mRange = buildMonthRange(month)
+  const yRange = !mRange ? buildYearRange(year) : null
+
+  if (mRange) where.createdAt = mRange
+  else if (yRange) where.createdAt = yRange
 
   const kw = String(q || "").trim()
   if (kw) {
@@ -61,13 +79,17 @@ export const getFeeHistory = async (req, res) => {
     const pageSize = Math.min(100, Math.max(5, toInt(req.query.pageSize, 10)))
     const skip = (page - 1) * pageSize
 
-    const where = buildWhere(req.query)
+    const where = buildWhere(req.query) // where cho bảng (có status nếu đang filter)
+    const statsWhere = buildWhere(req.query, { ignoreStatus: true }) // where cho card (bỏ status)
 
-    const [total, rows] = await Promise.all([
+    const sort = String(req.query.sort || "desc").toLowerCase()
+    const order = sort === "asc" ? "asc" : "desc"
+
+    const [tableTotal, rows, grouped, statsTotal] = await Promise.all([
       prisma.feeRecord.count({ where }),
       prisma.feeRecord.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: order },
         skip,
         take: pageSize,
         include: {
@@ -75,16 +97,31 @@ export const getFeeHistory = async (req, res) => {
           feeType: { select: { id: true, name: true, isMandatory: true, unitPrice: true } },
           manager: { select: { id: true, fullname: true, username: true, role: true } }
         }
-      })
+      }),
+      prisma.feeRecord.groupBy({
+        by: ["status"],
+        where: statsWhere,
+        _count: { _all: true }
+      }),
+      prisma.feeRecord.count({ where: statsWhere })
     ])
+
+    const map = new Map(grouped.map(g => [g.status, g._count._all]))
+    const stats = {
+      total: statsTotal,
+      pending: map.get(0) || 0,
+      partial: map.get(1) || 0,
+      paid: map.get(2) || 0
+    }
 
     res.json({
       data: rows,
       meta: {
         page,
         pageSize,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / pageSize))
+        total: tableTotal,
+        totalPages: Math.max(1, Math.ceil(tableTotal / pageSize)),
+        stats
       }
     })
   } catch (e) {
@@ -162,9 +199,12 @@ export const exportFeeHistoryExcel = async (req, res) => {
   try {
     const where = buildWhere(req.query)
 
+    const sort = String(req.query.sort || "desc").toLowerCase()
+    const order = sort === "asc" ? "asc" : "desc"
+
     const rows = await prisma.feeRecord.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: order },
       include: {
         household: { select: { householdCode: true, address: true } },
         feeType: { select: { name: true, isMandatory: true } },
@@ -192,6 +232,7 @@ export const exportFeeHistoryExcel = async (req, res) => {
     const kindLabel = m => (m ? "Bắt buộc" : "Tự nguyện")
 
     rows.forEach(r => {
+      const collector = String(r.method || "").toUpperCase() === "ONLINE" ? "Hệ thống" : r.manager?.fullname || ""
       ws.addRow({
         createdAt: r.createdAt ? new Date(r.createdAt) : "",
         householdCode: r.household?.householdCode || "",
@@ -201,7 +242,7 @@ export const exportFeeHistoryExcel = async (req, res) => {
         amount: r.amount ?? 0,
         method: r.method,
         status: statusLabel(r.status),
-        manager: r.manager?.fullname || "",
+        manager: collector,
         description: r.description || ""
       })
     })
@@ -234,15 +275,9 @@ export const printFeeInvoicePdf = async (req, res) => {
       }
     })
 
-    if (!record) {
-      return res.status(404).json({ message: "Không tìm thấy giao dịch" })
-    }
+    if (!record) return res.status(404).json({ message: "Không tìm thấy giao dịch" })
 
-    const doc = new PDFDocument({
-      size: "A4",
-      margin: 50
-    })
-
+    const doc = new PDFDocument({ size: "A4", margin: 50 })
     const filename = `hoa_don_thu_phi_${record.id}.pdf`
 
     res.setHeader("Content-Type", "application/pdf")
@@ -255,8 +290,9 @@ export const printFeeInvoicePdf = async (req, res) => {
     doc.registerFont("TNRI", FONT_ITALIC)
     doc.registerFont("TNRBI", FONT_BOLD_ITALIC)
 
-    const statusLabel =
-      record.status === 0 ? "Chưa nộp" : record.status === 1 ? "Nộp 1 phần" : "Đã nộp"
+    const statusLabel = record.status === 0 ? "Chưa nộp" : record.status === 1 ? "Nộp 1 phần" : "Đã nộp"
+    const collector =
+      String(record.method || "").toUpperCase() === "ONLINE" ? "Hệ thống" : record.manager?.fullname || "—"
 
     doc.font("TNRB").fontSize(14).text("BAN QUẢN LÝ KHU DÂN CƯ", { align: "center" }).moveDown(0.5)
     doc.font("TNRB").fontSize(18).text("HÓA ĐƠN THU PHÍ", { align: "center" }).moveDown(1.5)
@@ -267,21 +303,17 @@ export const printFeeInvoicePdf = async (req, res) => {
     doc.text(`Hình thức: ${record.method}`)
     doc.moveDown(1)
 
-    doc.font("TNRB").fontSize(12).text("Thông tin hộ dân", { underline: true })
-    doc.moveDown(0.5)
+    doc.font("TNRB").fontSize(12).text("Thông tin hộ dân", { underline: true }).moveDown(0.5)
     doc.font("TNR").fontSize(11)
     doc.text(`Mã hộ: ${record.household.householdCode}`)
     doc.text(`Địa chỉ: ${record.household.address}`)
     doc.moveDown(1)
 
-    doc.font("TNRB").fontSize(12).text("Chi tiết khoản thu", { underline: true })
-    doc.moveDown(0.5)
+    doc.font("TNRB").fontSize(12).text("Chi tiết khoản thu", { underline: true }).moveDown(0.5)
     doc.font("TNR").fontSize(11)
     doc.text(`Khoản thu: ${record.feeType.name}`)
     doc.text(`Loại: ${record.feeType.isMandatory ? "Bắt buộc" : "Tự nguyện"}`)
-    if (record.feeType.unitPrice != null) {
-      doc.text(`Đơn giá: ${Number(record.feeType.unitPrice).toLocaleString("vi-VN")} đ`)
-    }
+    if (record.feeType.unitPrice != null) doc.text(`Đơn giá: ${Number(record.feeType.unitPrice).toLocaleString("vi-VN")} đ`)
     doc.moveDown(0.5)
 
     doc.font("TNRB").fontSize(13).text(`Số tiền đã thu: ${Number(record.amount).toLocaleString("vi-VN")} đ`)
@@ -292,13 +324,11 @@ export const printFeeInvoicePdf = async (req, res) => {
     if (record.description) doc.text(`Ghi chú: ${record.description}`)
 
     doc.moveDown(2)
-    doc.text(`Người thu: ${record.manager?.fullname || "—"}`)
+    doc.text(`Người thu: ${collector}`)
     doc.text("Chữ ký người thu: ________________________")
 
     doc.moveDown(2)
-    doc.font("TNR").fontSize(10).fillColor("gray").text("Hóa đơn được tạo tự động từ hệ thống quản lý thu phí", {
-      align: "center"
-    })
+    doc.font("TNR").fontSize(10).fillColor("gray").text("Hóa đơn được tạo tự động từ hệ thống quản lý thu phí", { align: "center" })
 
     doc.end()
   } catch (e) {
