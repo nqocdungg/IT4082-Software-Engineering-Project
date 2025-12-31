@@ -938,15 +938,15 @@
   color: #374151;
 }
 
-/* ===== Save (💾 / CashRegister) ===== */
 .fee-action-save {
-  color: #2563eb;              /* blue-600 */
+  color: #1e40af;   /* blue-800 */
 }
 
 .fee-action-save:hover {
-  background: #eff6ff;         /* blue-50 */
-  border-color: #93c5fd;       /* blue-300 */
-  color: #1d4ed8;              /* blue-700 */
+  background: #dbeafe;
+  border-color: #60a5fa;
+  color: #1e3a8a;
 }
+
 
 
