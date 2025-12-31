@@ -1,6 +1,6 @@
 // src/components/resident/ResidentHero.jsx
 import React, { useState, useEffect } from "react";
-import HeroImage from "../../assets/images/anh1.jpg";
+import HeroImage from "../../assets/images/anh2.jpg";
 import "../../styles/resident/ResidentHero.css";
 
 export default function ResidentHero() {
