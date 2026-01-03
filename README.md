@@ -6,6 +6,21 @@ The system helps **community administrators** digitalize population management, 
 
 ---
 
+---
+
+---
+
+## 👥 Team Members & Contribution
+
+| Member | Role | Responsibilities | Contribution Score |
+|:------|:-----|:------------------|:------------------:|
+| **Nguyễn Ngọc Dung** | Team Leader | Frontend & Backend | **-** |
+| **Triệu Trường Giang** | Frontend Developer | Frontend | **-** |
+| **Nguyễn Đức Hiếu** | Backend Developer | Backend | **-** |
+| **Lê Thị Thu Hằng** | Frontend Developer | Frontend | **-** |
+
+
+
 ## 💻 Tech Stack
 
 | Category | Technologies |
@@ -29,18 +44,6 @@ The system helps **community administrators** digitalize population management, 
 
 ---
 
-## 🧩 Database Design (ERD & Schema Diagram)
-
-The following diagrams illustrate the **database structure and relationships** used in the Resident Management & Community Fee System.
-
-<p align="center">
-  <img src="./docs/demo/ERD.drawio.png" width="700" alt="ERD Diagram" />
-</p>
-<p align="center">
-  <img src="./docs/demo/schema.drawio.png" width="700" alt="Schema Diagram" />
-</p>
-
----
 
 ## 🖼️ DEMO
 
