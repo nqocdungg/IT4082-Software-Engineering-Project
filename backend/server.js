@@ -3,9 +3,9 @@ import cors from "cors"
 import path from "path"
 import { fileURLToPath } from "url"
 import dotenv from "dotenv"
-
+ 
 import authRoutes from "./src/routes/authRoutes.js"
-
+ 
 /* STAFF */
 import staffHouseholdRoutes from "./src/routes/staff/householdRoutes.js"
 import staffResidentRoutes from "./src/routes/staff/residentRoutes.js"
@@ -26,10 +26,10 @@ import residentNotificationRoutes from "./src/routes/resident/notificationRoutes
 import { startCronJobs } from "./src/services/cronService.js"
 
 dotenv.config()
-
+ 
 const app = express()
 const PORT = process.env.PORT || 5000
-
+ 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -63,14 +63,14 @@ app.use("/api/notifications", staffNotificationRoutes)
 app.use("/api/resident", householdInfoRoutes)
 app.use("/api", feeViewRoutes)
 app.use("/api/resident/notifications", residentNotificationRoutes)
-
+ 
 const distPath = path.join(__dirname, "../frontend/dist")
 app.use(express.static(distPath))
-
+ 
 app.get("*", (req, res) => {
   res.sendFile(path.join(distPath, "index.html"))
 })
-
+ 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })

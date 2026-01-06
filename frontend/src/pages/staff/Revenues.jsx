@@ -12,13 +12,13 @@ import {
   FaTimes,
   FaEye
 } from "react-icons/fa"
-
+ 
 import "../../styles/staff/fees.css"
 import "../../styles/staff/layout.css"
 import { formatDateDMY } from "../../utils/date"
-
+ 
 const API_BASE = "http://localhost:5000/api"
-
+ 
 const emptyFeeForm = {
   name: "",
   shortDescription: "",
@@ -29,12 +29,12 @@ const emptyFeeForm = {
   fromDate: "",
   toDate: ""
 }
-
+ 
 function authHeaders() {
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
-
+ 
 function toStartOfDay(dateStr) {
   if (!dateStr) return null
   const d = new Date(dateStr)
@@ -42,7 +42,7 @@ function toStartOfDay(dateStr) {
   d.setHours(0, 0, 0, 0)
   return d
 }
-
+ 
 function toEndOfDay(dateStr) {
   if (!dateStr) return null
   const d = new Date(dateStr)
@@ -50,7 +50,7 @@ function toEndOfDay(dateStr) {
   d.setHours(23, 59, 59, 999)
   return d
 }
-
+ 
 function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart <= bEnd && bStart <= aEnd
 }
@@ -69,27 +69,27 @@ function isExpiredFee(fee) {
 
 export default function RevenuesManagement() {
   const navigate = useNavigate()
-
+ 
   const [fees, setFees] = useState([])
-
+ 
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [mandatoryFilter, setMandatoryFilter] = useState("ALL")
-
+ 
   const [dateFromFilter, setDateFromFilter] = useState("")
   const [dateToFilter, setDateToFilter] = useState("")
-
+ 
   const [isAddFeeOpen, setIsAddFeeOpen] = useState(false)
   const [feeForm, setFeeForm] = useState(emptyFeeForm)
-
+ 
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(5)
-
+ 
   useEffect(() => {
     fetchFees()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
+ 
   async function fetchFees() {
     try {
       const res = await axios.get(`${API_BASE}/fees/list`, {
@@ -103,17 +103,17 @@ export default function RevenuesManagement() {
       alert("Không tải được danh sách khoản thu")
     }
   }
-
+ 
   const filteredFees = useMemo(() => {
     const list = Array.isArray(fees) ? fees : []
-
+ 
     const fFrom = toStartOfDay(dateFromFilter)
     const fTo = toEndOfDay(dateToFilter)
-
+ 
     const hasDateFilter = !!(fFrom || fTo)
     const filterStart = fFrom || new Date(-8640000000000000)
     const filterEnd = fTo || new Date(8640000000000000)
-
+ 
     return list.filter(f => {
       const matchSearch = !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase())
 
@@ -127,12 +127,12 @@ export default function RevenuesManagement() {
         mandatoryFilter === "ALL" ||
         (mandatoryFilter === "MANDATORY" && !!f.isMandatory) ||
         (mandatoryFilter === "OPTIONAL" && !f.isMandatory)
-
+ 
       let matchDate = true
       if (hasDateFilter) {
         const feeHasFrom = !!f.fromDate
         const feeHasTo = !!f.toDate
-
+ 
         if (!feeHasFrom && !feeHasTo) {
           matchDate = true
         } else {
@@ -142,11 +142,11 @@ export default function RevenuesManagement() {
           matchDate = rangesOverlap(feeStart, feeEnd, filterStart, filterEnd)
         }
       }
-
+ 
       return matchSearch && matchStatus && matchMandatory && matchDate
     })
   }, [fees, search, statusFilter, mandatoryFilter, dateFromFilter, dateToFilter])
-
+ 
   const stats = useMemo(() => {
     const list = Array.isArray(fees) ? fees : []
 
@@ -159,22 +159,22 @@ export default function RevenuesManagement() {
     const expired = list.filter(f => isExpiredFee(f)).length
     return { total, mandatory, optional, active, inactive, expired }
   }, [fees])
-
+ 
   useEffect(() => {
     setCurrentPage(1)
   }, [search, statusFilter, mandatoryFilter, dateFromFilter, dateToFilter])
-
+ 
   const totalPages = Math.max(1, Math.ceil(filteredFees.length / rowsPerPage))
-
+ 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1)
   }, [totalPages, currentPage])
-
+ 
   const pageFees = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage
     return filteredFees.slice(start, start + rowsPerPage)
   }, [filteredFees, currentPage, rowsPerPage])
-
+ 
   const rangeText = useMemo(() => {
     const total = filteredFees.length
     if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`
@@ -182,7 +182,7 @@ export default function RevenuesManagement() {
     const end = Math.min(currentPage * rowsPerPage, total)
     return `${start} - ${end} trên tổng số ${total} bản ghi`
   }, [filteredFees.length, currentPage, rowsPerPage])
-
+ 
   function getStatusLabel(fee) {
     // Hết hạn → hiển thị "Ngừng áp dụng"
     if (isExpiredFee(fee)) return "Ngừng áp dụng"
@@ -191,7 +191,7 @@ export default function RevenuesManagement() {
       ? "Đang hoạt động"
       : "Ngừng áp dụng"
   }
-
+ 
   function getStatusClass(fee) {
     if (isExpiredFee(fee)) return "fee-status-badge fee-status-inactive"
 
@@ -204,26 +204,26 @@ export default function RevenuesManagement() {
   function getDateRangeLabel(fee) {
     const hasFrom = !!fee.fromDate
     const hasTo = !!fee.toDate
-
+ 
     if (!hasFrom && !hasTo) return "Không thời hạn"
-
+ 
     const fromStr = hasFrom ? formatDateDMY(fee.fromDate) : ""
     const toStr = hasTo ? formatDateDMY(fee.toDate) : ""
-
+ 
     if (hasFrom && hasTo) return `${fromStr} – ${toStr}`
     if (hasFrom && !hasTo) return `Từ ${fromStr}`
     return `Đến ${toStr}`
   }
-
+ 
   function openAddFee() {
     setFeeForm({ ...emptyFeeForm, status: "1" })
     setIsAddFeeOpen(true)
   }
-
+ 
   function closeAddFee() {
     setIsAddFeeOpen(false)
   }
-
+ 
   function handleFeeFormChange(e) {
     const { name, value, type, checked } = e.target
     setFeeForm(prev => ({
@@ -231,7 +231,7 @@ export default function RevenuesManagement() {
       [name]: type === "checkbox" ? checked : value
     }))
   }
-
+ 
   async function handleAddFeeSubmit(e) {
     e.preventDefault()
     try {
@@ -247,17 +247,17 @@ export default function RevenuesManagement() {
         fromDate: feeForm.fromDate || null,
         toDate: feeForm.toDate || null
       }
-
+ 
       if (!payload.name) return alert("Tên khoản thu không được để trống")
-
+ 
       const res = await axios.post(`${API_BASE}/fees/create`, payload, {
         headers: authHeaders()
       })
-
+ 
       const created = res.data?.data
       if (created) setFees(prev => [created, ...(Array.isArray(prev) ? prev : [])])
       else await fetchFees()
-
+ 
       setIsAddFeeOpen(false)
       setFeeForm(emptyFeeForm)
     } catch (err) {
@@ -265,7 +265,7 @@ export default function RevenuesManagement() {
       alert(err?.response?.data?.message || err?.response?.data?.error || "Thêm khoản thu thất bại")
     }
   }
-
+ 
   async function handleDeleteFee(id) {
     if (!window.confirm("Bạn có chắc muốn xóa khoản thu ID " + id + " ?")) return
     try {
@@ -278,7 +278,7 @@ export default function RevenuesManagement() {
       alert(message)
     }
   }
-
+ 
   const miniCards = [
     { label: "Tổng khoản thu", value: stats.total, icon: <FaMoneyBillWave />, tone: "blue" },
     { label: "Bắt buộc", value: stats.mandatory, icon: <FaPlus />, tone: "green" },
@@ -288,7 +288,7 @@ export default function RevenuesManagement() {
     // nếu muốn thêm card hết hạn thì bật dòng dưới:
     // ,{ label: "Đã hết hạn", value: stats.expired, icon: <FaTimes />, tone: "red" }
   ]
-
+ 
   return (
     <div className="page-container revenues-page">
       <div className="stats-strip">
@@ -302,7 +302,7 @@ export default function RevenuesManagement() {
           </div>
         ))}
       </div>
-
+ 
       <div className="card table-card">
         <div className="table-toolbar">
           <div className="toolbar-row">
@@ -314,7 +314,7 @@ export default function RevenuesManagement() {
                   <option value="0">Ngừng áp dụng</option>
                 </select>
               </div>
-
+ 
               <div className="toolbar-select">
                 <select value={mandatoryFilter} onChange={e => setMandatoryFilter(e.target.value)}>
                   <option value="ALL">Tất cả loại khoản thu</option>
@@ -323,7 +323,7 @@ export default function RevenuesManagement() {
                 </select>
               </div>
             </div>
-
+ 
             <div className="toolbar-right">
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
@@ -334,14 +334,14 @@ export default function RevenuesManagement() {
                   onChange={e => setSearch(e.target.value)}
                 />
               </div>
-
+ 
               <button className="btn-primary compact" onClick={openAddFee}>
                 <FaPlus /> Thêm khoản thu
               </button>
             </div>
           </div>
         </div>
-
+ 
         <div className="table-wrapper">
           <table className="resident-table revenues-table">
             <thead>
@@ -354,7 +354,7 @@ export default function RevenuesManagement() {
                 <th style={{ width: 130 }}>Thao tác</th>
               </tr>
             </thead>
-
+ 
             <tbody>
               {pageFees.length === 0 ? (
                 <tr>
@@ -369,29 +369,29 @@ export default function RevenuesManagement() {
                       <div className="fee-name">{f.name}</div>
                       {f.shortDescription && <div className="fee-sub">{f.shortDescription}</div>}
                     </td>
-
+ 
                     <td>
                       <span className={f.isMandatory ? "fee-tag fee-tag-mandatory" : "fee-tag fee-tag-optional"}>
                         {f.isMandatory ? "Bắt buộc" : "Tự nguyện"}
                       </span>
                     </td>
-
+ 
                     <td className="money-cell">
                       {f.unitPrice != null
                         ? `${new Intl.NumberFormat("vi-VN").format(f.unitPrice)} đ`
                         : <span className="fee-muted">Tự nguyện</span>}
                     </td>
-
+ 
                     <td className="col-date">
                       <span className={f.fromDate || f.toDate ? "fee-date-range" : "fee-date-range fee-date-none"}>
                         {getDateRangeLabel(f)}
                       </span>
                     </td>
-
+ 
                     <td>
                       <span className={getStatusClass(f)}>{getStatusLabel(f)}</span>
                     </td>
-
+ 
                     <td>
                       <div className="row-actions">
                         <button
@@ -418,7 +418,7 @@ export default function RevenuesManagement() {
             </tbody>
           </table>
         </div>
-
+ 
         <div className="table-footer">
           <div className="footer-left">
             <span className="footer-muted">Số bản ghi</span>
@@ -433,7 +433,7 @@ export default function RevenuesManagement() {
               <option value={10}>10</option>
             </select>
           </div>
-
+ 
           <div className="footer-right">
             <span className="footer-muted">{rangeText}</span>
             <div className="pager">
@@ -447,7 +447,7 @@ export default function RevenuesManagement() {
           </div>
         </div>
       </div>
-
+ 
       {isAddFeeOpen && (
         <div className="fee-modal-overlay" onClick={closeAddFee}>
           <div className="fee-modal" onClick={e => e.stopPropagation()}>
@@ -456,12 +456,12 @@ export default function RevenuesManagement() {
                 <h3 className="fee-modal-title">Thêm khoản thu mới</h3>
                 <p className="fee-modal-sub">Tạo mới khoản thu</p>
               </div>
-
+ 
               <button className="fee-modal-close-btn" type="button" onClick={closeAddFee}>
                 <FaTimes size={14} />
               </button>
             </div>
-
+ 
             <form onSubmit={handleAddFeeSubmit} className="fee-modal-body">
               <div className="detail-grid">
                 <div className="detail-item detail-wide">
@@ -470,7 +470,7 @@ export default function RevenuesManagement() {
                     <input name="name" value={feeForm.name} onChange={handleFeeFormChange} required />
                   </div>
                 </div>
-
+ 
                 <div className="detail-row3">
                   <div className="detail-item">
                     <div className="detail-label">Đơn giá</div>
@@ -485,7 +485,7 @@ export default function RevenuesManagement() {
                       />
                     </div>
                   </div>
-
+ 
                   <div className="detail-item">
                     <div className="detail-label">Loại khoản thu</div>
                     <div className="detail-value">
@@ -504,7 +504,7 @@ export default function RevenuesManagement() {
                       </select>
                     </div>
                   </div>
-
+ 
                   <div className="detail-item">
                     <div className="detail-label">Trạng thái</div>
                     <div className="detail-value">
@@ -512,7 +512,7 @@ export default function RevenuesManagement() {
                     </div>
                   </div>
                 </div>
-
+ 
                 <div className="detail-row2">
                   <div className="detail-item">
                     <div className="detail-label">Ngày bắt đầu</div>
@@ -520,7 +520,7 @@ export default function RevenuesManagement() {
                       <input type="date" name="fromDate" value={feeForm.fromDate} onChange={handleFeeFormChange} />
                     </div>
                   </div>
-
+ 
                   <div className="detail-item">
                     <div className="detail-label">Ngày kết thúc</div>
                     <div className="detail-value">
@@ -528,7 +528,7 @@ export default function RevenuesManagement() {
                     </div>
                   </div>
                 </div>
-
+ 
                 <div className="detail-item detail-wide">
                   <div className="detail-label">Mô tả ngắn</div>
                   <textarea
@@ -539,7 +539,7 @@ export default function RevenuesManagement() {
                     placeholder="Hiển thị ngắn gọn trong danh sách khoản thu"
                   />
                 </div>
-
+ 
                 <div className="detail-item detail-wide">
                   <div className="detail-label">Mô tả chi tiết</div>
                   <textarea
@@ -552,7 +552,7 @@ export default function RevenuesManagement() {
                   />
                 </div>
               </div>
-
+ 
               <div className="fee-modal-footer">
                 <button className="btn-secondary" type="button" onClick={closeAddFee}>
                   Hủy
