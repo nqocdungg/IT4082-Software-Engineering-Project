@@ -3,9 +3,13 @@ import prisma from "../../../prisma/prismaClient.js"
 // GET /api/dashboard
 export const getDashboard = async (req, res) => {
   try {
-    const now = new Date()
+    const YEAR_CAP = 2025
+    let now = new Date()
+    if (now.getFullYear() > YEAR_CAP) now = new Date(YEAR_CAP, 11, 31, 23, 59, 59)
+
     const currentYear = now.getFullYear()
     const currentMonth = now.getMonth() + 1
+
 
     const startOfMonth = new Date(currentYear, currentMonth - 1, 1)
     const startOfNextMonth = new Date(currentYear, currentMonth, 1)
@@ -63,95 +67,95 @@ export const getDashboard = async (req, res) => {
       }
     })
 
-// =========================
-// 5. Tỷ lệ đóng phí (HOÀN THÀNH THEO NĂM – CỘNG DỒN TIỀN)
-// =========================
+    // =========================
+    // 5. Tỷ lệ đóng phí (HOÀN THÀNH THEO NĂM – CỘNG DỒN TIỀN)
+    // =========================
 
-const startOfYear = new Date(currentYear, 0, 1)
-const startOfNextYear = new Date(currentYear + 1, 0, 1)
+    const startOfYear = new Date(currentYear, 0, 1)
+    const startOfNextYear = new Date(currentYear + 1, 0, 1)
 
-// lấy toàn bộ phí bắt buộc trong năm
-const mandatoryFees = await prisma.feeType.findMany({
-  where: {
-    isMandatory: true,
-    fromDate: { lte: startOfNextYear },
-    toDate: { gte: startOfYear }
-  }
-})
+    // lấy toàn bộ phí bắt buộc trong năm
+    const mandatoryFees = await prisma.feeType.findMany({
+      where: {
+        isMandatory: true,
+        fromDate: { lte: startOfNextYear },
+        toDate: { gte: startOfYear }
+      }
+    })
 
-const mandatoryFeeIds = mandatoryFees.map(f => f.id)
+    const mandatoryFeeIds = mandatoryFees.map(f => f.id)
 
-// lấy toàn bộ record phí bắt buộc trong năm (kể cả đóng 1 phần)
-const records = await prisma.feeRecord.findMany({
-  where: {
-    createdAt: {
-      gte: startOfYear,
-      lt: startOfNextYear
-    },
-    feeTypeId: { in: mandatoryFeeIds },
-    household: { status: 1 }
-  },
-  include: {
-    feeType: true,
-    household: {
+    // lấy toàn bộ record phí bắt buộc trong năm (kể cả đóng 1 phần)
+    const records = await prisma.feeRecord.findMany({
+      where: {
+        createdAt: {
+          gte: startOfYear,
+          lt: startOfNextYear
+        },
+        feeTypeId: { in: mandatoryFeeIds },
+        household: { status: 1 }
+      },
       include: {
-        residents: {
-          where: { status: { in: [0, 1] } }
+        feeType: true,
+        household: {
+          include: {
+            residents: {
+              where: { status: { in: [0, 1] } }
+            }
+          }
         }
       }
-    }
-  }
-})
-
-// map householdId -> feeTypeId -> { paid, expected }
-const map = new Map()
-
-for (const r of records) {
-  const memberCount = r.household.residents.length
-  const expected = r.feeType.unitPrice * memberCount
-  const key = `${r.householdId}-${r.feeTypeId}`
-
-  if (!map.has(key)) {
-    map.set(key, {
-      householdId: r.householdId,
-      feeTypeId: r.feeTypeId,
-      expected,
-      paid: 0
     })
-  }
 
-  map.get(key).paid += Number(r.amount || 0)
-}
+    // map householdId -> feeTypeId -> { paid, expected }
+    const map = new Map()
 
-// householdId -> Set<feeTypeId đã hoàn thành>
-const completedByHousehold = new Map()
+    for (const r of records) {
+      const memberCount = r.household.residents.length
+      const expected = r.feeType.unitPrice * memberCount
+      const key = `${r.householdId}-${r.feeTypeId}`
 
-for (const v of map.values()) {
-  if (v.paid >= v.expected) {
-    if (!completedByHousehold.has(v.householdId)) {
-      completedByHousehold.set(v.householdId, new Set())
+      if (!map.has(key)) {
+        map.set(key, {
+          householdId: r.householdId,
+          feeTypeId: r.feeTypeId,
+          expected,
+          paid: 0
+        })
+      }
+
+      map.get(key).paid += Number(r.amount || 0)
     }
-    completedByHousehold.get(v.householdId).add(v.feeTypeId)
-  }
-}
 
-// hộ hoàn thành = đủ TẤT CẢ feeType bắt buộc
-const paidHouseholds = [...completedByHousehold.entries()]
-  .filter(([_, set]) => set.size === mandatoryFees.length)
-  .map(([householdId]) => householdId)
+    // householdId -> Set<feeTypeId đã hoàn thành>
+    const completedByHousehold = new Map()
 
-const paidCount = paidHouseholds.length
+    for (const v of map.values()) {
+      if (v.paid >= v.expected) {
+        if (!completedByHousehold.has(v.householdId)) {
+          completedByHousehold.set(v.householdId, new Set())
+        }
+        completedByHousehold.get(v.householdId).add(v.feeTypeId)
+      }
+    }
 
-const paymentRate =
-  totalHouseholds === 0
-    ? 0
-    : Math.round((paidCount / totalHouseholds) * 100)
+    // hộ hoàn thành = đủ TẤT CẢ feeType bắt buộc
+    const paidHouseholds = [...completedByHousehold.entries()]
+      .filter(([_, set]) => set.size === mandatoryFees.length)
+      .map(([householdId]) => householdId)
 
-const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
+    const paidCount = paidHouseholds.length
 
-// tạm thời giữ 0 cho so sánh tháng
-const paymentRateChange = 0
-const unpaidHouseholdsChange = 0
+    const paymentRate =
+      totalHouseholds === 0
+        ? 0
+        : Math.round((paidCount / totalHouseholds) * 100)
+
+    const unpaidHouseholds = Math.max(totalHouseholds - paidCount, 0)
+
+    // tạm thời giữ 0 cho so sánh tháng
+    const paymentRateChange = 0
+    const unpaidHouseholdsChange = 0
 
 
 

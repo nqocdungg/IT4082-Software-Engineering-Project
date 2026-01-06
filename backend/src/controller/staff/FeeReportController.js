@@ -1,28 +1,54 @@
+// backend/src/controller/staff/FeeReportController.js
 import prisma from "../../../prisma/prismaClient.js"
 import ExcelJS from "exceljs"
 
+// ✅ Cố định mốc "hiện tại" và cận trên dữ liệu là hết 2025
+const NOW = new Date(2025, 11, 31, 0, 0, 0, 0) // 31/12/2025 (local)
+const END_2025 = new Date(2026, 0, 1, 0, 0, 0, 0) // cận trên: < 01/01/2026
+
+// Parse an toàn cho chuỗi ngày "YYYY-MM-DD" (tránh lệch timezone)
+function parseDateOnly(dateStr) {
+  if (!dateStr) return null
+  const s = String(dateStr).trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split("-").map(Number)
+    return new Date(y, m - 1, d)
+  }
+  const d = new Date(s)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
 function buildDateRange({ year, fromDate, toDate }) {
-  if (fromDate && toDate) return { gte: new Date(fromDate), lte: new Date(toDate) }
+  if (fromDate && toDate) {
+    const start = parseDateOnly(fromDate) || new Date(fromDate)
+    const end = parseDateOnly(toDate) || new Date(toDate)
+    return { gte: start, lte: end }
+  }
+
   if (year) {
-    const start = new Date(`${year}-01-01`)
-    const end = new Date(`${Number(year) + 1}-01-01`)
+    const y = Number(year)
+    const start = new Date(y, 0, 1)
+    const end = new Date(y + 1, 0, 1)
     return { gte: start, lt: end }
   }
+
   return undefined
 }
 
 function buildMonthRange(month) {
   if (!month) return undefined
-  const start = new Date(`${month}-01`)
-  const end = new Date(start)
-  end.setMonth(end.getMonth() + 1)
+  const s = String(month).trim()
+  if (!/^\d{4}-\d{2}$/.test(s)) return undefined
+
+  const [y, m] = s.split("-").map(Number)
+  const start = new Date(y, m - 1, 1)
+  const end = new Date(y, m, 1)
   return { gte: start, lt: end }
 }
 
 function getCurrentMonthRange() {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const start = new Date(NOW.getFullYear(), NOW.getMonth(), 1)
+  const end = new Date(NOW.getFullYear(), NOW.getMonth() + 1, 1)
   return { gte: start, lt: end }
 }
 
@@ -44,8 +70,8 @@ async function getActiveResidentCount() {
 }
 
 async function getEffectiveMandatoryFeeTypes(range) {
-  const start = range?.gte ?? new Date("1970-01-01")
-  const end = range?.lt ?? range?.lte ?? new Date("2999-12-31")
+  const start = range?.gte ?? new Date(1970, 0, 1)
+  const end = range?.lt ?? range?.lte ?? new Date(2999, 11, 31)
 
   return prisma.feeType.findMany({
     where: {
@@ -96,7 +122,8 @@ async function getTop6FeeTypeIdsAllTime(activeHouseholdIds) {
     by: ["feeTypeId"],
     where: {
       householdId: { in: activeHouseholdIds },
-      status: { in: [1, 2] }
+      status: { in: [1, 2] },
+      createdAt: { lt: END_2025 } // ✅ cận trên 2025
     },
     _sum: { amount: true }
   })
@@ -107,7 +134,8 @@ async function getTop6FeeTypeIdsAllTime(activeHouseholdIds) {
 
 export const getFeeReportOverview = async (req, res) => {
   try {
-    const range = undefined
+    // ✅ "All time" nhưng chỉ tính tới hết 2025
+    const range = { lt: END_2025 }
 
     const totalCollected = await sumCollectedAll(range)
 
@@ -121,9 +149,7 @@ export const getFeeReportOverview = async (req, res) => {
 
     const mandatoryRemaining = Math.max(0, mandatoryExpected - collectedMandatory)
     const completionRate =
-      mandatoryExpected > 0
-        ? Number(((collectedMandatory / mandatoryExpected) * 100).toFixed(2))
-        : 0
+      mandatoryExpected > 0 ? Number(((collectedMandatory / mandatoryExpected) * 100).toFixed(2)) : 0
 
     const collectedVoluntary = Math.max(0, totalCollected - collectedMandatory)
 
@@ -133,7 +159,7 @@ export const getFeeReportOverview = async (req, res) => {
       collectedVoluntary,
       mandatoryExpected,
       mandatoryRemaining,
-      completionRate,
+      completionRate
     })
   } catch (err) {
     console.error(err)
@@ -146,8 +172,9 @@ export const getMonthlyFeeReport = async (req, res) => {
     const { year } = req.query
     if (!year) return res.status(400).json({ message: "year is required" })
 
-    const start = new Date(`${year}-01-01`)
-    const end = new Date(`${Number(year) + 1}-01-01`)
+    const y = Number(year)
+    const start = new Date(y, 0, 1)
+    const end = new Date(y + 1, 0, 1)
 
     const records = await prisma.feeRecord.findMany({
       where: { createdAt: { gte: start, lt: end }, status: { in: [1, 2] } },
@@ -175,7 +202,8 @@ export const getMonthlyFeeReport = async (req, res) => {
 
 export const getFeeReportByFeeType = async (req, res) => {
   try {
-    const range = undefined
+    // ✅ "All time" nhưng chỉ tính tới hết 2025
+    const range = { lt: END_2025 }
 
     const activeIds = await getActiveHouseholdIds()
     const totalActiveHouseholds = activeIds.length
@@ -281,6 +309,7 @@ export const getHouseholdPaymentStatus = async (req, res) => {
   try {
     const { month, feeTypeId } = req.query
 
+    // ✅ Nếu không truyền month thì lấy tháng của NOW (31/12/2025)
     const range = month ? buildMonthRange(month) : getCurrentMonthRange()
 
     const householdIds = await getActiveHouseholdIds()
@@ -447,9 +476,14 @@ export const getFeeReportComparison = async (req, res) => {
     let currentRange, previousRange
 
     if (type === "month") {
-      const cur = new Date(`${current}-01`)
-      const prev = new Date(cur)
-      prev.setMonth(prev.getMonth() - 1)
+      // ✅ parse "YYYY-MM" an toàn
+      if (!/^\d{4}-\d{2}$/.test(String(current))) {
+        return res.status(400).json({ message: "current must be YYYY-MM for month comparison" })
+      }
+      const [y, m] = String(current).split("-").map(Number)
+
+      const cur = new Date(y, m - 1, 1)
+      const prev = new Date(y, m - 2, 1)
 
       currentRange = { gte: cur, lt: new Date(cur.getFullYear(), cur.getMonth() + 1, 1) }
       previousRange = { gte: prev, lt: new Date(prev.getFullYear(), prev.getMonth() + 1, 1) }

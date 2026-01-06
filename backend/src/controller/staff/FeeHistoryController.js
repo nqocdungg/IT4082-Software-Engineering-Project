@@ -16,12 +16,12 @@ function toInt(v, def = undefined) {
   const n = Number(v)
   return Number.isFinite(n) ? n : def
 }
- 
+
 function isValidMonthStr(month) {
   const s = String(month ?? "").trim()
   return /^\d{4}-\d{2}$/.test(s)
 }
- 
+
 function monthRange(month) {
   if (!isValidMonthStr(month)) return null
   const [y, m] = String(month).split("-").map(Number)
@@ -29,7 +29,7 @@ function monthRange(month) {
   const end = new Date(y, m, 1, 0, 0, 0, 0)
   return { gte: start, lt: end }
 }
- 
+
 function buildWhere(query, { ignoreStatus = false } = {}) {
   const { q, householdId, feeTypeId, method, status, fromDate, toDate, month } = query
   const where = {}
@@ -46,9 +46,9 @@ function buildWhere(query, { ignoreStatus = false } = {}) {
       where.status = toInt(status)
     }
   }
- 
+
   const mr = monthRange(month)
- 
+
   if (mr) {
     where.createdAt = mr
   } else if (fromDate || toDate) {
@@ -61,11 +61,11 @@ function buildWhere(query, { ignoreStatus = false } = {}) {
     }
     if (Object.keys(createdAt).length) where.createdAt = createdAt
   }
- 
+
   const kw = String(q || "").trim()
   if (kw) {
     where.OR = [
-      { household: { householdCode: { contains: kw, mode: "insensitive" } } },
+      { household: { householdCode: { startsWith: kw, mode: "insensitive" } } },
       { household: { address: { contains: kw, mode: "insensitive" } } },
       { feeType: { name: { contains: kw, mode: "insensitive" } } },
       { manager: { fullname: { contains: kw, mode: "insensitive" } } }
@@ -74,23 +74,23 @@ function buildWhere(query, { ignoreStatus = false } = {}) {
  
   return where
 }
- 
+
 function parseSort(raw) {
   const s = String(raw || "").toLowerCase()
   return s === "asc" ? "asc" : "desc"
 }
- 
+
 export const getFeeHistory = async (req, res) => {
   try {
     const page = Math.max(1, toInt(req.query.page, 1))
     const pageSize = Math.min(100, Math.max(5, toInt(req.query.pageSize, 10)))
     const skip = (page - 1) * pageSize
- 
+
     const sortDir = parseSort(req.query.sort)
- 
+
     const where = buildWhere(req.query)
     const whereForStats = buildWhere(req.query, { ignoreStatus: true })
- 
+
     const [total, rows, grouped] = await Promise.all([
       prisma.feeRecord.count({ where }),
       prisma.feeRecord.findMany({
@@ -110,7 +110,7 @@ export const getFeeHistory = async (req, res) => {
         _count: { _all: true }
       })
     ])
- 
+
     const stats = { total: 0, paid: 0, pending: 0, partial: 0 }
     for (const g of grouped || []) {
       const c = Number(g?._count?._all || 0)
@@ -205,7 +205,7 @@ export const exportFeeHistoryExcel = async (req, res) => {
   try {
     const where = buildWhere(req.query)
     const sortDir = parseSort(req.query.sort)
- 
+
     const rows = await prisma.feeRecord.findMany({
       where,
       orderBy: { createdAt: sortDir },
@@ -277,16 +277,16 @@ export const printFeeInvoicePdf = async (req, res) => {
         manager: { select: { fullname: true } }
       }
     })
- 
+
     if (!record) {
       return res.status(404).json({ message: "Không tìm thấy giao dịch" })
     }
- 
+
     const doc = new PDFDocument({
       size: "A4",
       margin: 50
     })
- 
+
     const filename = `hoa_don_thu_phi_${record.id}.pdf`
  
     res.setHeader("Content-Type", "application/pdf")
@@ -300,7 +300,7 @@ export const printFeeInvoicePdf = async (req, res) => {
     doc.registerFont("TNRBI", FONT_BOLD_ITALIC)
  
     const statusLabel = record.status === 0 ? "Chưa nộp" : record.status === 1 ? "Nộp 1 phần" : "Đã nộp"
- 
+
     doc.font("TNRB").fontSize(14).text("BAN QUẢN LÝ KHU DÂN CƯ", { align: "center" }).moveDown(0.5)
     doc.font("TNRB").fontSize(18).text("HÓA ĐƠN THU PHÍ", { align: "center" }).moveDown(1.5)
  
@@ -309,14 +309,14 @@ export const printFeeInvoicePdf = async (req, res) => {
     doc.text(`Ngày thu: ${record.createdAt.toLocaleString("vi-VN")}`)
     doc.text(`Hình thức: ${record.method}`)
     doc.moveDown(1)
- 
+
     doc.font("TNRB").fontSize(12).text("Thông tin hộ dân", { underline: true })
     doc.moveDown(0.5)
     doc.font("TNR").fontSize(11)
     doc.text(`Mã hộ: ${record.household.householdCode}`)
     doc.text(`Địa chỉ: ${record.household.address}`)
     doc.moveDown(1)
- 
+
     doc.font("TNRB").fontSize(12).text("Chi tiết khoản thu", { underline: true })
     doc.moveDown(0.5)
     doc.font("TNR").fontSize(11)
@@ -343,7 +343,7 @@ export const printFeeInvoicePdf = async (req, res) => {
       .fontSize(10)
       .fillColor("gray")
       .text("Hóa đơn được tạo tự động từ hệ thống quản lý thu phí", { align: "center" })
- 
+
     doc.end()
   } catch (e) {
     console.error("printFeeInvoicePdf error:", e)

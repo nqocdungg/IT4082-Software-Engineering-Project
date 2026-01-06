@@ -1,11 +1,13 @@
 import prisma from "../../../prisma/prismaClient.js"
- 
+
+const NOW = new Date(2025, 11, 31, 0, 0, 0, 0)
+
 function isExpired(feeType) {
   if (!feeType?.toDate) return false
- 
+
   const end = new Date(feeType.toDate)
   if (Number.isNaN(end.getTime())) return false
- 
+
   end.setDate(end.getDate() + 1)
   end.setHours(0, 0, 0, 0)
  
@@ -182,7 +184,7 @@ export const updateFee = async (req, res) => {
     if (status !== undefined) data.isActive = Number(status) === 1
     if (fromDate !== undefined) data.fromDate = fromDate ? new Date(fromDate) : null
     if (toDate !== undefined) data.toDate = toDate ? new Date(toDate) : null
- 
+
     const updated = await prisma.feeType.update({
       where: { id: feeTypeId },
       data,

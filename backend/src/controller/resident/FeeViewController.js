@@ -14,14 +14,22 @@ const FONT_BOLD_ITALIC = path.join(__dirname, "../../../assets/font/TIMESBI.TTF"
 const vnd = (n) => new Intl.NumberFormat("vi-VN").format(Number(n ?? 0))
 const dmy = (d) => (d ? new Date(d).toLocaleDateString("vi-VN") : "—")
  
+// đặt gần đầu file
+const NOW_ANCHOR = new Date(2025, 11, 31, 12, 0, 0, 0) // 31/12/2025 (tháng 11 = December)
+
+// dùng NOW_ANCHOR thay cho new Date()
 function isExpiredFeeType(feeType) {
   if (!feeType?.toDate) return false
+
   const end = new Date(feeType.toDate)
   if (Number.isNaN(end.getTime())) return false
+
   end.setDate(end.getDate() + 1)
   end.setHours(0, 0, 0, 0)
-  return new Date() >= end
+
+  return NOW_ANCHOR >= end
 }
+
  
 export const downloadInvoicePdf = async (req, res) => {
   try {

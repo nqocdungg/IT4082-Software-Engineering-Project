@@ -17,16 +17,16 @@ async function generateUniqueHouseholdCode(tx) {
     if (!existed) return code
   }
 }
- 
+
 function parseBool(raw) {
   const v = String(raw ?? "").trim().toLowerCase()
   return v === "1" || v === "true" || v === "yes" || v === "on"
 }
- 
+
 function nonEmptyHouseholdWhere() {
   return { residents: { some: { status: { in: [0, 1, 2] } } } }
 }
- 
+
 export const getAllHouseholds = async (req, res) => {
   try {
     const search = String(req.query.search ?? "").trim()
@@ -34,20 +34,20 @@ export const getAllHouseholds = async (req, res) => {
  
     const page = toPositiveInt(req.query.page) || 1
     const limit = toPositiveInt(req.query.limit ?? req.query.rowsPerPage) || 10
- 
+
     const includeEmpty = parseBool(req.query.includeEmpty)
- 
+
     const where = {}
  
     if (statusRaw !== "ALL" && statusRaw !== "") {
       const s = Number(statusRaw)
       if ([0, 1].includes(s)) where.status = s
     }
- 
+
     if (!includeEmpty) {
       where.AND = [...(where.AND || []), nonEmptyHouseholdWhere()]
     }
- 
+
     if (search) {
       where.OR = [
         { householdCode: { contains: search, mode: "insensitive" } },
@@ -107,20 +107,20 @@ export const searchHouseholds = async (req, res) => {
   try {
     const q = String(req.query.q || "").trim()
     if (!q) return res.json({ success: true, data: [] })
- 
+
     const includeEmpty = parseBool(req.query.includeEmpty)
- 
+
     const where = {
       OR: [
         { householdCode: { startsWith: q, mode: "insensitive" } },
         { address: { startsWith: q, mode: "insensitive" } }
       ]
     }
- 
+
     if (!includeEmpty) {
       where.AND = [...(where.AND || []), nonEmptyHouseholdWhere()]
     }
- 
+
     const list = await prisma.household.findMany({
       where,
       orderBy: { id: "desc" },
@@ -352,18 +352,18 @@ export const exportHouseholdsExcel = async (req, res) => {
     const search = String(req.query.search ?? "").trim()
     const statusRaw = String(req.query.status ?? "ALL").trim()
     const includeEmpty = parseBool(req.query.includeEmpty)
- 
+
     const where = {}
  
     if (statusRaw !== "ALL" && statusRaw !== "") {
       const s = Number(statusRaw)
       if ([0, 1].includes(s)) where.status = s
     }
- 
+
     if (!includeEmpty) {
       where.AND = [...(where.AND || []), nonEmptyHouseholdWhere()]
     }
- 
+
     if (search) {
       where.OR = [
         { householdCode: { contains: search, mode: "insensitive" } },

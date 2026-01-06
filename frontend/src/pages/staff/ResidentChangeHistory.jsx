@@ -1,3 +1,4 @@
+// frontend/src/pages/staff/ResidentChangeHistory.jsx
 import React, { useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import {
@@ -11,18 +12,18 @@ import {
   FaTimesCircle,
   FaFileExcel
 } from "react-icons/fa"
- 
+
 import "../../styles/staff/layout.css"
 import "../../styles/staff/residentchangehistory.css"
 import { formatDateDMY } from "../../utils/date"
- 
+
 const API_BASE = "http://localhost:5000/api"
- 
+
 function authHeaders() {
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
- 
+
 function useDebouncedValue(value, delay = 350) {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -31,7 +32,7 @@ function useDebouncedValue(value, delay = 350) {
   }, [value, delay])
   return debounced
 }
- 
+
 const CHANGE_TYPES = {
   0: { label: "Khai sinh" },
   1: { label: "Tạm trú" },
@@ -42,25 +43,25 @@ const CHANGE_TYPES = {
   6: { label: "Đổi chủ hộ" },
   7: { label: "Khai tử" }
 }
- 
+
 const APPROVAL = {
   0: { label: "Chờ duyệt", className: "rch-approval-pending" },
   1: { label: "Đã duyệt", className: "rch-approval-approved" },
   2: { label: "Từ chối", className: "rch-approval-rejected" }
 }
- 
+
 function getChangeTypeInfo(code) {
   return CHANGE_TYPES[Number(code)] || { label: "Không rõ" }
 }
- 
+
 function getApprovalInfo(code) {
   return APPROVAL[Number(code)] || { label: "Không rõ", className: "" }
 }
- 
+
 function money(v) {
   return new Intl.NumberFormat("vi-VN").format(Number(v || 0))
 }
- 
+
 function isSameMonth(dateValue, ym) {
   if (!ym) return true
   const d = new Date(dateValue)
@@ -69,7 +70,7 @@ function isSameMonth(dateValue, ym) {
   const m = String(d.getMonth() + 1).padStart(2, "0")
   return `${y}-${m}` === ym
 }
- 
+
 function computeStats(list, monthFilter) {
   const s = {
     total: 0,
@@ -83,13 +84,13 @@ function computeStats(list, monthFilter) {
     if (it.approvalStatus === 0) s.pending++
     else if (it.approvalStatus === 1) s.approved++
     else if (it.approvalStatus === 2) s.rejected++
- 
+
     const refDate = it.createdAt || it.fromDate
     if (monthFilter && refDate && isSameMonth(refDate, monthFilter)) s.inMonth++
   }
   return s
 }
- 
+
 function safeJson(obj) {
   if (!obj) return "—"
   try {
@@ -98,26 +99,26 @@ function safeJson(obj) {
     return "—"
   }
 }
- 
+
 export default function ResidentChangeHistory() {
   const [items, setItems] = useState([])
- 
+
   const [search, setSearch] = useState("")
   const [changeTypeFilter, setChangeTypeFilter] = useState("ALL")
   const [approvalFilter, setApprovalFilter] = useState("ALL")
   const [monthFilter, setMonthFilter] = useState("")
   const [sort, setSort] = useState("NEWEST")
- 
+
   const debouncedSearch = useDebouncedValue(search, 350)
- 
+
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(5)
- 
+
   const [selected, setSelected] = useState(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
- 
+
   const [exporting, setExporting] = useState(false)
- 
+
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -125,23 +126,23 @@ export default function ResidentChangeHistory() {
     rejected: 0,
     inMonth: 0
   })
- 
+
   useEffect(() => {
     fetchHistory()
     setCurrentPage(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, changeTypeFilter, approvalFilter, monthFilter, sort])
- 
+
   async function fetchHistory() {
     try {
       const params = {}
- 
+
       if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
       if (changeTypeFilter !== "ALL") params.changeType = changeTypeFilter
       if (approvalFilter !== "ALL") params.approvalStatus = approvalFilter
       if (monthFilter) params.month = monthFilter
       if (sort) params.sort = sort
- 
+
       // NOTE:
       // - Nếu BE của m đang mount route khác (vd: /resident-change-history), đổi chỗ này cho đúng.
       // - Mình giữ kiểu query params để khớp layout filter/search như m hay làm.
@@ -149,7 +150,7 @@ export default function ResidentChangeHistory() {
         headers: authHeaders(),
         params
       })
- 
+
       const list = res.data?.data || []
       setItems(list)
       setStats(computeStats(list, monthFilter))
@@ -160,18 +161,18 @@ export default function ResidentChangeHistory() {
       setStats(computeStats([], monthFilter))
     }
   }
- 
+
   const totalPages = Math.max(1, Math.ceil(items.length / rowsPerPage))
- 
+
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(1)
   }, [totalPages, currentPage])
- 
+
   const pageItems = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage
     return items.slice(start, start + rowsPerPage)
   }, [items, currentPage, rowsPerPage])
- 
+
   const rangeText = useMemo(() => {
     const total = items.length
     if (total === 0) return `0 - 0 trên tổng số 0 bản ghi`
@@ -179,7 +180,7 @@ export default function ResidentChangeHistory() {
     const end = Math.min(currentPage * rowsPerPage, total)
     return `${start} - ${end} trên tổng số ${total} bản ghi`
   }, [items.length, currentPage, rowsPerPage])
- 
+
   const miniCards = useMemo(
     () => [
       { label: "Tổng bản ghi", value: stats.total, icon: <FaUsers />, tone: "blue" },
@@ -190,9 +191,9 @@ export default function ResidentChangeHistory() {
     ],
     [stats, monthFilter]
   )
- 
+
   const closeDetail = () => setSelected(null)
- 
+
   const openDetail = async row => {
     setSelected(row)
     setLoadingDetail(true)
@@ -208,7 +209,7 @@ export default function ResidentChangeHistory() {
       setLoadingDetail(false)
     }
   }
- 
+
   async function handleExportExcel() {
     if (exporting) return
     setExporting(true)
@@ -220,17 +221,17 @@ export default function ResidentChangeHistory() {
         month: monthFilter || undefined,
         sort: sort || undefined
       }
- 
+
       const res = await axios.get(`${API_BASE}/resident-changes/history/export-excel`, {
         headers: authHeaders(),
         responseType: "blob",
         params
       })
- 
+
       const blob = new Blob([res.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       })
- 
+
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -246,7 +247,7 @@ export default function ResidentChangeHistory() {
       setExporting(false)
     }
   }
- 
+
   return (
     <div className="page-container residents-page rch-page">
       <div className="stats-strip">
@@ -260,7 +261,7 @@ export default function ResidentChangeHistory() {
           </div>
         ))}
       </div>
- 
+
       <div className="card table-card">
         <div className="table-toolbar">
           <div className="toolbar-row">
@@ -281,7 +282,7 @@ export default function ResidentChangeHistory() {
                   ))}
                 </select>
               </div>
- 
+
               <div className="toolbar-select">
                 <select
                   value={approvalFilter}
@@ -296,9 +297,9 @@ export default function ResidentChangeHistory() {
                   <option value="2">Từ chối</option>
                 </select>
               </div>
- 
-             
- 
+
+              
+
               <div className="toolbar-select">
                 <select
                   value={sort}
@@ -312,7 +313,7 @@ export default function ResidentChangeHistory() {
                 </select>
               </div>
             </div>
- 
+
             <div className="toolbar-right">
               <button
                 type="button"
@@ -324,7 +325,7 @@ export default function ResidentChangeHistory() {
                 <FaFileExcel />
                 {exporting ? "Đang xuất..." : "Xuất Excel"}
               </button>
- 
+
               <div className="toolbar-search">
                 <FaSearch className="search-icon" />
                 <input
@@ -340,7 +341,7 @@ export default function ResidentChangeHistory() {
             </div>
           </div>
         </div>
- 
+
         <div className="table-wrapper">
           <table className="resident-table rch-table">
             <thead>
@@ -356,7 +357,7 @@ export default function ResidentChangeHistory() {
                 <th style={{ width: 90 }}>Thao tác</th>
               </tr>
             </thead>
- 
+
             <tbody>
               {pageItems.length === 0 ? (
                 <tr>
@@ -368,19 +369,19 @@ export default function ResidentChangeHistory() {
                 pageItems.map(row => {
                   const typeInfo = getChangeTypeInfo(row.changeType)
                   const appr = getApprovalInfo(row.approvalStatus)
- 
+
                   const residentName =
                     row?.resident?.fullname ||
                     row?.residentFullname ||
                     (row.residentId ? `NK #${row.residentId}` : "—")
- 
+
                   const householdCode =
                     row?.resident?.household?.householdCode ||
                     row?.householdCode ||
                     (row?.resident?.householdId != null ? `HK #${row.resident.householdId}` : "—")
- 
+
                   const managerName = row?.manager?.fullname || row?.managerName || (row.managerId ? `CB #${row.managerId}` : "—")
- 
+
                   return (
                     <tr key={row.id} className="clickable-row" onClick={() => openDetail(row)}>
                       <td>#{row.id}</td>
@@ -416,7 +417,7 @@ export default function ResidentChangeHistory() {
             </tbody>
           </table>
         </div>
- 
+
         <div className="table-footer">
           <div className="footer-left">
             <span className="footer-muted">Số bản ghi</span>
@@ -432,10 +433,10 @@ export default function ResidentChangeHistory() {
               <option value={20}>20</option>
             </select>
           </div>
- 
+
           <div className="footer-right">
             <span className="footer-muted">{rangeText}</span>
- 
+
             <div className="pager">
               <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
                 <FaChevronLeft />
@@ -447,7 +448,7 @@ export default function ResidentChangeHistory() {
           </div>
         </div>
       </div>
- 
+
       {selected && (
         <div className="resident-modal-overlay" onClick={closeDetail}>
           <div className="resident-modal rch-modal" onClick={e => e.stopPropagation()}>
@@ -456,12 +457,12 @@ export default function ResidentChangeHistory() {
                 <h3 className="resident-modal-title">Chi tiết biến động</h3>
                 <p className="resident-modal-sub">ID: #{selected.id}</p>
               </div>
- 
+
               <button className="modal-close-btn" type="button" onClick={closeDetail}>
                 ✕
               </button>
             </div>
- 
+
             <div className="resident-modal-body">
               {loadingDetail ? (
                 <div className="empty-row">Đang tải chi tiết...</div>
@@ -471,7 +472,7 @@ export default function ResidentChangeHistory() {
                     <div className="detail-label">Loại biến động</div>
                     <div className="detail-value">{getChangeTypeInfo(selected.changeType).label}</div>
                   </div>
- 
+
                   <div className="detail-item">
                     <div className="detail-label">Trạng thái duyệt</div>
                     <div className="detail-value">
@@ -480,7 +481,7 @@ export default function ResidentChangeHistory() {
                       </span>
                     </div>
                   </div>
- 
+
                   <div className="detail-item">
                     <div className="detail-label">Nhân khẩu</div>
                     <div className="detail-value">
@@ -488,7 +489,7 @@ export default function ResidentChangeHistory() {
                       {!!selected?.resident?.residentCCCD && <div className="sub-text">CCCD: {selected.resident.residentCCCD}</div>}
                     </div>
                   </div>
- 
+
                   <div className="detail-item">
                     <div className="detail-label">Hộ khẩu</div>
                     <div className="detail-value">
@@ -498,32 +499,32 @@ export default function ResidentChangeHistory() {
                       {!!selected?.resident?.household?.address && <div className="sub-text">{selected.resident.household.address}</div>}
                     </div>
                   </div>
- 
+
                   <div className="detail-item">
                     <div className="detail-label">Từ ngày</div>
                     <div className="detail-value">{formatDateDMY(selected.fromDate)}</div>
                   </div>
- 
+
                   <div className="detail-item">
                     <div className="detail-label">Đến ngày</div>
                     <div className="detail-value">{selected.toDate ? formatDateDMY(selected.toDate) : "—"}</div>
                   </div>
- 
+
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Địa chỉ đi</div>
                     <div className="detail-value">{selected.fromAddress || "—"}</div>
                   </div>
- 
+
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Địa chỉ đến</div>
                     <div className="detail-value">{selected.toAddress || "—"}</div>
                   </div>
- 
+
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Lý do</div>
                     <div className="detail-value">{selected.reason || "—"}</div>
                   </div>
- 
+
                   <div className="detail-item detail-wide">
                     <div className="detail-label">Người xử lý</div>
                     <div className="detail-value">
@@ -532,8 +533,8 @@ export default function ResidentChangeHistory() {
                         (selected.managerId ? `CB #${selected.managerId}` : "—")}
                     </div>
                   </div>
- 
- 
+
+
                   <div className="detail-item">
                     <div className="detail-label">Ngày tạo</div>
                     <div className="detail-value">{formatDateDMY(selected.createdAt)}</div>
@@ -541,7 +542,7 @@ export default function ResidentChangeHistory() {
                 </div>
               )}
             </div>
- 
+
             <div className="resident-modal-footer">
               <button className="btn-secondary" type="button" onClick={closeDetail}>
                 Đóng

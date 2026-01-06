@@ -1,3 +1,4 @@
+// frontend/src/pages/staff/RevenuesManagement.jsx
 import React, { useState, useMemo, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
@@ -53,17 +54,19 @@ function toEndOfDay(dateStr) {
 function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart <= bEnd && bStart <= aEnd
 }
- 
-// ✅ đồng bộ BE: hết hạn kể từ 00:00 của ngày (toDate + 1)
+
+const NOW = new Date(2025, 11, 31, 0, 0, 0, 0)
+
 function isExpiredFee(fee) {
   if (!fee?.toDate) return false
   const end = new Date(fee.toDate)
   if (Number.isNaN(end.getTime())) return false
   end.setDate(end.getDate() + 1)
   end.setHours(0, 0, 0, 0)
-  return new Date() >= end
+  return NOW >= end
 }
- 
+
+
 export default function RevenuesManagement() {
   const navigate = useNavigate()
  
@@ -113,10 +116,13 @@ export default function RevenuesManagement() {
  
     return list.filter(f => {
       const matchSearch = !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase())
- 
+
       const matchStatus =
-        statusFilter === "ALL" || String(f.status) === String(statusFilter)
- 
+        statusFilter === "ALL" ||
+        (statusFilter === "1" && Number(f.status) === 1 && !isExpiredFee(f)) ||
+        (statusFilter === "0" && (Number(f.status) === 0 || isExpiredFee(f)))
+
+
       const matchMandatory =
         mandatoryFilter === "ALL" ||
         (mandatoryFilter === "MANDATORY" && !!f.isMandatory) ||
@@ -143,11 +149,13 @@ export default function RevenuesManagement() {
  
   const stats = useMemo(() => {
     const list = Array.isArray(fees) ? fees : []
+
     const total = list.length
     const mandatory = list.filter(f => !!f.isMandatory).length
     const optional = list.filter(f => !f.isMandatory).length
-    const active = list.filter(f => Number(f.status) === 1).length
-    const inactive = list.filter(f => Number(f.status) === 0).length
+    const inactive = list.filter(f => Number(f.status) === 0 || isExpiredFee(f)).length
+    const active = list.filter(f => Number(f.status) === 1 && !isExpiredFee(f)).length
+
     const expired = list.filter(f => isExpiredFee(f)).length
     return { total, mandatory, optional, active, inactive, expired }
   }, [fees])
@@ -178,7 +186,7 @@ export default function RevenuesManagement() {
   function getStatusLabel(fee) {
     // Hết hạn → hiển thị "Ngừng áp dụng"
     if (isExpiredFee(fee)) return "Ngừng áp dụng"
- 
+
     return Number(fee.status) === 1
       ? "Đang hoạt động"
       : "Ngừng áp dụng"
@@ -186,13 +194,13 @@ export default function RevenuesManagement() {
  
   function getStatusClass(fee) {
     if (isExpiredFee(fee)) return "fee-status-badge fee-status-inactive"
- 
+
     return Number(fee.status) === 1
       ? "fee-status-badge fee-status-active"
       : "fee-status-badge fee-status-inactive"
   }
- 
- 
+
+
   function getDateRangeLabel(fee) {
     const hasFrom = !!fee.fromDate
     const hasTo = !!fee.toDate
@@ -393,7 +401,7 @@ export default function RevenuesManagement() {
                         >
                           <FaEye />
                         </button>
- 
+
                         <button
                           type="button"
                           title="Xóa"

@@ -1,12 +1,12 @@
 /* ===== ResidentChangeHistory toolbar layout ===== */
- 
+
 /* tách toolbar thành 2 hàng: trên = 3 dropdown, dưới = Excel + Search */
 .rch-page .table-toolbar .toolbar-row {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
- 
+
 /* hàng trên: 3 dropdown 1 hàng */
 .rch-page .table-toolbar .rch-toolbar-left {
   display: grid;
@@ -14,17 +14,17 @@
   gap: 12px;
   width: 100%;
 }
- 
+
 /* giữ style chung của select/input wrapper, chỉ căn hàng */
 .rch-page .table-toolbar .toolbar-select {
   width: 100%;
 }
- 
+
 .rch-page .table-toolbar .toolbar-select select,
 .rch-page .table-toolbar .toolbar-select input {
   width: 100%;
 }
- 
+
 /* hàng dưới: Excel + Search 1 hàng (KHÔNG chỉnh size nút/search) */
 .rch-page .table-toolbar .toolbar-right {
   display: flex;
@@ -33,47 +33,47 @@
   justify-content: flex-start;
   width: 100%;
 }
- 
+
 /* không ép width/height cho nút excel + ô search (giữ size gốc) */
 .rch-page .table-toolbar .btn-primary-excel {
   flex: 0 0 auto;
 }
- 
+
 .rch-page .table-toolbar .toolbar-search {
   flex: 0 0 auto;
 }
- 
+
 /* ===== Status badge colors ===== */
 .rch-page .status-badge.rch-approval-pending {
   background: #fff7ed;
   color: #b45309;
   border: 1px solid #fed7aa;
 }
- 
+
 .rch-page .status-badge.rch-approval-approved {
   background: #ecfdf5;
   color: #047857;
   border: 1px solid #a7f3d0;
 }
- 
+
 .rch-page .status-badge.rch-approval-rejected {
   background: #fff1f2;
   color: #be123c;
   border: 1px solid #fecdd3;
 }
- 
+
 /* ===== responsive: nhỏ thì cho xuống dòng đẹp ===== */
 @media (max-width: 1100px) {
   .rch-page .table-toolbar .rch-toolbar-left {
     grid-template-columns: 1fr;
   }
- 
+
   .rch-page .table-toolbar .toolbar-right {
     flex-wrap: wrap;
   }
 }
 /* ===== DÒNG DƯỚI: EXCEL + SEARCH SÁT PHẢI ===== */
- 
+
 .rch-page .table-toolbar .toolbar-right {
   width: 100%;
   display: flex;
@@ -81,15 +81,14 @@
   align-items: center;
   gap: 14px;
 }
- 
+
 /* giữ nguyên kích thước gốc, không cho co giãn */
 .rch-page .table-toolbar .toolbar-right > * {
   flex: 0 0 auto;
 }
- 
+
 /* đảm bảo search không bị margin auto kéo lung tung */
 .rch-page .table-toolbar .toolbar-search {
   margin-left: 0 !important;
   width: auto;
 }
- 
