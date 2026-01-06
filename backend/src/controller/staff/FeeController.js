@@ -3,22 +3,14 @@ import prisma from "../../../prisma/prismaClient.js"
 function isExpired(feeType) {
   if (!feeType?.toDate) return false
 
-  const now = new Date()
+  const end = new Date(feeType.toDate)
+  if (Number.isNaN(end.getTime())) return false
 
-  // Đưa toDate về CUỐI NGÀY
-  const endOfDay = new Date(feeType.toDate)
-  endOfDay.setHours(23, 59, 59, 999)
+  end.setDate(end.getDate() + 1)
+  end.setHours(0, 0, 0, 0)
 
-  return now > endOfDay
+  return new Date() >= end
 }
-
-function normalizeToEndOfDay(dateStr) {
-  if (!dateStr) return null
-  const d = new Date(dateStr)
-  d.setHours(23, 59, 59, 999)
-  return d
-}
-
 
 
 export const getAllFees = async (req, res) => {
@@ -86,7 +78,7 @@ export const createFee = async (req, res) => {
         isMandatory: mandatoryBool,
         unitPrice: priceValue,
         fromDate: fromDate ? new Date(fromDate) : null,
-        toDate: toDate ? normalizeToEndOfDay(toDate) : null,
+        toDate: toDate ? new Date(toDate) : null,
         isActive: true,
       },
     })
@@ -189,10 +181,7 @@ export const updateFee = async (req, res) => {
 
     if (status !== undefined) data.isActive = Number(status) === 1
     if (fromDate !== undefined) data.fromDate = fromDate ? new Date(fromDate) : null
-if (toDate !== undefined) {
-  data.toDate = toDate ? normalizeToEndOfDay(toDate) : null
-}
-
+    if (toDate !== undefined) data.toDate = toDate ? new Date(toDate) : null
 
     const updated = await prisma.feeType.update({
       where: { id: feeTypeId },

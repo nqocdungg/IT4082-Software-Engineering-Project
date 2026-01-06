@@ -17,28 +17,21 @@ function toInt(v, def = undefined) {
   return Number.isFinite(n) ? n : def
 }
 
-function buildMonthRange(month) {
-  if (!month) return null
-  const start = new Date(`${month}-01`)
-  if (Number.isNaN(start.getTime())) return null
-  const end = new Date(start)
-  end.setMonth(end.getMonth() + 1)
+function isValidMonthStr(month) {
+  const s = String(month ?? "").trim()
+  return /^\d{4}-\d{2}$/.test(s)
+}
+
+function monthRange(month) {
+  if (!isValidMonthStr(month)) return null
+  const [y, m] = String(month).split("-").map(Number)
+  const start = new Date(y, m - 1, 1, 0, 0, 0, 0)
+  const end = new Date(y, m, 1, 0, 0, 0, 0)
   return { gte: start, lt: end }
 }
 
-function buildYearRange(year) {
-  if (!year) return null
-  const y = toInt(year)
-  if (!y) return null
-  const start = new Date(`${y}-01-01`)
-  const end = new Date(`${y + 1}-01-01`)
-  return { gte: start, lt: end }
-}
-
-function buildWhere(query, opts = {}) {
-  const { ignoreStatus = false } = opts
-
-  const { q, householdId, feeTypeId, method, status, month, year } = query
+function buildWhere(query, { ignoreStatus = false } = {}) {
+  const { q, householdId, feeTypeId, method, status, fromDate, toDate, month } = query
   const where = {}
 
   if (householdId) where.householdId = toInt(householdId)
@@ -54,16 +47,25 @@ function buildWhere(query, opts = {}) {
     }
   }
 
-  const mRange = buildMonthRange(month)
-  const yRange = !mRange ? buildYearRange(year) : null
+  const mr = monthRange(month)
 
-  if (mRange) where.createdAt = mRange
-  else if (yRange) where.createdAt = yRange
+  if (mr) {
+    where.createdAt = mr
+  } else if (fromDate || toDate) {
+    const createdAt = {}
+    if (fromDate) createdAt.gte = new Date(fromDate)
+    if (toDate) {
+      const d = new Date(toDate)
+      d.setHours(23, 59, 59, 999)
+      createdAt.lte = d
+    }
+    if (Object.keys(createdAt).length) where.createdAt = createdAt
+  }
 
   const kw = String(q || "").trim()
   if (kw) {
     where.OR = [
-      { household: { householdCode: { contains: kw, mode: "insensitive" } } },
+      { household: { householdCode: { startsWith: kw, mode: "insensitive" } } },
       { household: { address: { contains: kw, mode: "insensitive" } } },
       { feeType: { name: { contains: kw, mode: "insensitive" } } },
       { manager: { fullname: { contains: kw, mode: "insensitive" } } }
@@ -73,23 +75,27 @@ function buildWhere(query, opts = {}) {
   return where
 }
 
+function parseSort(raw) {
+  const s = String(raw || "").toLowerCase()
+  return s === "asc" ? "asc" : "desc"
+}
+
 export const getFeeHistory = async (req, res) => {
   try {
     const page = Math.max(1, toInt(req.query.page, 1))
     const pageSize = Math.min(100, Math.max(5, toInt(req.query.pageSize, 10)))
     const skip = (page - 1) * pageSize
 
-    const where = buildWhere(req.query) // where cho bảng (có status nếu đang filter)
-    const statsWhere = buildWhere(req.query, { ignoreStatus: true }) // where cho card (bỏ status)
+    const sortDir = parseSort(req.query.sort)
 
-    const sort = String(req.query.sort || "desc").toLowerCase()
-    const order = sort === "asc" ? "asc" : "desc"
+    const where = buildWhere(req.query)
+    const whereForStats = buildWhere(req.query, { ignoreStatus: true })
 
-    const [tableTotal, rows, grouped, statsTotal] = await Promise.all([
+    const [total, rows, grouped] = await Promise.all([
       prisma.feeRecord.count({ where }),
       prisma.feeRecord.findMany({
         where,
-        orderBy: { createdAt: order },
+        orderBy: { createdAt: sortDir },
         skip,
         take: pageSize,
         include: {
@@ -100,18 +106,18 @@ export const getFeeHistory = async (req, res) => {
       }),
       prisma.feeRecord.groupBy({
         by: ["status"],
-        where: statsWhere,
+        where: whereForStats,
         _count: { _all: true }
-      }),
-      prisma.feeRecord.count({ where: statsWhere })
+      })
     ])
 
-    const map = new Map(grouped.map(g => [g.status, g._count._all]))
-    const stats = {
-      total: statsTotal,
-      pending: map.get(0) || 0,
-      partial: map.get(1) || 0,
-      paid: map.get(2) || 0
+    const stats = { total: 0, paid: 0, pending: 0, partial: 0 }
+    for (const g of grouped || []) {
+      const c = Number(g?._count?._all || 0)
+      stats.total += c
+      if (g.status === 2) stats.paid += c
+      else if (g.status === 0) stats.pending += c
+      else if (g.status === 1) stats.partial += c
     }
 
     res.json({
@@ -119,8 +125,8 @@ export const getFeeHistory = async (req, res) => {
       meta: {
         page,
         pageSize,
-        total: tableTotal,
-        totalPages: Math.max(1, Math.ceil(tableTotal / pageSize)),
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
         stats
       }
     })
@@ -198,13 +204,11 @@ export const createOfflineFeeRecord = async (req, res) => {
 export const exportFeeHistoryExcel = async (req, res) => {
   try {
     const where = buildWhere(req.query)
-
-    const sort = String(req.query.sort || "desc").toLowerCase()
-    const order = sort === "asc" ? "asc" : "desc"
+    const sortDir = parseSort(req.query.sort)
 
     const rows = await prisma.feeRecord.findMany({
       where,
-      orderBy: { createdAt: order },
+      orderBy: { createdAt: sortDir },
       include: {
         household: { select: { householdCode: true, address: true } },
         feeType: { select: { name: true, isMandatory: true } },
@@ -232,7 +236,6 @@ export const exportFeeHistoryExcel = async (req, res) => {
     const kindLabel = m => (m ? "Bắt buộc" : "Tự nguyện")
 
     rows.forEach(r => {
-      const collector = String(r.method || "").toUpperCase() === "ONLINE" ? "Hệ thống" : r.manager?.fullname || ""
       ws.addRow({
         createdAt: r.createdAt ? new Date(r.createdAt) : "",
         householdCode: r.household?.householdCode || "",
@@ -242,7 +245,7 @@ export const exportFeeHistoryExcel = async (req, res) => {
         amount: r.amount ?? 0,
         method: r.method,
         status: statusLabel(r.status),
-        manager: collector,
+        manager: r.manager?.fullname || "",
         description: r.description || ""
       })
     })
@@ -275,9 +278,15 @@ export const printFeeInvoicePdf = async (req, res) => {
       }
     })
 
-    if (!record) return res.status(404).json({ message: "Không tìm thấy giao dịch" })
+    if (!record) {
+      return res.status(404).json({ message: "Không tìm thấy giao dịch" })
+    }
 
-    const doc = new PDFDocument({ size: "A4", margin: 50 })
+    const doc = new PDFDocument({
+      size: "A4",
+      margin: 50
+    })
+
     const filename = `hoa_don_thu_phi_${record.id}.pdf`
 
     res.setHeader("Content-Type", "application/pdf")
@@ -291,8 +300,6 @@ export const printFeeInvoicePdf = async (req, res) => {
     doc.registerFont("TNRBI", FONT_BOLD_ITALIC)
 
     const statusLabel = record.status === 0 ? "Chưa nộp" : record.status === 1 ? "Nộp 1 phần" : "Đã nộp"
-    const collector =
-      String(record.method || "").toUpperCase() === "ONLINE" ? "Hệ thống" : record.manager?.fullname || "—"
 
     doc.font("TNRB").fontSize(14).text("BAN QUẢN LÝ KHU DÂN CƯ", { align: "center" }).moveDown(0.5)
     doc.font("TNRB").fontSize(18).text("HÓA ĐƠN THU PHÍ", { align: "center" }).moveDown(1.5)
@@ -303,17 +310,21 @@ export const printFeeInvoicePdf = async (req, res) => {
     doc.text(`Hình thức: ${record.method}`)
     doc.moveDown(1)
 
-    doc.font("TNRB").fontSize(12).text("Thông tin hộ dân", { underline: true }).moveDown(0.5)
+    doc.font("TNRB").fontSize(12).text("Thông tin hộ dân", { underline: true })
+    doc.moveDown(0.5)
     doc.font("TNR").fontSize(11)
     doc.text(`Mã hộ: ${record.household.householdCode}`)
     doc.text(`Địa chỉ: ${record.household.address}`)
     doc.moveDown(1)
 
-    doc.font("TNRB").fontSize(12).text("Chi tiết khoản thu", { underline: true }).moveDown(0.5)
+    doc.font("TNRB").fontSize(12).text("Chi tiết khoản thu", { underline: true })
+    doc.moveDown(0.5)
     doc.font("TNR").fontSize(11)
     doc.text(`Khoản thu: ${record.feeType.name}`)
     doc.text(`Loại: ${record.feeType.isMandatory ? "Bắt buộc" : "Tự nguyện"}`)
-    if (record.feeType.unitPrice != null) doc.text(`Đơn giá: ${Number(record.feeType.unitPrice).toLocaleString("vi-VN")} đ`)
+    if (record.feeType.unitPrice != null) {
+      doc.text(`Đơn giá: ${Number(record.feeType.unitPrice).toLocaleString("vi-VN")} đ`)
+    }
     doc.moveDown(0.5)
 
     doc.font("TNRB").fontSize(13).text(`Số tiền đã thu: ${Number(record.amount).toLocaleString("vi-VN")} đ`)
@@ -324,11 +335,14 @@ export const printFeeInvoicePdf = async (req, res) => {
     if (record.description) doc.text(`Ghi chú: ${record.description}`)
 
     doc.moveDown(2)
-    doc.text(`Người thu: ${collector}`)
+    doc.text(`Người thu: ${record.manager?.fullname || "—"}`)
     doc.text("Chữ ký người thu: ________________________")
 
     doc.moveDown(2)
-    doc.font("TNR").fontSize(10).fillColor("gray").text("Hóa đơn được tạo tự động từ hệ thống quản lý thu phí", { align: "center" })
+    doc.font("TNR")
+      .fontSize(10)
+      .fillColor("gray")
+      .text("Hóa đơn được tạo tự động từ hệ thống quản lý thu phí", { align: "center" })
 
     doc.end()
   } catch (e) {

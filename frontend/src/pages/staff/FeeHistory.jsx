@@ -51,7 +51,8 @@ export default function FeeHistory() {
   const [method, setMethod] = useState("ALL")
   const [status, setStatus] = useState("ALL")
   const [sort, setSort] = useState("desc")
-  const [month, setMonth] = useState(getCurrentMonth())
+  const [month, setMonth] = useState("")
+
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)

@@ -13,10 +13,7 @@ import {
   Cell
 } from "recharts"
 
-import {
-    FaFileExcel
-} from "react-icons/fa"
-
+import { FaFileExcel } from "react-icons/fa"
 
 import "../../styles/staff/fee-report.css"
 
@@ -107,26 +104,18 @@ export default function FeeReport() {
     }
   }
 
-  const pieColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#64748b"]
+  const pieColors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"]
 
-  const pieData = useMemo(() => {
-    return (feeTypes || [])
-      .filter((f) => Number(f.totalCollected) > 0)
-      .map((f) => ({
-        name: f.name,
-        value: Number(f.totalCollected)
-      }))
+  const topFeeTypes = useMemo(() => {
+    const list = Array.isArray(feeTypes) ? feeTypes : []
+    return list
+      .filter((f) => Number(f?.totalCollected || 0) > 0 && f?.name !== "Các loại phí khác")
+      .sort((a, b) => {
+        if (Number(b.totalCollected) !== Number(a.totalCollected)) return Number(b.totalCollected) - Number(a.totalCollected)
+        return Number(b.paidHouseholds || 0) - Number(a.paidHouseholds || 0)
+      })
+      .slice(0, 6)
   }, [feeTypes])
-
-  const totalPieValue = useMemo(() => {
-    return pieData.reduce((s, i) => s + Number(i.value || 0), 0)
-  }, [pieData])
-
-  const totalPieCenter = useMemo(() => {
-    const v = overview?.totalCollected
-    if (v === undefined || v === null) return totalPieValue
-    return Number(v || 0)
-  }, [overview, totalPieValue])
 
   const sortedFeeTypes = useMemo(() => {
     return [...(feeTypes || [])].sort((a, b) => {
@@ -134,14 +123,31 @@ export default function FeeReport() {
       const bOther = b.name === "Các loại phí khác"
       if (aOther !== bOther) return aOther ? 1 : -1
 
-      if (Number(b.totalCollected) !== Number(a.totalCollected)) return Number(b.totalCollected) - Number(a.totalCollected)
-      return Number(b.paidHouseholds) - Number(a.paidHouseholds)
+      if (Number(b.totalCollected) !== Number(a.totalCollected))
+        return Number(b.totalCollected) - Number(a.totalCollected)
+
+      return Number(b.paidHouseholds || 0) - Number(a.paidHouseholds || 0)
     })
   }, [feeTypes])
 
+
+  const pieData = useMemo(() => {
+    return topFeeTypes.map((f) => ({
+      name: f.name,
+      value: Number(f.totalCollected || 0)
+    }))
+  }, [topFeeTypes])
+
+  const totalPieValue = useMemo(() => {
+    return pieData.reduce((s, i) => s + Number(i.value || 0), 0)
+  }, [pieData])
+
+  const totalPieCenter = useMemo(() => {
+    return totalPieValue
+  }, [totalPieValue])
+
   const pieLegendItems = useMemo(() => {
-    const nonOther = pieData.filter((x) => x.name !== "Các loại phí khác")
-    return nonOther.slice(0, 6)
+    return pieData
   }, [pieData])
 
   useEffect(() => {
@@ -237,7 +243,7 @@ export default function FeeReport() {
               <p>Tổng hợp và phân tích tình hình thu phí trong khu dân cư</p>
             </div>
             <button className="btn-primary-excel" onClick={handleExport} disabled={loading}>
-              <FaFileExcel/>{loading ? "Đang xử lý..." : "Xuất báo cáo"}
+              <FaFileExcel /> {loading ? "Đang xử lý..." : "Xuất báo cáo"}
             </button>
           </div>
         </div>
@@ -285,9 +291,6 @@ export default function FeeReport() {
             </div>
           </section>
         )}
-
-
-
 
         <section className="report-section">
           <div className="card">
@@ -353,6 +356,13 @@ export default function FeeReport() {
                         </td>
                       </tr>
                     ))}
+                    {sortedFeeTypes.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="text-center">
+                          Chưa có dữ liệu
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -376,10 +386,7 @@ export default function FeeReport() {
                           isAnimationActive
                         >
                           {pieData.map((f, i) => (
-                            <Cell
-                              key={`${f.name}-${i}`}
-                              fill={f.name === "Các loại phí khác" ? "#64748b" : pieColors[i % pieColors.length]}
-                            />
+                            <Cell key={`${f.name}-${i}`} fill={pieColors[i % pieColors.length]} />
                           ))}
                         </Pie>
 
@@ -387,24 +394,20 @@ export default function FeeReport() {
                           {formatTrieu(totalPieCenter)} Tr
                         </text>
                         <text x="50%" y="58%" textAnchor="middle" className="pie-center-sub">
-                          Tổng thu
+                          Tổng thu (6 khoản)
                         </text>
                       </PieChart>
                     </div>
 
                     <div className="pie-legend-grid pie-legend-6">
-                      {pieLegendItems.map((item, i) => {
-                        const srcIdx = pieData.findIndex((x) => x.name === item.name)
-                        const color = srcIdx >= 0 ? pieColors[srcIdx % pieColors.length] : pieColors[i % pieColors.length]
-                        return (
-                          <div key={`${item.name}-lg-${i}`} className="pie-legend-item">
-                            <span className="pie-legend-swatch" style={{ background: color }} />
-                            <span className="pie-legend-text" title={item.name}>
-                              {item.name}
-                            </span>
-                          </div>
-                        )
-                      })}
+                      {pieLegendItems.map((item, i) => (
+                        <div key={`${item.name}-lg-${i}`} className="pie-legend-item">
+                          <span className="pie-legend-swatch" style={{ background: pieColors[i % pieColors.length] }} />
+                          <span className="pie-legend-text" title={item.name}>
+                            {item.name}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ) : (

@@ -4,7 +4,7 @@ import prisma from "../../../prisma/prismaClient.js"
 export const getDashboard = async (req, res) => {
   try {
     const now = new Date()
-    const currentYear = now.getFullYear()
+    const currentYear = now.getFullYear() - 1
     const currentMonth = now.getMonth() + 1
 
     const startOfMonth = new Date(currentYear, currentMonth - 1, 1)

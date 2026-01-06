@@ -43,16 +43,30 @@ export default function FeePayment() {
     return [...mandatory, ...contribution]
   }, [data])
 
+  // month filter: keep fee if [fromDate..toDate] intersects selected month
   const filteredFees = useMemo(() => {
     return allFees.filter((fee) => {
       if (selectedType !== "all" && fee.type !== selectedType) return false
 
-      const dateSource = fee.fromDate
-      if (filterMonth && dateSource) {
-        const d = new Date(dateSource)
-        if (!Number.isNaN(d.getTime())) {
-          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-          if (ym !== filterMonth) return false
+      if (filterMonth) {
+        const parts = String(filterMonth).split("-")
+        const y = Number(parts[0])
+        const m = Number(parts[1])
+
+        if (Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12) {
+          const monthStart = new Date(y, m - 1, 1)
+          const nextMonthStart = new Date(y, m, 1)
+
+          const from = fee.fromDate ? new Date(fee.fromDate) : null
+          const to = fee.toDate ? new Date(fee.toDate) : null
+
+          const feeStart =
+            from && !Number.isNaN(from.getTime()) ? from : new Date(-8640000000000000)
+          const feeEnd =
+            to && !Number.isNaN(to.getTime()) ? to : new Date(8640000000000000)
+
+          // overlap check
+          if (!(feeStart < nextMonthStart && feeEnd >= monthStart)) return false
         }
       }
 
@@ -326,7 +340,7 @@ export default function FeePayment() {
                 <>
                   <div className="popup-info-item">
                     <span className="label">Nhà bạn đã góp</span>
-                    <span className="value">{formatCurrency(popupFee.myPaidAmount ?? 0)}</span>
+                    <span className="value">{formatCurrency(getPaidAmount(popupFee))}</span>
                   </div>
                   <div className="popup-info-item">
                     <span className="label">Toàn dân đã góp</span>

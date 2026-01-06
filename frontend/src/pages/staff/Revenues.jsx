@@ -1,3 +1,4 @@
+// frontend/src/pages/staff/RevenuesManagement.jsx
 import React, { useState, useMemo, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
@@ -54,12 +55,14 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart <= bEnd && bStart <= aEnd
 }
 
+// ✅ đồng bộ BE: hết hạn kể từ 00:00 của ngày (toDate + 1)
 function isExpiredFee(fee) {
   if (!fee?.toDate) return false
   const end = new Date(fee.toDate)
   if (Number.isNaN(end.getTime())) return false
-  const now = new Date()
-  return now > end
+  end.setDate(end.getDate() + 1)
+  end.setHours(0, 0, 0, 0)
+  return new Date() >= end
 }
 
 export default function RevenuesManagement() {
@@ -82,6 +85,7 @@ export default function RevenuesManagement() {
 
   useEffect(() => {
     fetchFees()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchFees() {
@@ -109,8 +113,7 @@ export default function RevenuesManagement() {
     const filterEnd = fTo || new Date(8640000000000000)
 
     return list.filter(f => {
-      const matchSearch =
-        !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase())
+      const matchSearch = !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase())
 
       const matchStatus =
         statusFilter === "ALL" || String(f.status) === String(statusFilter)
@@ -128,8 +131,9 @@ export default function RevenuesManagement() {
         if (!feeHasFrom && !feeHasTo) {
           matchDate = true
         } else {
-          const feeStart = feeHasFrom ? new Date(f.fromDate) : new Date(-8640000000000000)
-          const feeEnd = feeHasTo ? new Date(f.toDate) : new Date(8640000000000000)
+          // ✅ fix: feeEnd lấy theo "hết ngày toDate" để filter không bị lệch
+          const feeStart = feeHasFrom ? toStartOfDay(f.fromDate) : new Date(-8640000000000000)
+          const feeEnd = feeHasTo ? toEndOfDay(f.toDate) : new Date(8640000000000000)
           matchDate = rangesOverlap(feeStart, feeEnd, filterStart, filterEnd)
         }
       }
@@ -140,14 +144,20 @@ export default function RevenuesManagement() {
 
   const stats = useMemo(() => {
     const list = Array.isArray(fees) ? fees : []
+
     const total = list.length
     const mandatory = list.filter(f => !!f.isMandatory).length
     const optional = list.filter(f => !f.isMandatory).length
-    const active = list.filter(f => f.status === 1).length
-    const inactive = list.filter(f => f.status === 0).length
-    const expired = list.filter(f => isExpiredFee(f)).length
-    return { total, mandatory, optional, active, inactive, expired }
+
+    // Ngừng hoạt động = hết hạn (dựa vào toDate)
+    const inactive = list.filter(f => isExpiredFee(f)).length
+
+    // Đang áp dụng = chưa hết hạn
+    const active = list.filter(f => !isExpiredFee(f)).length
+
+    return { total, mandatory, optional, active, inactive }
   }, [fees])
+
 
   useEffect(() => {
     setCurrentPage(1)
@@ -173,17 +183,22 @@ export default function RevenuesManagement() {
   }, [filteredFees.length, currentPage, rowsPerPage])
 
   function getStatusLabel(fee) {
-    if (isExpiredFee(fee)) return "Đã hết hạn"
-    if (fee.status === 1) return "Đang hoạt động"
-    if (fee.status === 0) return "Ngừng áp dụng"
-    return "Khác"
+    // Hết hạn → hiển thị "Ngừng áp dụng"
+    if (isExpiredFee(fee)) return "Ngừng áp dụng"
+
+    return Number(fee.status) === 1
+      ? "Đang hoạt động"
+      : "Ngừng áp dụng"
   }
 
   function getStatusClass(fee) {
-    if (isExpiredFee(fee)) return "fee-status-badge fee-status-expired"
-    if (fee.status === 1) return "fee-status-badge fee-status-active"
-    return "fee-status-badge fee-status-inactive"
+    if (isExpiredFee(fee)) return "fee-status-badge fee-status-inactive"
+
+    return Number(fee.status) === 1
+      ? "fee-status-badge fee-status-active"
+      : "fee-status-badge fee-status-inactive"
   }
+
 
   function getDateRangeLabel(fee) {
     const hasFrom = !!fee.fromDate
@@ -246,11 +261,7 @@ export default function RevenuesManagement() {
       setFeeForm(emptyFeeForm)
     } catch (err) {
       console.error("handleAddFeeSubmit error:", err)
-      alert(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          "Thêm khoản thu thất bại"
-      )
+      alert(err?.response?.data?.message || err?.response?.data?.error || "Thêm khoản thu thất bại")
     }
   }
 
@@ -262,10 +273,7 @@ export default function RevenuesManagement() {
       })
       setFees(prev => (Array.isArray(prev) ? prev.filter(f => f.id !== id) : []))
     } catch (err) {
-      const message =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Xóa khoản thu thất bại"
+      const message = err.response?.data?.message || err.response?.data?.error || "Xóa khoản thu thất bại"
       alert(message)
     }
   }
@@ -276,6 +284,8 @@ export default function RevenuesManagement() {
     { label: "Tự nguyện", value: stats.optional, icon: <FaPlus />, tone: "amber" },
     { label: "Đang áp dụng", value: stats.active, icon: <FaMoneyBillWave />, tone: "slate" },
     { label: "Ngừng áp dụng", value: stats.inactive, icon: <FaTrash />, tone: "rose" }
+    // nếu muốn thêm card hết hạn thì bật dòng dưới:
+    // ,{ label: "Đã hết hạn", value: stats.expired, icon: <FaTimes />, tone: "red" }
   ]
 
   return (
@@ -378,18 +388,25 @@ export default function RevenuesManagement() {
                     </td>
 
                     <td>
-                      <span className={getStatusClass(f)}>
-                        {getStatusLabel(f)}
-                      </span>
+                      <span className={getStatusClass(f)}>{getStatusLabel(f)}</span>
                     </td>
 
                     <td>
                       <div className="row-actions">
-                        <button type="button" title="Xem chi tiết" onClick={() => navigate(`/revenues/${f.id}`)}>
+                        <button
+                          type="button"
+                          title="Xem chi tiết"
+                          onClick={() => navigate(`/revenues/${f.id}`)}
+                        >
                           <FaEye />
                         </button>
 
-                        <button type="button" title="Xóa" className="danger" onClick={() => handleDeleteFee(f.id)}>
+                        <button
+                          type="button"
+                          title="Xóa"
+                          className="danger"
+                          onClick={() => handleDeleteFee(f.id)}
+                        >
                           <FaTrash />
                         </button>
                       </div>
