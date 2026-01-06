@@ -18,6 +18,8 @@ import { FaFileExcel } from "react-icons/fa"
 import "../../styles/staff/fee-report.css"
 
 const API_BASE = "http://localhost:5000/api"
+const NOW = new Date(2025, 11, 31, 0, 0, 0, 0) // 31/12/2025 local
+
 
 function authHeaders() {
   const token = localStorage.getItem("token") || localStorage.getItem("accessToken")
@@ -29,14 +31,14 @@ function money(v) {
 }
 
 function getCurrentYear() {
-  return new Date().getFullYear().toString()
+  return NOW.getFullYear().toString()
 }
 
 function getCurrentMonth() {
-  const d = new Date()
-  const m = String(d.getMonth() + 1).padStart(2, "0")
-  return `${d.getFullYear()}-${m}`
+  const m = String(NOW.getMonth() + 1).padStart(2, "0")
+  return `${NOW.getFullYear()}-${m}`
 }
+
 
 function formatTrieu(total) {
   const tr = Number(total || 0) / 1_000_000

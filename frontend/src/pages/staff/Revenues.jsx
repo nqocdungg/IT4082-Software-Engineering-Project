@@ -55,15 +55,17 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart <= bEnd && bStart <= aEnd
 }
 
-// ✅ đồng bộ BE: hết hạn kể từ 00:00 của ngày (toDate + 1)
+const NOW = new Date(2025, 11, 31, 0, 0, 0, 0)
+
 function isExpiredFee(fee) {
   if (!fee?.toDate) return false
   const end = new Date(fee.toDate)
   if (Number.isNaN(end.getTime())) return false
   end.setDate(end.getDate() + 1)
   end.setHours(0, 0, 0, 0)
-  return new Date() >= end
+  return NOW >= end
 }
+
 
 export default function RevenuesManagement() {
   const navigate = useNavigate()
@@ -116,7 +118,10 @@ export default function RevenuesManagement() {
       const matchSearch = !search.trim() || (f.name || "").toLowerCase().includes(search.toLowerCase())
 
       const matchStatus =
-        statusFilter === "ALL" || String(f.status) === String(statusFilter)
+        statusFilter === "ALL" ||
+        (statusFilter === "1" && Number(f.status) === 1 && !isExpiredFee(f)) ||
+        (statusFilter === "0" && (Number(f.status) === 0 || isExpiredFee(f)))
+
 
       const matchMandatory =
         mandatoryFilter === "ALL" ||
@@ -148,16 +153,12 @@ export default function RevenuesManagement() {
     const total = list.length
     const mandatory = list.filter(f => !!f.isMandatory).length
     const optional = list.filter(f => !f.isMandatory).length
+    const inactive = list.filter(f => Number(f.status) === 0 || isExpiredFee(f)).length
+    const active = list.filter(f => Number(f.status) === 1 && !isExpiredFee(f)).length
 
-    // Ngừng hoạt động = hết hạn (dựa vào toDate)
-    const inactive = list.filter(f => isExpiredFee(f)).length
-
-    // Đang áp dụng = chưa hết hạn
-    const active = list.filter(f => !isExpiredFee(f)).length
-
-    return { total, mandatory, optional, active, inactive }
+    const expired = list.filter(f => isExpiredFee(f)).length
+    return { total, mandatory, optional, active, inactive, expired }
   }, [fees])
-
 
   useEffect(() => {
     setCurrentPage(1)

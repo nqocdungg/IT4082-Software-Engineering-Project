@@ -1,5 +1,7 @@
 import prisma from "../../../prisma/prismaClient.js"
 
+const NOW = new Date(2025, 11, 31, 0, 0, 0, 0)
+
 function isExpired(feeType) {
   if (!feeType?.toDate) return false
 
@@ -8,11 +10,11 @@ function isExpired(feeType) {
 
   end.setDate(end.getDate() + 1)
   end.setHours(0, 0, 0, 0)
-
+ 
   return new Date() >= end
 }
-
-
+ 
+ 
 export const getAllFees = async (req, res) => {
   try {
     const feeTypes = await prisma.feeType.findMany({
